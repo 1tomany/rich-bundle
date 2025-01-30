@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<container
+    xmlns="http://symfony.com/schema/dic/services"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-Instance"
+    xsi:schemaLocation="http://symfony.com/schema/dic/services https://symfony.com/schema/dic/services/services-1.0.xsd"
+>
+    <services>
+        <defaults autowire="true"/>
+
+        <service id="OneToMany\RichBundle\EventSubscriber\ViewSubscriber">
+            <tag>kernel.event_subscriber</tag>
+        </service>
+        <service id="OneToMany\RichBundle\ValueResolver\BookingIdValueResolver">
+            <tag>controller.argument_value_resolver</tag>
+        </service>
+    </services>
+</container>
