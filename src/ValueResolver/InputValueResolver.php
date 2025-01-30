@@ -48,10 +48,10 @@ final readonly class InputValueResolver implements ValueResolverInterface
             throw new MalformedContentException($e);
         }
 
-        // Inject: Authenticated User Session Data
-        // Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface
-        // Symfony\Component\Security\Core\Authentication\Token\TokenInterface
-        // $data->add($this->securityToken->toArray());
+        // Inject: Authenticated User ID
+        if (null !== $token = $this->tokenStorage->getToken()) {
+            $data->set('userId', $token->getUserIdentifier());
+        }
 
         // Inject: Route Parameters
         if (true === $request->attributes->has('_route_params')) {

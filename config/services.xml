@@ -14,5 +14,9 @@
             <tag>controller.argument_value_resolver</tag>
             <argument key="$tokenStorage" type="service" id="Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface"/>
         </service>
+        <service id="OneToMany\RichBundle\Serializer\Normalizer\WrappedExceptionNormalizer">
+            <tag>serializer.normalizer</tag>
+            <argument key="$debug">%kernel.debug%</argument>
+        </service>
     </services>
 </container>
