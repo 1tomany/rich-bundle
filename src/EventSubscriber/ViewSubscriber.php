@@ -38,7 +38,9 @@ final readonly class ViewSubscriber implements EventSubscriberInterface
                 $data, $result->status
             );
 
-            $response->setHeaders($result->headers);
+            $response->headers->replace(...[
+                'headers' => $result->headers
+            ]);
 
             $event->setResponse($response);
         }
