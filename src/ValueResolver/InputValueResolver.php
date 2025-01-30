@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Controller\ValueResolverInterface;
 use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
@@ -19,6 +20,7 @@ final readonly class InputValueResolver implements ValueResolverInterface
 {
 
     public function __construct(
+        private TokenStorageInterface $tokenStorage,
         private DenormalizerInterface $normalizer,
         private ValidatorInterface $validator,
     )
@@ -47,6 +49,8 @@ final readonly class InputValueResolver implements ValueResolverInterface
         }
 
         // Inject: Authenticated User Session Data
+        // Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface
+        // Symfony\Component\Security\Core\Authentication\Token\TokenInterface
         // $data->add($this->securityToken->toArray());
 
         // Inject: Route Parameters
