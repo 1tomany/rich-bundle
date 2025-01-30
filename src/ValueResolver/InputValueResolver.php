@@ -78,15 +78,13 @@ final readonly class InputValueResolver implements ValueResolverInterface
             return null;
         }
 
-        try {
-            $class = new \ReflectionClass($type);
-        } catch (\ReflectionException $e) {
+        if (!class_exists($type)) {
             return null;
         }
 
-        $attrs = $class->getAttributes(RichInput::class);
+        $attributes = (new \ReflectionClass($type))->getAttributes(RichInput::class);
 
-        if (count($attrs) > 0) {
+        if (count($attributes) > 0) {
             return $type;
         }
 
