@@ -72,20 +72,18 @@ final readonly class InputValueResolver implements ValueResolverInterface
         return [$input];
     }
 
-    private function getResolvableType(?string $type): ?string
+    private function getResolvableType(?string $argumentType): ?string
     {
-        if (null === $type) {
+        if (null === $argumentType) {
             return null;
         }
 
-        if (!class_exists($type)) {
-            return null;
-        }
+        if (class_exists($argumentType)) {
+            $ref = new \ReflectionClass($argumentType);
 
-        $attributes = (new \ReflectionClass($type))->getAttributes(RichInput::class);
-
-        if (count($attributes) > 0) {
-            return $type;
+            if (count($ref->getAttributes(RichInput::class))) {
+                return $argumentType;
+            }
         }
 
         return null;

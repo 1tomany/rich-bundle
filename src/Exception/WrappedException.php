@@ -20,23 +20,22 @@ final class WrappedException
     private array $headers;
 
     /**
-     * @var list<array<string, string>>
-     */
-    private array $errors;
-
-    /**
      * @var list<array<string, int|string>>
      */
     private array $stack;
+
+    /**
+     * @var list<array<string, string>>
+     */
+    private array $violations;
 
     public function __construct(\Throwable $exception)
     {
         $this->resolveStatus($exception);
         $this->resolveMessage($exception);
         $this->resolveHeaders($exception);
-
-        $this->expandErrors($exception);
-        $this->expandStack($exception);
+        $this->normalizeStack($exception);
+        $this->expandViolations($exception);
     }
 
     public function getStatus(): int
@@ -64,19 +63,19 @@ final class WrappedException
     }
 
     /**
-     * @return list<array<string, string>>
-     */
-    public function getErrors(): array
-    {
-        return $this->errors;
-    }
-
-    /**
      * @return list<array<string, int|string>>
      */
     public function getStack(): array
     {
         return $this->stack;
+    }
+
+    /**
+     * @return list<array<string, string>>
+     */
+    public function getViolations(): array
+    {
+        return $this->violations;
     }
 
     private function resolveStatus(\Throwable $exception): void
@@ -125,22 +124,7 @@ final class WrappedException
         }
     }
 
-    private function expandErrors(\Throwable $exception): void
-    {
-        $this->errors = [];
-
-        if ($exception instanceof ValidationFailedException) {
-            /** @var ConstraintViolationInterface $violation */
-            foreach ($exception->getViolations() as $violation) {
-                $this->errors[] = [
-                    'property' => $violation->getPropertyPath(),
-                    'message' => $violation->getMessage(),
-                ];
-            }
-        }
-    }
-
-    private function expandStack(\Throwable $exception): void
+    private function normalizeStack(\Throwable $exception): void
     {
         $this->stack = [];
 
@@ -153,6 +137,21 @@ final class WrappedException
             ];
 
             $exception = $exception->getPrevious();
+        }
+    }
+
+    private function expandViolations(\Throwable $exception): void
+    {
+        $this->violations = [];
+
+        if ($exception instanceof ValidationFailedException) {
+            /** @var ConstraintViolationInterface $violation */
+            foreach ($exception->getViolations() as $violation) {
+                $this->violations[] = [
+                    'property' => $violation->getPropertyPath(),
+                    'message' => $violation->getMessage(),
+                ];
+            }
         }
     }
 
