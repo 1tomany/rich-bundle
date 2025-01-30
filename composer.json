@@ -6,10 +6,11 @@
     "minimum-stability": "stable",
     "require": {
         "php": ">=8.3",
-        "symfony/event-dispatcher": "^7.2",
+        "symfony/event-dispatcher": "^7.1",
         "symfony/http-foundation": "^7.1",
         "symfony/http-kernel": "^7.1",
-        "symfony/serializer": "^7.2"
+        "symfony/serializer": "^7.1",
+        "symfony/validator": "^7.1"
     },
     "require-dev": {
         "phpstan/phpstan": "^2.1",
