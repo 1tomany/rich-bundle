@@ -5,6 +5,7 @@
     "type": "symfony-bundle",
     "minimum-stability": "stable",
     "require": {
+        "php": ">=8.3",
         "symfony/http-foundation": "^7.1",
         "symfony/http-kernel": "^7.1"
     },
