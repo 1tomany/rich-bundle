@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+    xsi:noNamespaceSchemaLocation="./vendor/phpunit/phpunit/phpunit.xsd"
     backupGlobals="false"
-    bootstrap="vendor/autoload.php"
+    bootstrap="./vendor/autoload.php"
     cacheDirectory="./var/phpunit"
     colors="true"
     beStrictAboutOutputDuringTests="true"
@@ -13,7 +13,7 @@
     failOnWarning="true"
 >
     <testsuites>
-        <testsuite name="Package Test Suite">
+        <testsuite name="Bundle Test Suite">
             <directory>tests</directory>
         </testsuite>
     </testsuites>
