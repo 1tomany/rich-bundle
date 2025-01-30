@@ -1,0 +1,29 @@
+{
+    "name": "1tomany/rich-bundle",
+    "description": "Symfony bundle that provides easy scaffolding to support RICH applications",
+    "license": "MIT",
+    "type": "symfony-bundle",
+    "minimum-stability": "stable",
+    "require": {
+        "symfony/http-foundation": "^7.1",
+        "symfony/http-kernel": "^7.1"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^11.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "OneToMany\\RichBundle\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Vic Cherubini",
+            "email": "vcherubini@gmail.com"
+        }
+    ],
+    "config": {
+        "sort-packages": true
+    }
+}
