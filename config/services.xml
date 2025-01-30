@@ -10,7 +10,7 @@
         <service id="OneToMany\RichBundle\EventSubscriber\ViewSubscriber">
             <tag>kernel.event_subscriber</tag>
         </service>
-        <service id="OneToMany\RichBundle\ValueResolver\BookingIdValueResolver">
+        <service id="OneToMany\RichBundle\ValueResolver\InputValueResolver">
             <tag>controller.argument_value_resolver</tag>
         </service>
     </services>
