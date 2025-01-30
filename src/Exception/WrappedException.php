@@ -12,10 +12,11 @@ final class WrappedException
 {
 
     private int $status;
+    private string $title;
     private string $message;
 
     /**
-     * @var array<string, string>
+     * @var array<string, scalar>
      */
     private array $headers;
 
@@ -45,8 +46,7 @@ final class WrappedException
 
     public function getTitle(): string
     {
-        /** @var non-empty-string */
-        return Response::$statusTexts[$this->status];
+        return $this->title;
     }
 
     public function getMessage(): string
@@ -55,7 +55,7 @@ final class WrappedException
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, scalar>
      */
     public function getHeaders(): array
     {
@@ -93,6 +93,19 @@ final class WrappedException
         if (!isset(Response::$statusTexts[$this->status])) {
             $this->status = Response::HTTP_INTERNAL_SERVER_ERROR;
         }
+
+        $this->resolveTitle();
+    }
+
+    private function resolveTitle(): void
+    {
+        $title = Response::$statusTexts[$this->status] ?? null;
+
+        if (!is_string($title)) {
+            $title = 'Unknown';
+        }
+
+        $this->title = $title;
     }
 
     private function resolveMessage(\Throwable $exception): void

@@ -21,6 +21,11 @@
             "OneToMany\\RichBundle\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "OneToMany\\RichBundle\\Tests\\": "tests/"
+        }
+    },
     "authors": [
         {
             "name": "Vic Cherubini",
