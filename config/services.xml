@@ -10,13 +10,13 @@
         <service id="OneToMany\RichBundle\EventSubscriber\ViewSubscriber">
             <tag>kernel.event_subscriber</tag>
         </service>
-        <service id="OneToMany\RichBundle\ValueResolver\InputValueResolver">
-            <tag>controller.argument_value_resolver</tag>
-            <argument key="$tokenStorage" type="service" id="Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface"/>
-        </service>
         <service id="OneToMany\RichBundle\Serializer\Normalizer\WrappedExceptionNormalizer">
             <tag>serializer.normalizer</tag>
             <argument key="$debug">%kernel.debug%</argument>
+        </service>
+        <service id="OneToMany\RichBundle\ValueResolver\InputValueResolver">
+            <tag>controller.argument_value_resolver</tag>
+            <argument key="$tokenStorage" type="service" id="Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface"/>
         </service>
     </services>
 </container>

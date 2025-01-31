@@ -30,16 +30,14 @@ final readonly class ViewSubscriber implements EventSubscriberInterface
         $result = $event->getControllerResult();
 
         if ($result instanceof HandlerResponse) {
-            $data = $this->normalizer->normalize(
+            $normalizedData = $this->normalizer->normalize(
                 $result->data, null, $result->context
             );
 
-            $response = new JsonResponse(
-                $data, $result->status
-            );
-
-            $response->headers->add(...[
-                'headers' => $result->headers
+            $response = new JsonResponse(...[
+                'data' => $normalizedData,
+                'status' => $result->status,
+                'headers' => $result->headers,
             ]);
 
             $event->setResponse($response);
