@@ -3,12 +3,12 @@
 namespace OneToMany\RichBundle\Attribute;
 
 #[\Attribute(\Attribute::TARGET_PROPERTY | \Attribute::IS_REPEATABLE)]
-final readonly class RichPropertyQueryString extends RichProperty
+final readonly class RichPropertyRoute extends RichProperty
 {
 
     public function __construct()
     {
-        parent::__construct(PropertySource::QueryString);
+        parent::__construct(PropertySource::Route);
     }
 
 }

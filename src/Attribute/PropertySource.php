@@ -5,10 +5,10 @@ namespace OneToMany\RichBundle\Attribute;
 enum PropertySource
 {
 
-    case QueryString;
-    case RequestContent;
-    case RouteParameter;
-    case TokenStorage;
-    // case Container;
+    case Container;
+    case Query;
+    case Payload;
+    case Route;
+    case Token;
 
 }

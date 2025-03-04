@@ -56,7 +56,7 @@ final readonly class InputValueResolver implements ValueResolverInterface
         $className = $reflClass->name;
 
         foreach ($reflClass->getProperties() as $property) {
-            $propertySources[$property->name] = PropertySource::RequestContent;
+            $propertySources[$property->name] = PropertySource::Payload;
             $propertyData[$property->name] = null;
 
             if ($property->getDeclaringClass()->name === $className) {
@@ -67,15 +67,15 @@ final readonly class InputValueResolver implements ValueResolverInterface
                 }
             }
 
-            if ($propertySources[$property->name] === PropertySource::QueryString) {
+            if ($propertySources[$property->name] === PropertySource::Query) {
                 $propertyData[$property->name] = $request->query->get($property->name);
             }
 
-            if ($propertySources[$property->name] === PropertySource::RouteParameter) {
+            if ($propertySources[$property->name] === PropertySource::Route) {
                 $propertyData[$property->name] = ($routeParameters[$property->name] ?? null);
             }
 
-            if ($propertySources[$property->name] === PropertySource::RequestContent) {
+            if ($propertySources[$property->name] === PropertySource::Payload) {
                 $propertyData[$property->name] = ($requestContent[$property->name] ?? null);
             }
         }
