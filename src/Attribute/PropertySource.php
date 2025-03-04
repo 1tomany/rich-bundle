@@ -10,7 +10,7 @@ enum PropertySource
     case Payload;
     case Query;
     case Route;
-    case Security;
+    case Token;
     // case Session;
 
 }

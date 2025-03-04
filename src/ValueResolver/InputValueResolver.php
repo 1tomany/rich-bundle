@@ -19,13 +19,16 @@ use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use \ReflectionAttribute;
 use \ReflectionClass;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 final class InputValueResolver implements ValueResolverInterface
 {
 
     public function __construct(
+
         private readonly DenormalizerInterface $normalizer,
         private readonly ValidatorInterface $validator,
+        private readonly ?TokenStorageInterface $tokenStorage = null,
     )
     {
     }
@@ -118,6 +121,10 @@ final class InputValueResolver implements ValueResolverInterface
                 if (PropertySource::Payload === $source && array_key_exists($property->name, $payload)) {
                     $inputData[$property->name] = $payload[$property->name];
                 }
+
+                if (PropertySource::Token === $source && null !== $this->tokenStorage?->getToken()) {
+                    $inputData[$property->name] = $this->tokenStorage->getToken()->getUserIdentifier();
+                }
             }
 
             // Finally, ensure each property is present
@@ -125,13 +132,6 @@ final class InputValueResolver implements ValueResolverInterface
             // it could not be found in any input source.
             $inputData[$property->name] ??= null;
         }
-
-        /*
-        // Inject: Authenticated User ID
-        // if (null !== $token = $this->tokenStorage->getToken()) {
-        //     $data->set('userId', $token->getUserIdentifier());
-        // }
-        */
 
         try {
             /** @var object $input */
