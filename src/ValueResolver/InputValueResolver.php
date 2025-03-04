@@ -11,18 +11,20 @@ use Symfony\Component\HttpFoundation\Exception\JsonException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Controller\ValueResolverInterface;
 use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
-use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+// use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use \ReflectionAttribute;
 use \ReflectionClass;
+// use \ReflectionException;
+use \ReflectionProperty;
 
 final readonly class InputValueResolver implements ValueResolverInterface
 {
 
     public function __construct(
-        // private TokenStorageInterface $tokenStorage,
         private DenormalizerInterface $normalizer,
         private ValidatorInterface $validator,
     )
@@ -30,54 +32,68 @@ final readonly class InputValueResolver implements ValueResolverInterface
     }
 
     /**
-     * @return list<mixed>
+     * @return list<object>
      */
     public function resolve(Request $request, ArgumentMetadata $argument): iterable
     {
         $type = $this->getResolvableType($argument->getType());
 
-        if (null === $type) {
+        if (!$type) {
             return [];
         }
 
+        $inputData = [];
+        $propertySources = [];
+
+        // PropertySource::Query
+        $query = $request->query->all();
+
         try {
-            $requestContent = $request->getPayload()->all();
+            // PropertySource::Payload
+            $payload = $request->getPayload()->all();
         } catch (JsonException $e) {
             throw new MalformedContentException($e);
         }
 
-        /** @var array<string, scalar> $routeParameters */
-        $routeParameters = $request->attributes->get('_route_params', []);
+        // PropertySource::Route
+        $route = $request->attributes->get(
+            '_route_params', []
+        );
 
-        $propertyData = [];
-        $propertySources = [];
+        if (!is_array($route)) {
+            $route = [];
+        }
 
-        $reflClass = new ReflectionClass($type);
-        $className = $reflClass->name;
+        $inputClass = new ReflectionClass($type);
 
-        foreach ($reflClass->getProperties() as $property) {
-            $propertySources[$property->name] = PropertySource::Payload;
-            $propertyData[$property->name] = null;
+        foreach ($inputClass->getProperties() as $property) {
+            $inputData[$property->getName()] = null;
 
-            if ($property->getDeclaringClass()->name === $className) {
-                foreach ($this->getAttributes($property) as $richProperty) {
-                    if ($richProperty instanceof RichProperty) {
-                        $propertySources[$property->name] = $richProperty->source;
-                    }
+            if ($property->getDeclaringClass()->getName() === $inputClass->getName()) {
+                foreach ($this->getAttributes($property) as $attribute) {
+
                 }
             }
 
-            if ($propertySources[$property->name] === PropertySource::Query) {
-                $propertyData[$property->name] = $request->query->get($property->name);
-            }
+            // if ($property->getDeclaringClass()->name === $class->name) {
+            //     foreach ($this->getAttributes($property) as $richProperty) {
+            //         if ($richProperty instanceof RichProperty) {
+            //             $propertySources[$property->name] = $richProperty->source;
+            //         }
+            //     }
+            // }
 
-            if ($propertySources[$property->name] === PropertySource::Route) {
-                $propertyData[$property->name] = ($routeParameters[$property->name] ?? null);
-            }
+            // if ($propertySources[$property->name] === PropertySource::Query) {
+            //     $propertyData[$property->name] = $request->query->get($property->name);
+            // }
 
-            if ($propertySources[$property->name] === PropertySource::Payload) {
-                $propertyData[$property->name] = ($requestContent[$property->name] ?? null);
-            }
+            // if ($propertySources[$property->name] === PropertySource::Route) {
+            //     $propertyData[$property->name] = ($routeParameters[$property->name] ?? null);
+            // }
+
+            // if ($propertySources[$property->name] === PropertySource::Payload) {
+            //     $propertyData[$property->name] = ($requestContent[$property->name] ?? null);
+            // }
         }
 
         /*
@@ -103,7 +119,8 @@ final readonly class InputValueResolver implements ValueResolverInterface
         */
 
         try {
-            $input = $this->normalizer->denormalize($propertyData, $type, null, [
+            /** @var object $input */
+            $input = $this->normalizer->denormalize($inputData, $type, null, [
                 'disable_type_enforcement' => true,
                 'collect_denormalization_errors' => true,
             ]);
@@ -139,15 +156,12 @@ final readonly class InputValueResolver implements ValueResolverInterface
         return (1 === count($attrs) ? $type : null);
     }
 
-    private function getAttributes(\ReflectionMethod|\ReflectionClass|\ReflectionProperty $reflection): iterable
+    /**
+     * @return iterable<RichProperty>
+     */
+    private function getAttributes(ReflectionProperty $property): iterable
     {
-        // foreach ($reflection->getAttributes(GroupSequence::class) as $attribute) {
-        //     yield $attribute->newInstance();
-        // }
-        // foreach ($reflection->getAttributes(GroupSequenceProvider::class) as $attribute) {
-        //     yield $attribute->newInstance();
-        // }
-        foreach ($reflection->getAttributes(RichProperty::class, \ReflectionAttribute::IS_INSTANCEOF) as $attribute) {
+        foreach ($property->getAttributes(RichProperty::class, ReflectionAttribute::IS_INSTANCEOF) as $attribute) {
             yield $attribute->newInstance();
         }
     }

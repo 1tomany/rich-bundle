@@ -16,7 +16,7 @@
         </service>
         <service id="OneToMany\RichBundle\ValueResolver\InputValueResolver">
             <tag>controller.argument_value_resolver</tag>
-            <argument key="$tokenStorage" type="service" id="Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface"/>
+            <!-- <argument key="$tokenStorage" type="service" id="Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface"/> -->
         </service>
     </services>
 </container>
