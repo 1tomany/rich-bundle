@@ -5,6 +5,7 @@ namespace OneToMany\RichBundle\ValueResolver;
 use OneToMany\RichBundle\Attribute\PropertySource;
 use OneToMany\RichBundle\Attribute\RichInput;
 use OneToMany\RichBundle\Attribute\RichProperty;
+use OneToMany\RichBundle\Attribute\RichPropertyIgnored;
 use OneToMany\RichBundle\ValueResolver\Exception\InvalidMappingException;
 use OneToMany\RichBundle\ValueResolver\Exception\MalformedContentException;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
@@ -18,15 +19,13 @@ use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use \ReflectionAttribute;
 use \ReflectionClass;
-// use \ReflectionException;
-use \ReflectionProperty;
 
-final readonly class InputValueResolver implements ValueResolverInterface
+final class InputValueResolver implements ValueResolverInterface
 {
 
     public function __construct(
-        private DenormalizerInterface $normalizer,
-        private ValidatorInterface $validator,
+        private readonly DenormalizerInterface $normalizer,
+        private readonly ValidatorInterface $validator,
     )
     {
     }
@@ -36,86 +35,102 @@ final readonly class InputValueResolver implements ValueResolverInterface
      */
     public function resolve(Request $request, ArgumentMetadata $argument): iterable
     {
-        $type = $this->getResolvableType($argument->getType());
+        $inputData = [];
 
-        if (!$type) {
-            return [];
+        $type = $this->getResolvableType(...[
+            'type' => $argument->getType(),
+        ]);
+
+        if (null === $type) {
+            return $inputData;
         }
 
-        $inputData = [];
-        $propertySources = [];
-
-        // PropertySource::Query
-        $query = $request->query->all();
-
         try {
-            // PropertySource::Payload
             $payload = $request->getPayload()->all();
         } catch (JsonException $e) {
             throw new MalformedContentException($e);
         }
 
-        // PropertySource::Route
-        $route = $request->attributes->get(
-            '_route_params', []
-        );
+        /** @var array<string, bool|int|string> $routeParams */
+        $routeParams = $request->attributes->get('_route_params', []);
 
-        if (!is_array($route)) {
-            $route = [];
-        }
 
-        $inputClass = new ReflectionClass($type);
 
-        foreach ($inputClass->getProperties() as $property) {
-            $inputData[$property->getName()] = null;
 
-            if ($property->getDeclaringClass()->getName() === $inputClass->getName()) {
-                foreach ($this->getAttributes($property) as $attribute) {
+        $class = new ReflectionClass($type);
 
+        foreach ($class->getProperties() as $property) {
+            // Ensure that the property is
+            // a member of the class itself.
+            $isSameClass = in_array($class->name, [
+                $property->getDeclaringClass()->name,
+            ]);
+
+            if (!$isSameClass) {
+                continue;
+            }
+
+            // If a property is explicitly marked as
+            // ignored, don't attempt to extract it.
+            $ignored = $property->getAttributes(
+                RichPropertyIgnored::class
+            );
+
+            if (count($ignored)) {
+                continue;
+            }
+
+            $sources = null;
+
+            // Compile a list of PropertySource enums. This assumes
+            // the order of the attributes on the property itself
+            // is the priority that the data should be extracted.
+            $richPropertyAttributes = $property->getAttributes(
+                RichProperty::class, ReflectionAttribute::IS_INSTANCEOF
+            );
+
+            foreach ($richPropertyAttributes as $attribute) {
+                $sources[] = $attribute->newInstance()->source;
+            }
+
+            // Ensure that if a property was not explicitly
+            // ignored that it has at least one source. By
+            // default, we assume it comes from the payload.
+            $sources = $sources ?? [PropertySource::Payload];
+
+            foreach ($sources as $source) {
+                $dataExists = array_key_exists(
+                    $property->name, $inputData
+                );
+
+                if ($dataExists) {
+                    continue;
+                }
+
+                if (PropertySource::Query === $source && $request->query->has($property->name)) {
+                    $inputData[$property->name] = $request->query->get($property->name);
+                }
+
+                if (PropertySource::Route === $source && array_key_exists($property->name, $routeParams)) {
+                    $inputData[$property->name] = $routeParams[$property->name];
+                }
+
+                if (PropertySource::Payload === $source && array_key_exists($property->name, $payload)) {
+                    $inputData[$property->name] = $payload[$property->name];
                 }
             }
 
-            // if ($property->getDeclaringClass()->name === $class->name) {
-            //     foreach ($this->getAttributes($property) as $richProperty) {
-            //         if ($richProperty instanceof RichProperty) {
-            //             $propertySources[$property->name] = $richProperty->source;
-            //         }
-            //     }
-            // }
-
-            // if ($propertySources[$property->name] === PropertySource::Query) {
-            //     $propertyData[$property->name] = $request->query->get($property->name);
-            // }
-
-            // if ($propertySources[$property->name] === PropertySource::Route) {
-            //     $propertyData[$property->name] = ($routeParameters[$property->name] ?? null);
-            // }
-
-            // if ($propertySources[$property->name] === PropertySource::Payload) {
-            //     $propertyData[$property->name] = ($requestContent[$property->name] ?? null);
-            // }
+            // Finally, ensure each property is present
+            // in the data to be denormalized, even if
+            // it could not be found in any input source.
+            $inputData[$property->name] ??= null;
         }
 
         /*
-        // Inject: Query String Data
-        $data = new InputBag($request->query->all());
-
-        try {
-            // Inject: Request Content Data
-            $data->add($request->getPayload()->all());
-        } catch (JsonException $e) {
-            throw new MalformedContentException($e);
-        }
-
         // Inject: Authenticated User ID
         // if (null !== $token = $this->tokenStorage->getToken()) {
         //     $data->set('userId', $token->getUserIdentifier());
         // }
-
-        // Inject: Route Parameters
-        if (true === $request->attributes->has('_route_params')) {
-            $data->add($request->attributes->all('_route_params'));
-        }
         */
 
         try {
@@ -150,20 +165,11 @@ final readonly class InputValueResolver implements ValueResolverInterface
             return null;
         }
 
-        $attrs = new ReflectionClass($type)
-            ->getAttributes(RichInput::class);
+        $attributes = new ReflectionClass($type)->getAttributes(
+            RichInput::class, ReflectionAttribute::IS_INSTANCEOF
+        );
 
-        return (1 === count($attrs) ? $type : null);
-    }
-
-    /**
-     * @return iterable<RichProperty>
-     */
-    private function getAttributes(ReflectionProperty $property): iterable
-    {
-        foreach ($property->getAttributes(RichProperty::class, ReflectionAttribute::IS_INSTANCEOF) as $attribute) {
-            yield $attribute->newInstance();
-        }
+        return (count($attributes) ? $type : null);
     }
 
 }

@@ -6,7 +6,9 @@ namespace OneToMany\RichBundle\Attribute;
 readonly class RichProperty
 {
 
-    public function __construct(public PropertySource $source = PropertySource::Payload)
+    public function __construct(
+        public PropertySource $source = PropertySource::Payload,
+    )
     {
     }
 

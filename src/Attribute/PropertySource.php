@@ -6,11 +6,11 @@ enum PropertySource
 {
 
     case Container;
-    case File;
+    // case File;
     case Payload;
     case Query;
     case Route;
     case Security;
-    case Session;
+    // case Session;
 
 }
