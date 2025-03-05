@@ -2,15 +2,11 @@
 
 namespace OneToMany\RichBundle\Attribute;
 
-enum PropertySource
+abstract readonly class PropertySource
 {
 
-    case Container;
-    // case File;
-    case Payload;
-    case Query;
-    case Route;
-    case Token;
-    // case Session;
+    public function __construct(public ?string $name = null)
+    {
+    }
 
 }

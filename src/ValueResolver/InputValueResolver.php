@@ -2,30 +2,34 @@
 
 namespace OneToMany\RichBundle\ValueResolver;
 
-use OneToMany\RichBundle\Attribute\PropertySource;
+use OneToMany\RichBundle\Attribute\PropertyIgnored;
 use OneToMany\RichBundle\Attribute\RichInput;
-use OneToMany\RichBundle\Attribute\RichProperty;
-use OneToMany\RichBundle\Attribute\RichPropertyIgnored;
+use OneToMany\RichBundle\Attribute\PropertySource;
+use OneToMany\RichBundle\Attribute\SourceContainer;
+use OneToMany\RichBundle\Attribute\SourcePayload;
+use OneToMany\RichBundle\Attribute\SourceQuery;
+use OneToMany\RichBundle\Attribute\SourceRoute;
+use OneToMany\RichBundle\Attribute\SourceSecurity;
 use OneToMany\RichBundle\ValueResolver\Exception\InvalidMappingException;
 use OneToMany\RichBundle\ValueResolver\Exception\MalformedContentException;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Controller\ValueResolverInterface;
 use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
-// use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-use \ReflectionAttribute;
-use \ReflectionClass;
+// use \ReflectionAttribute;
+// use \ReflectionClass;
+use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 final class InputValueResolver implements ValueResolverInterface
 {
 
     public function __construct(
-
+        private readonly ContainerBagInterface $container,
         private readonly DenormalizerInterface $normalizer,
         private readonly ValidatorInterface $validator,
         private readonly ?TokenStorageInterface $tokenStorage = null,
@@ -57,80 +61,76 @@ final class InputValueResolver implements ValueResolverInterface
         /** @var array<string, bool|int|string> $routeParams */
         $routeParams = $request->attributes->get('_route_params', []);
 
-
-
-
-        $class = new ReflectionClass($type);
+        $class = new \ReflectionClass($type);
 
         foreach ($class->getProperties() as $property) {
+            $sources = null;
+
             // Ensure that the property is
             // a member of the class itself.
-            $isSameClass = in_array($class->name, [
-                $property->getDeclaringClass()->name,
-            ]);
+            // $isSameClass = in_array($class->name, [
+            //     $property->getDeclaringClass()->name,
+            // ]);
 
-            if (!$isSameClass) {
-                continue;
-            }
+            // if (!$isSameClass) {
+            //     continue;
+            // }
 
-            // If a property is explicitly marked as
-            // ignored, don't attempt to extract it.
-            $ignored = $property->getAttributes(
-                RichPropertyIgnored::class
-            );
+            // Don't extract a property if it is explicitly ignored.
+            $ignored = $property->getAttributes(PropertyIgnored::class);
 
             if (count($ignored)) {
                 continue;
             }
 
-            $sources = null;
-
-            // Compile a list of PropertySource enums. This assumes
+            // Compile a list of property sources. This assumes
             // the order of the attributes on the property itself
             // is the priority that the data should be extracted.
             $richPropertyAttributes = $property->getAttributes(
-                RichProperty::class, ReflectionAttribute::IS_INSTANCEOF
+                PropertySource::class, \ReflectionAttribute::IS_INSTANCEOF
             );
 
             foreach ($richPropertyAttributes as $attribute) {
-                $sources[] = $attribute->newInstance()->source;
+                $sources[] = $attribute->newInstance();
             }
 
             // Ensure that if a property was not explicitly
             // ignored that it has at least one source. By
             // default, we assume it comes from the payload.
-            $sources = $sources ?? [PropertySource::Payload];
+            $sources = $sources ?? [new SourcePayload()];
 
             foreach ($sources as $source) {
-                $dataExists = array_key_exists(
-                    $property->name, $inputData
-                );
+                $propertyName = $source->name ?? $property->name;
 
-                if ($dataExists) {
+                if (array_key_exists($propertyName, $inputData)) {
                     continue;
                 }
 
-                if (PropertySource::Query === $source && $request->query->has($property->name)) {
-                    $inputData[$property->name] = $request->query->get($property->name);
+                if ($source instanceof SourceContainer && $this->container->has($propertyName)) {
+                    $inputData[$propertyName] = $this->container->get($propertyName);
                 }
 
-                if (PropertySource::Route === $source && array_key_exists($property->name, $routeParams)) {
-                    $inputData[$property->name] = $routeParams[$property->name];
+                if ($source instanceof SourceQuery && $request->query->has($propertyName)) {
+                    $inputData[$propertyName] = $request->query->get($propertyName);
                 }
 
-                if (PropertySource::Payload === $source && array_key_exists($property->name, $payload)) {
-                    $inputData[$property->name] = $payload[$property->name];
+                if ($source instanceof SourceRoute && array_key_exists($propertyName, $routeParams)) {
+                    $inputData[$propertyName] = $routeParams[$propertyName];
                 }
 
-                if (PropertySource::Token === $source && null !== $this->tokenStorage?->getToken()) {
-                    $inputData[$property->name] = $this->tokenStorage->getToken()->getUserIdentifier();
+                if ($source instanceof SourcePayload && array_key_exists($propertyName, $payload)) {
+                    $inputData[$propertyName] = $payload[$propertyName];
+                }
+
+                if ($source instanceof SourceSecurity && null !== $this->tokenStorage?->getToken()) {
+                    $inputData[$propertyName] = $this->tokenStorage->getToken()->getUserIdentifier();
                 }
             }
 
             // Finally, ensure each property is present
             // in the data to be denormalized, even if
             // it could not be found in any input source.
-            $inputData[$property->name] ??= null;
+            $inputData[$propertyName] ??= null;
         }
 
         try {
@@ -165,8 +165,8 @@ final class InputValueResolver implements ValueResolverInterface
             return null;
         }
 
-        $attributes = new ReflectionClass($type)->getAttributes(
-            RichInput::class, ReflectionAttribute::IS_INSTANCEOF
+        $attributes = new \ReflectionClass($type)->getAttributes(
+            RichInput::class, \ReflectionAttribute::IS_INSTANCEOF
         );
 
         return (count($attributes) ? $type : null);

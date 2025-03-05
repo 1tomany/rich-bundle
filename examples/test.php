@@ -5,7 +5,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use OneToMany\RichBundle\Attribute\PropertySource;
 use OneToMany\RichBundle\Attribute\RichInput;
 use OneToMany\RichBundle\Attribute\RichProperty;
-use OneToMany\RichBundle\Attribute\RichPropertyIgnored;
+use OneToMany\RichBundle\Attribute\PropertyIgnored;
 use OneToMany\RichBundle\Attribute\RichPropertyQuery;
 use OneToMany\RichBundle\Attribute\RichPropertyRoute;
 use OneToMany\RichBundle\ValueResolver\InputValueResolver;
@@ -26,7 +26,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 class PropertyInput
 {
 
-    #[RichPropertyIgnored]
+    #[PropertyIgnored]
     public int $id = 10;
 
     #[Assert\Positive]
@@ -142,9 +142,9 @@ $request = new Request(
     content: json_encode($data),
 );
 
-$metadata = new ArgumentMetadata('input', PropertyInput::class, false, false, null, false);
+// $metadata = new ArgumentMetadata('input', PropertyInput::class, false, false, null, false);
 
-$resolver = new InputValueResolver($serializer, $validator);
-$results = $resolver->resolve($request, $metadata);
+// $resolver = new InputValueResolver($serializer, $validator);
+// $results = $resolver->resolve($request, $metadata);
 
-print_r($results);
+// print_r($results);
