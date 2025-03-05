@@ -12,6 +12,7 @@ use OneToMany\RichBundle\Attribute\SourceRoute;
 use OneToMany\RichBundle\Attribute\SourceSecurity;
 use OneToMany\RichBundle\ValueResolver\Exception\InvalidMappingException;
 use OneToMany\RichBundle\ValueResolver\Exception\MalformedContentException;
+use Psr\Container\ContainerExceptionInterface;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Controller\ValueResolverInterface;
@@ -20,8 +21,6 @@ use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExcep
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-// use \ReflectionAttribute;
-// use \ReflectionClass;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
@@ -100,37 +99,81 @@ final class InputValueResolver implements ValueResolverInterface
             $sources = $sources ?? [new SourcePayload()];
 
             foreach ($sources as $source) {
-                $propertyName = $source->name ?? $property->name;
+                $name = $source->name ?? $property->name;
 
-                if (array_key_exists($propertyName, $inputData)) {
+                if (array_key_exists($property->name, $inputData)) {
                     continue;
                 }
 
-                if ($source instanceof SourceContainer && $this->container->has($propertyName)) {
-                    $inputData[$propertyName] = $this->container->get($propertyName);
+                if ($source instanceof SourceContainer) {
+                    // if (!$this->container->has($name)) {
+                    //     throw new \Exception('container has no ' . $name);
+                    // }
+
+                    try {
+                        $inputData[$property->name] = $this->container->get($name);
+                    } catch (ContainerExceptionInterface $e) {
+                        if ($source->required) {
+                            throw new \Exception('container has no ' . $name);
+                        }
+
+                        $inputData[$property->name] = $property->getDefaultValue();
+                    }
                 }
 
-                if ($source instanceof SourceQuery && $request->query->has($propertyName)) {
-                    $inputData[$propertyName] = $request->query->get($propertyName);
+                if ($source instanceof SourceQuery) {
+                    if (!$this->container->has($name)) {
+                        if ($source->required) {
+                            throw new \Exception('query has no ' . $name);
+                        }
+
+                        $inputData[$property->name] = $property->getDefaultValue();
+                    } else {
+                        $inputData[$property->name] = $request->query->get($name);
+                    }
                 }
 
-                if ($source instanceof SourceRoute && array_key_exists($propertyName, $routeParams)) {
-                    $inputData[$propertyName] = $routeParams[$propertyName];
+                if ($source instanceof SourceRoute) {
+                    if (!array_key_exists($name, $routeParams)) {
+                        if ($source->required) {
+                            throw new \Exception('no route param ' . $name);
+                        }
+
+                        $inputData[$property->name] = $property->getDefaultValue();
+                    } else {
+                        $inputData[$property->name] = $routeParams[$name];
+                    }
                 }
 
-                if ($source instanceof SourcePayload && array_key_exists($propertyName, $payload)) {
-                    $inputData[$propertyName] = $payload[$propertyName];
+                if ($source instanceof SourcePayload) {
+                    if (!array_key_exists($name, $payload)) {
+                        if ($source->required) {
+                            throw new \Exception('payload has no ' . $name);
+                        }
+
+                        $inputData[$property->name] = $property->getDefaultValue();
+                    } else {
+                        $inputData[$property->name] = $payload[$name];
+                    }
                 }
 
-                if ($source instanceof SourceSecurity && null !== $this->tokenStorage?->getToken()) {
-                    $inputData[$propertyName] = $this->tokenStorage->getToken()->getUserIdentifier();
+                if ($source instanceof SourceSecurity) {
+                    if (null === $token = $this->tokenStorage?->getToken()) {
+                        if ($source->required) {
+                            throw new \Exception('no active security token');
+                        }
+
+                        $inputData[$property->name] = $property->getDefaultValue();
+                    } else {
+                        $inputData[$property->name] = $token->getUserIdentifier();
+                    }
                 }
             }
 
             // Finally, ensure each property is present
             // in the data to be denormalized, even if
             // it could not be found in any input source.
-            $inputData[$propertyName] ??= null;
+            $inputData[$property->name] ??= null;
         }
 
         try {
