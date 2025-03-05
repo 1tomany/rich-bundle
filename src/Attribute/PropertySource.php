@@ -12,4 +12,6 @@ abstract readonly class PropertySource
     {
     }
 
+    abstract public function getSource(): string;
+
 }

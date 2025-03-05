@@ -11,4 +11,9 @@ final readonly class SourceSecurity extends PropertySource
         parent::__construct(null, $required);
     }
 
+    public function getSource(): string
+    {
+        return 'security token';
+    }
+
 }
