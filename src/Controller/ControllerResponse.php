@@ -2,7 +2,7 @@
 
 namespace OneToMany\RichBundle\Controller;
 
-final readonly class HandlerResponse
+final readonly class ControllerResponse
 {
 
     /**

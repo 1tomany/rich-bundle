@@ -2,7 +2,7 @@
 
 namespace OneToMany\RichBundle\EventSubscriber;
 
-use OneToMany\RichBundle\Controller\HandlerResponse;
+use OneToMany\RichBundle\Controller\ControllerResponse;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Event\ViewEvent;
@@ -29,7 +29,7 @@ final readonly class ViewSubscriber implements EventSubscriberInterface
     {
         $result = $event->getControllerResult();
 
-        if ($result instanceof HandlerResponse) {
+        if ($result instanceof ControllerResponse) {
             $normalizedData = $this->normalizer->normalize(
                 $result->data, null, $result->context
             );
