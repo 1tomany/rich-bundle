@@ -134,10 +134,6 @@ final class InputValueResolver implements ValueResolverInterface
             }
 
             foreach ($propertySources as $propertySource) {
-                // if ($this->sourceData->has($property->name)) {
-                //     continue;
-                // }
-
                 // Resolve the key name from the source data
                 $key = $propertySource->name ?? $property->name;
 
@@ -207,28 +203,28 @@ final class InputValueResolver implements ValueResolverInterface
     private function extractFromContainer(string $property, string $sourceKey): void
     {
         if ($this->container->has($sourceKey) && !$this->sourceData->has($property)) {
-            $this->sourceData[$property] = $this->container->get($sourceKey);
+            $this->sourceData->set($property, $this->container->get($sourceKey));
         }
     }
 
     private function extractFromQuery(string $property, string $sourceKey): void
     {
         if ($this->sourceQuery->has($sourceKey) && !$this->sourceData->has($property)) {
-            $this->sourceData[$property] = $this->sourceQuery->get($sourceKey);
+            $this->sourceData->set($property, $this->sourceQuery->get($sourceKey));
         }
     }
 
     private function extractFromRequest(string $property, string $sourceKey): void
     {
         if ($this->sourceRequest->has($sourceKey) && !$this->sourceData->has($property)) {
-            $this->sourceData[$property] = $this->sourceRequest->get($sourceKey);
+            $this->sourceData->set($property, $this->sourceRequest->get($sourceKey));
         }
     }
 
     private function extractFromRoute(string $property, string $sourceKey): void
     {
         if ($this->sourceRoute->has($sourceKey) && !$this->sourceData->has($property)) {
-            $this->sourceData[$property] = $this->sourceRoute->get($sourceKey);
+            $this->sourceData->set($property, $this->sourceRoute->get($sourceKey));
         }
     }
 
