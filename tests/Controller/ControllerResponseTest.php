@@ -3,6 +3,7 @@
 namespace OneToMany\RichBundle\Tests\Controller;
 
 use OneToMany\RichBundle\Controller\ControllerResponse;
+use OneToMany\RichBundle\Controller\Exception\InvalidHttpStatusException;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
@@ -10,6 +11,14 @@ use PHPUnit\Framework\TestCase;
 #[Group('ControllerTests')]
 final class ControllerResponseTest extends TestCase
 {
+
+    public function testConstructorRequiresValidHttpStatusCode(): void
+    {
+        $this->expectException(InvalidHttpStatusException::class);
+
+        // @phpstan-ignore-next-line
+        new ControllerResponse(['id' => 1], random_int(1, 99));
+    }
 
     public function testOkUsesCorrectHttpStatusCode(): void
     {

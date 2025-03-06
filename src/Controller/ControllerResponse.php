@@ -2,10 +2,14 @@
 
 namespace OneToMany\RichBundle\Controller;
 
+use OneToMany\RichBundle\Controller\Exception\InvalidHttpStatusException;
+use Symfony\Component\HttpFoundation\Response;
+
 final readonly class ControllerResponse
 {
 
     /**
+     * @param int<100, 599> $status
      * @param array<string, mixed> $context
      * @param array<string, string> $headers
      */
@@ -16,6 +20,9 @@ final readonly class ControllerResponse
         public array $headers = [],
     )
     {
+        if (!array_key_exists($status, Response::$statusTexts)) {
+            throw new InvalidHttpStatusException($status);
+        }
     }
 
     /**

@@ -98,20 +98,20 @@ final class InputValueResolver implements ValueResolverInterface
                 continue;
             }
 
-            $propertySources = [];
+            /**
+             * @var ?list<PropertySource>
+             */
+            $propertySources = null;
 
             foreach ($property->getAttributes(PropertySource::class, \ReflectionAttribute::IS_INSTANCEOF) as $attribute) {
-                array_push($propertySources, $attribute->newInstance());
+               $propertySources[] = $attribute->newInstance();
             }
 
-            if (!count($propertySources)) {
-                $propertySources = [
-                    new SourceRequest(),
-                ];
-            }
+            // Use the HTTP request body by default if no sources are found
+            $propertySources = $propertySources ?? [new SourceRequest()];
 
             foreach ($propertySources as $propertySource) {
-                // Resolve the key name from the source data
+                // Resolve the key name from the source attribute
                 $key = $propertySource->name ?? $property->name;
 
                 if ($propertySource instanceof SourceContainer) {
@@ -135,7 +135,7 @@ final class InputValueResolver implements ValueResolverInterface
                 }
             }
 
-
+            // Ensure a property has a value if possible
             if (!$this->sourceData->has($property->name)) {
                 if (!$property->isPromoted() && !$property->hasDefaultValue()) {
                     throw new PropertySourceNotMappedException($property->name);

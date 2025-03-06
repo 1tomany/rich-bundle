@@ -8,35 +8,35 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Validator\ConstraintViolationInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
-final class WrappedException
+final class WrappedException implements WrappedExceptionInterface
 {
 
-    private int $status;
-    private string $title;
-    private string $message;
+    private int $status = 500;
+    private string $title = '';
+    private string $message = '';
 
     /**
-     * @var array<string, scalar>
+     * @var array<string, int|float|string>
      */
-    private array $headers;
+    private array $headers = [];
 
     /**
      * @var list<array<string, int|string>>
      */
-    private array $stack;
+    private array $stack = [];
 
     /**
      * @var list<array<string, string>>
      */
-    private array $violations;
+    private array $violations = [];
 
-    public function __construct(\Throwable $exception)
+    public function __construct(private readonly \Throwable $exception)
     {
-        $this->resolveStatus($exception);
-        $this->resolveMessage($exception);
-        $this->resolveHeaders($exception);
-        $this->normalizeStack($exception);
-        $this->expandViolations($exception);
+        $this->resolveStatus();
+        $this->resolveMessage();
+        $this->resolveHeaders();
+        $this->normalizeStack();
+        $this->expandViolations();
     }
 
     public function getStatus(): int
@@ -54,39 +54,30 @@ final class WrappedException
         return $this->message;
     }
 
-    /**
-     * @return array<string, scalar>
-     */
     public function getHeaders(): array
     {
         return $this->headers;
     }
 
-    /**
-     * @return list<array<string, int|string>>
-     */
     public function getStack(): array
     {
         return $this->stack;
     }
 
-    /**
-     * @return list<array<string, string>>
-     */
     public function getViolations(): array
     {
         return $this->violations;
     }
 
-    private function resolveStatus(\Throwable $exception): void
+    private function resolveStatus(): void
     {
-        $this->status = $exception->getCode();
+        $this->status = $this->exception->getCode();
 
-        if ($exception instanceof HttpException) {
-            $this->status = $exception->getStatusCode();
+        if ($this->exception instanceof HttpException) {
+            $this->status = $this->exception->getStatusCode();
         }
 
-        if ($exception instanceof ValidationFailedException) {
+        if ($this->exception instanceof ValidationFailedException) {
             $this->status = Response::HTTP_BAD_REQUEST;
         }
 
@@ -108,38 +99,36 @@ final class WrappedException
         $this->title = $title;
     }
 
-    private function resolveMessage(\Throwable $exception): void
+    private function resolveMessage(): void
     {
         $this->message = 'An unexpected error occurred.';
 
-        if ($exception instanceof HttpException) {
-            $this->message = $exception->getMessage();
+        if ($this->exception instanceof HttpException) {
+            $this->message = $this->exception->getMessage();
         }
 
-        $ref = new \ReflectionClass($exception);
+        $class = new \ReflectionClass($this->exception);
 
-        if (count($ref->getAttributes(HasUserMessage::class))) {
-            $this->message = $exception->getMessage();
+        if (count($class->getAttributes(HasUserMessage::class))) {
+            $this->message = $this->exception->getMessage();
         }
 
-        if ($exception instanceof ValidationFailedException) {
+        if ($this->exception instanceof ValidationFailedException) {
             $this->message = 'The data provided is not valid.';
         }
     }
 
-    private function resolveHeaders(\Throwable $exception): void
+    private function resolveHeaders(): void
     {
-        $this->headers = [];
-
-        if ($exception instanceof HttpException) {
+        if ($this->exception instanceof HttpException) {
             // @phpstan-ignore-next-line
-            $this->headers = $exception->getHeaders();
+            $this->headers = $this->exception->getHeaders();
         }
     }
 
-    private function normalizeStack(\Throwable $exception): void
+    private function normalizeStack(): void
     {
-        $this->stack = [];
+        $exception = $this->exception;
 
         while (null !== $exception) {
             $this->stack[] = [
@@ -153,13 +142,11 @@ final class WrappedException
         }
     }
 
-    private function expandViolations(\Throwable $exception): void
+    private function expandViolations(): void
     {
-        $this->violations = [];
-
-        if ($exception instanceof ValidationFailedException) {
+        if ($this->exception instanceof ValidationFailedException) {
             /** @var ConstraintViolationInterface $violation */
-            foreach ($exception->getViolations() as $violation) {
+            foreach ($this->exception->getViolations() as $violation) {
                 $this->violations[] = [
                     'property' => $violation->getPropertyPath(),
                     'message' => $violation->getMessage(),

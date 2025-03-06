@@ -2,7 +2,7 @@
 
 namespace OneToMany\RichBundle\Serializer\Normalizer;
 
-use OneToMany\RichBundle\Exception\WrappedException;
+use OneToMany\RichBundle\Exception\WrappedExceptionInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 final readonly class WrappedExceptionNormalizer implements NormalizerInterface
@@ -13,7 +13,7 @@ final readonly class WrappedExceptionNormalizer implements NormalizerInterface
     }
 
     /**
-     * @param WrappedException $object
+     * @param WrappedExceptionInterface $object
      * @param array<string, mixed> $context
      * @return array<string, mixed>
      */
@@ -39,13 +39,13 @@ final readonly class WrappedExceptionNormalizer implements NormalizerInterface
      */
     public function supportsNormalization(mixed $data, ?string $format = null, array $context = []): bool
     {
-        return ($data instanceof WrappedException);
+        return ($data instanceof WrappedExceptionInterface);
     }
 
     public function getSupportedTypes(?string $format): array
     {
         return [
-            WrappedException::class => true,
+            WrappedExceptionInterface::class => true,
         ];
     }
 
