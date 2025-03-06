@@ -5,11 +5,13 @@ namespace OneToMany\RichBundle\Function
 
     function strnull(mixed $value): ?string
     {
+        $str = null;
+
         if (is_string($value)) {
-            $value = trim($value);
+            $str = trim($value);
         }
 
-        return !empty($value) ? $value : null;
+        return !empty($str) ? $str : null;
     }
 
 }

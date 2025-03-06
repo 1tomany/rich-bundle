@@ -39,7 +39,7 @@ final class InputValueResolver implements ValueResolverInterface
     private const string ROUTE_PARAMETERS_KEY = '_route_params';
 
     public function __construct(
-        private readonly ContainerBagInterface $container,
+        private readonly ContainerBagInterface $containerBag,
         private readonly DenormalizerInterface $normalizer,
         private readonly ValidatorInterface $validator,
         private readonly ?TokenStorageInterface $tokenStorage = null,
@@ -115,7 +115,7 @@ final class InputValueResolver implements ValueResolverInterface
                 $key = $propertySource->name ?? $property->name;
 
                 if ($propertySource instanceof SourceContainer) {
-                    $this->extractFromContainer($property->name, $key);
+                    $this->extractFromContainerBag($property->name, $key);
                 }
 
                 if ($propertySource instanceof SourceQuery) {
@@ -185,10 +185,10 @@ final class InputValueResolver implements ValueResolverInterface
         $this->sourceRequest->replace([]);
     }
 
-    private function extractFromContainer(string $property, string $sourceKey): void
+    private function extractFromContainerBag(string $property, string $sourceKey): void
     {
-        if ($this->container->has($sourceKey) && !$this->sourceData->has($property)) {
-            $this->sourceData->set($property, $this->container->get($sourceKey));
+        if ($this->containerBag->has($sourceKey) && !$this->sourceData->has($property)) {
+            $this->sourceData->set($property, $this->containerBag->get($sourceKey));
         }
     }
 
