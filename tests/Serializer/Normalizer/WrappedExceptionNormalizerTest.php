@@ -13,7 +13,7 @@ use PHPUnit\Framework\TestCase;
 final class WrappedExceptionNormalizerTest extends TestCase
 {
 
-    public function testNormalizingExceptionInNonProductionEnvironmentIncludesStack(): void
+    public function testNormalizingExceptionInDebugEnvironmentIncludesStack(): void
     {
         $exception1 = new \Exception(...[
             'message' => 'Exception 1'
@@ -39,7 +39,7 @@ final class WrappedExceptionNormalizerTest extends TestCase
         $this->assertNotEmpty($record['stack']);
     }
 
-    public function testNormalizingExceptionInProductionEnvironmentDoesNotIncludeStack(): void
+    public function testNormalizingExceptionInNonDebugEnvironmentDoesNotIncludeStack(): void
     {
         $exception1 = new \Exception(...[
             'message' => 'Exception 1'

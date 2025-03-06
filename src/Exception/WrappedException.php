@@ -90,13 +90,8 @@ final class WrappedException implements WrappedExceptionInterface
 
     private function resolveTitle(): void
     {
-        $title = Response::$statusTexts[$this->status] ?? null;
-
-        if (!is_string($title)) {
-            $title = 'Unknown';
-        }
-
-        $this->title = $title;
+        // @phpstan-ignore-next-line
+        $this->title = Response::$statusTexts[$this->status] ?? 'Unknown';
     }
 
     private function resolveMessage(): void
