@@ -10,7 +10,6 @@ use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceRoute;
 use OneToMany\RichBundle\Attribute\SourceSecurity;
-use OneToMany\RichBundle\Attribute\SourceType;
 use OneToMany\RichBundle\Contract\CommandInterface;
 use OneToMany\RichBundle\Contract\InputInterface;
 use OneToMany\RichBundle\ValueResolver\Exception\InvalidMappingException;
@@ -37,8 +36,9 @@ final class InputValueResolver implements ValueResolverInterface
 
     // private ParameterBag $properties;
     private ParameterBag $sourceData;
+    private InputBag $sourceQuery;
     private InputBag $sourceRoute;
-    private InputBag $sourcePayload;
+    private InputBag $sourceRequest;
 
     private const string ROUTE_PARAMETERS_KEY = '_route_params';
 
@@ -51,8 +51,9 @@ final class InputValueResolver implements ValueResolverInterface
     {
         // $this->properties = new ParameterBag();
         $this->sourceData = new ParameterBag();
+        $this->sourceQuery = new InputBag();
         $this->sourceRoute = new InputBag();
-        $this->sourcePayload = new InputBag();
+        $this->sourceRequest = new InputBag();
     }
 
     /**
@@ -73,14 +74,18 @@ final class InputValueResolver implements ValueResolverInterface
         $propertySources = []; //new ParameterBag();
 
         // Reset source data bags
-        // $this->properties->replace([]);
         $this->sourceData->replace([]);
         $this->sourceRoute->replace([]);
-        $this->sourcePayload->replace([]);
+        $this->sourceRequest->replace([]);
+
+        // Extract HTTP query string
+        $this->sourceQuery->replace(
+            $request->query->all()
+        );
 
         try {
-            // Extract request body content
-            $this->sourcePayload->replace(
+            // Extract HTTP request body
+            $this->sourceRequest->replace(
                 $request->getPayload()->all()
             );
         } catch (JsonException $e) {
@@ -129,35 +134,31 @@ final class InputValueResolver implements ValueResolverInterface
             }
 
             foreach ($propertySources as $propertySource) {
-                if ($this->sourceData->has($property->name)) {
-                    continue;
-                }
+                // if ($this->sourceData->has($property->name)) {
+                //     continue;
+                // }
 
                 // Resolve the key name from the source data
-                $sourceKey = $propertySource->name ?? $property->name;
+                $key = $propertySource->name ?? $property->name;
 
-                if ($propertySource instanceof SourceContainer && $this->container->has($sourceKey)) {
-                    $this->sourceData->set($property->name, $this->container->get($sourceKey));
+                if ($propertySource instanceof SourceContainer) {
+                    $this->extractFromContainer($property->name, $key);
                 }
 
-                if ($propertySource instanceof SourceQuery && $request->query->has($sourceKey)) {
-                    $this->sourceData->set($property->name, $request->query->get($sourceKey));
+                if ($propertySource instanceof SourceQuery) {
+                    $this->extractFromQuery($property->name, $key);
                 }
 
-                if ($propertySource instanceof SourceRequest && $this->sourcePayload->has($sourceKey)) {
-                    $this->sourceData->set($property->name, $this->sourcePayload->get($sourceKey));
+                if ($propertySource instanceof SourceRequest) {
+                    $this->extractFromRequest($property->name, $key);
                 }
 
-                if ($propertySource instanceof SourceRoute && $this->sourceRoute->has($sourceKey)) {
-                    $this->sourceData->set($property->name, $this->sourceRoute->get($sourceKey));
+                if ($propertySource instanceof SourceRoute) {
+                    $this->extractFromRoute($property->name, $key);
                 }
 
                 if ($propertySource instanceof SourceSecurity) {
-                    $token = $this->tokenStorage?->getToken();
-
-                    if (null !== $userId = $token?->getUserIdentifier()) {
-                        $this->sourceData->set($property->name, $userId);
-                    }
+                    $this->extractFromToken($property->name);
                 }
             }
 
@@ -201,6 +202,43 @@ final class InputValueResolver implements ValueResolverInterface
         }
 
         return (is_a($type, InputInterface::class, true) ? $type : null);
+    }
+
+    private function extractFromContainer(string $property, string $sourceKey): void
+    {
+        if ($this->container->has($sourceKey) && !$this->sourceData->has($property)) {
+            $this->sourceData[$property] = $this->container->get($sourceKey);
+        }
+    }
+
+    private function extractFromQuery(string $property, string $sourceKey): void
+    {
+        if ($this->sourceQuery->has($sourceKey) && !$this->sourceData->has($property)) {
+            $this->sourceData[$property] = $this->sourceQuery->get($sourceKey);
+        }
+    }
+
+    private function extractFromRequest(string $property, string $sourceKey): void
+    {
+        if ($this->sourceRequest->has($sourceKey) && !$this->sourceData->has($property)) {
+            $this->sourceData[$property] = $this->sourceRequest->get($sourceKey);
+        }
+    }
+
+    private function extractFromRoute(string $property, string $sourceKey): void
+    {
+        if ($this->sourceRoute->has($sourceKey) && !$this->sourceData->has($property)) {
+            $this->sourceData[$property] = $this->sourceRoute->get($sourceKey);
+        }
+    }
+
+    private function extractFromToken(string $property): void
+    {
+        $token = $this->tokenStorage?->getToken();
+
+        if (null !== $userId = $token?->getUserIdentifier()) {
+            $this->sourceData->set($property, $userId);
+        }
     }
 
 }
