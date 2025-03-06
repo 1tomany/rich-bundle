@@ -5,7 +5,6 @@ namespace OneToMany\RichBundle\ValueResolver;
 use OneToMany\RichBundle\Attribute\PropertyIgnored;
 use OneToMany\RichBundle\Attribute\PropertySource;
 use OneToMany\RichBundle\Attribute\SourceContainer;
-use OneToMany\RichBundle\Attribute\SourcePayload;
 use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceRoute;
@@ -14,9 +13,7 @@ use OneToMany\RichBundle\Contract\CommandInterface;
 use OneToMany\RichBundle\Contract\InputInterface;
 use OneToMany\RichBundle\ValueResolver\Exception\InvalidMappingException;
 use OneToMany\RichBundle\ValueResolver\Exception\MalformedContentException;
-use OneToMany\RichBundle\ValueResolver\Exception\MissingSourceException;
-use OneToMany\RichBundle\ValueResolver\Exception\MissingSourceSecurityException;
-use Psr\Container\ContainerExceptionInterface;
+use OneToMany\RichBundle\ValueResolver\Exception\PropertySourceNotMappedException;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
 use Symfony\Component\HttpFoundation\Exception\UnexpectedValueException;
 use Symfony\Component\HttpFoundation\Request;
@@ -34,7 +31,6 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 final class InputValueResolver implements ValueResolverInterface
 {
 
-    // private ParameterBag $properties;
     private ParameterBag $sourceData;
     private InputBag $sourceQuery;
     private InputBag $sourceRoute;
@@ -49,7 +45,6 @@ final class InputValueResolver implements ValueResolverInterface
         private readonly ?TokenStorageInterface $tokenStorage = null,
     )
     {
-        // $this->properties = new ParameterBag();
         $this->sourceData = new ParameterBag();
         $this->sourceQuery = new InputBag();
         $this->sourceRoute = new InputBag();
@@ -70,15 +65,9 @@ final class InputValueResolver implements ValueResolverInterface
             return [];
         }
 
-        // duh
-        $propertySources = []; //new ParameterBag();
+        // Initialize data sources
+        $this->resetDataSources();
 
-        // Reset source data bags
-        $this->sourceData->replace([]);
-        $this->sourceRoute->replace([]);
-        $this->sourceRequest->replace([]);
-
-        // Extract HTTP query string
         $this->sourceQuery->replace(
             $request->query->all()
         );
@@ -101,19 +90,7 @@ final class InputValueResolver implements ValueResolverInterface
             $this->sourceRoute->replace($routeParams);
         } catch (UnexpectedValueException $e) { }
 
-        $class = new \ReflectionClass($type);
-
-        foreach ($class->getProperties() as $property) {
-            // Ensure that the property is
-            // a member of the class itself.
-            // $isSameClass = in_array($class->name, [
-            //     $property->getDeclaringClass()->name,
-            // ]);
-
-            // if (!$isSameClass) {
-            //     continue;
-            // }
-
+        foreach (new \ReflectionClass($type)->getProperties() as $property) {
             // Don't extract a property if it is explicitly ignored
             $ignored = $property->getAttributes(PropertyIgnored::class);
 
@@ -158,15 +135,14 @@ final class InputValueResolver implements ValueResolverInterface
                 }
             }
 
-            /*
+
             if (!$this->sourceData->has($property->name)) {
                 if (!$property->isPromoted() && !$property->hasDefaultValue()) {
-                    throw new \Exception('no default property value for ' . $property->name);
+                    throw new PropertySourceNotMappedException($property->name);
                 }
 
                 $this->sourceData->set($property->name, $property->getDefaultValue());
             }
-            */
         }
 
         try {
@@ -198,6 +174,13 @@ final class InputValueResolver implements ValueResolverInterface
         }
 
         return (is_a($type, InputInterface::class, true) ? $type : null);
+    }
+
+    private function resetDataSources(): void
+    {
+        $this->sourceData->replace([]);
+        $this->sourceRoute->replace([]);
+        $this->sourceRequest->replace([]);
     }
 
     private function extractFromContainer(string $property, string $sourceKey): void
