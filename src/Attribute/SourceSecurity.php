@@ -6,14 +6,9 @@ namespace OneToMany\RichBundle\Attribute;
 final readonly class SourceSecurity extends PropertySource
 {
 
-    public function __construct(bool $required = true)
+    public function __construct()
     {
-        parent::__construct(null, $required);
-    }
-
-    public function getSource(): string
-    {
-        return 'security token';
+        parent::__construct(null);
     }
 
 }

@@ -6,9 +6,9 @@ namespace OneToMany\RichBundle\Attribute;
 final readonly class SourceQuery extends PropertySource
 {
 
-    public function getSource(): string
-    {
-        return 'query string';
-    }
+    // public function getSource(): string
+    // {
+    //     return 'query string';
+    // }
 
 }

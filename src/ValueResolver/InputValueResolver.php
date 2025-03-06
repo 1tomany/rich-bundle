@@ -7,8 +7,10 @@ use OneToMany\RichBundle\Attribute\PropertySource;
 use OneToMany\RichBundle\Attribute\SourceContainer;
 use OneToMany\RichBundle\Attribute\SourcePayload;
 use OneToMany\RichBundle\Attribute\SourceQuery;
+use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceRoute;
 use OneToMany\RichBundle\Attribute\SourceSecurity;
+use OneToMany\RichBundle\Attribute\SourceType;
 use OneToMany\RichBundle\Contract\CommandInterface;
 use OneToMany\RichBundle\Contract\InputInterface;
 use OneToMany\RichBundle\ValueResolver\Exception\InvalidMappingException;
@@ -33,6 +35,7 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 final class InputValueResolver implements ValueResolverInterface
 {
 
+    // private ParameterBag $properties;
     private ParameterBag $sourceData;
     private InputBag $sourceRoute;
     private InputBag $sourcePayload;
@@ -46,6 +49,7 @@ final class InputValueResolver implements ValueResolverInterface
         private readonly ?TokenStorageInterface $tokenStorage = null,
     )
     {
+        // $this->properties = new ParameterBag();
         $this->sourceData = new ParameterBag();
         $this->sourceRoute = new InputBag();
         $this->sourcePayload = new InputBag();
@@ -65,7 +69,11 @@ final class InputValueResolver implements ValueResolverInterface
             return [];
         }
 
+        // duh
+        $propertySources = []; //new ParameterBag();
+
         // Reset source data bags
+        // $this->properties->replace([]);
         $this->sourceData->replace([]);
         $this->sourceRoute->replace([]);
         $this->sourcePayload->replace([]);
@@ -91,8 +99,6 @@ final class InputValueResolver implements ValueResolverInterface
         $class = new \ReflectionClass($type);
 
         foreach ($class->getProperties() as $property) {
-            $sources = null;
-
             // Ensure that the property is
             // a member of the class itself.
             // $isSameClass = in_array($class->name, [
@@ -103,105 +109,67 @@ final class InputValueResolver implements ValueResolverInterface
             //     continue;
             // }
 
-            // Don't extract a property if it is explicitly ignored.
+            // Don't extract a property if it is explicitly ignored
             $ignored = $property->getAttributes(PropertyIgnored::class);
 
             if (count($ignored)) {
                 continue;
             }
 
-            // Compile a list of property sources. This assumes
-            // the order of the attributes on the property itself
-            // is the priority that the data should be extracted.
-            $richPropertyAttributes = $property->getAttributes(
-                PropertySource::class, \ReflectionAttribute::IS_INSTANCEOF
-            );
+            $propertySources = [];
 
-            foreach ($richPropertyAttributes as $attribute) {
-                $sources[] = $attribute->newInstance();
+            foreach ($property->getAttributes(PropertySource::class, \ReflectionAttribute::IS_INSTANCEOF) as $attribute) {
+                array_push($propertySources, $attribute->newInstance());
             }
 
-            // Ensure that if a property was not explicitly
-            // ignored that it has at least one source. By
-            // default, we assume it comes from the payload.
-            $sources = $sources ?? [new SourcePayload()];
+            if (!count($propertySources)) {
+                $propertySources = [
+                    new SourceRequest(),
+                ];
+            }
 
-            foreach ($sources as $source) {
-                // Stop searching once a value has been found
+            foreach ($propertySources as $propertySource) {
                 if ($this->sourceData->has($property->name)) {
                     continue;
                 }
 
-                $sourceValue = $property->getDefaultValue();
-                // if ($property->hasDefaultValue()) {
-                //     $propertyValue = $property->getDefaultValue();
-                // }
-                // $_value = $property->getDefaultValue();
-
                 // Resolve the key name from the source data
-                $sourceKey = $source->name ?? $property->name;
+                $sourceKey = $propertySource->name ?? $property->name;
 
-                if ($source instanceof SourceContainer) {
-                    if (!$this->container->has($sourceKey) && $source->required) {
-                        throw new MissingSourceException($source, $property->name, $sourceKey);
-                    }
-
-                    if ($this->container->has($sourceKey)) {
-                        $sourceValue = $this->container->get($sourceKey);
-                    }
-
-                    $this->sourceData->set($property->name, $sourceValue);
+                if ($propertySource instanceof SourceContainer && $this->container->has($sourceKey)) {
+                    $this->sourceData->set($property->name, $this->container->get($sourceKey));
                 }
 
-                /*
-                if ($source instanceof SourceQuery) {
-                    if (!$request->query->has($sourceKey) && $source->required) {
-                        throw new \Exception('query has no ' . $sourceKey);
-                    }
-
-                    $_value = $request->query->get($sourceKey) ?? $_value;
+                if ($propertySource instanceof SourceQuery && $request->query->has($sourceKey)) {
+                    $this->sourceData->set($property->name, $request->query->get($sourceKey));
                 }
 
-                if ($source instanceof SourceRoute) {
-                    if (!$sourceRoute->has($sourceKey) && $source->required) {
-                        throw new \Exception('no route param ' . $sourceKey);
-                    }
-
-                    $_value = $sourceRoute->get($sourceKey) ?? $_value;
-                }
-                */
-
-                if ($source instanceof SourcePayload) {
-                    if (!$this->sourcePayload->has($sourceKey) && $source->required) {
-                        throw new MissingSourceException($source, $property->name, $sourceKey);
-                    }
-
-                    if ($this->sourcePayload->has($sourceKey)) {
-                        $sourceValue = $this->sourcePayload->get($sourceKey);
-                    }
-
-                    $this->sourceData->set($property->name, $sourceValue);
+                if ($propertySource instanceof SourceRequest && $this->sourcePayload->has($sourceKey)) {
+                    $this->sourceData->set($property->name, $this->sourcePayload->get($sourceKey));
                 }
 
-                if ($source instanceof SourceSecurity) {
+                if ($propertySource instanceof SourceRoute && $this->sourceRoute->has($sourceKey)) {
+                    $this->sourceData->set($property->name, $this->sourceRoute->get($sourceKey));
+                }
+
+                if ($propertySource instanceof SourceSecurity) {
                     $token = $this->tokenStorage?->getToken();
 
-                    if (null === $token && $source->required) {
-                        throw new MissingSourceSecurityException($property->name);
+                    if (null !== $userId = $token?->getUserIdentifier()) {
+                        $this->sourceData->set($property->name, $userId);
                     }
-
-                    if (null !== $token?->getUserIdentifier()) {
-                        $sourceValue = $token->getUserIdentifier();
-                    }
-
-                    $this->sourceData->set($property->name, $sourceValue);
                 }
             }
 
-            // Finally, ensure each property is present
-            // in the data to be denormalized, even if
-            // it could not be found in any input source.
-            // $inputData[$property->name] ??= null;
+            /*
+            if (!$this->sourceData->has($property->name)) {
+                if (!$property->isPromoted() && !$property->hasDefaultValue()) {
+                    throw new \Exception('no default property value for ' . $property->name);
+                }
+
+                $this->sourceData->set($property->name, $property->getDefaultValue());
+            }
+            */
         }
 
         try {

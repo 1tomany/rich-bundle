@@ -6,9 +6,9 @@ namespace OneToMany\RichBundle\Attribute;
 final readonly class SourcePayload extends PropertySource
 {
 
-    public function getSource(): string
-    {
-        return 'request';
-    }
+    // public function getSource(): string
+    // {
+    //     return 'request';
+    // }
 
 }

@@ -6,9 +6,9 @@ namespace OneToMany\RichBundle\Attribute;
 final readonly class SourceRoute extends PropertySource
 {
 
-    public function getSource(): string
-    {
-        return 'route parameters';
-    }
+    // public function getSource(): string
+    // {
+    //     return 'route parameters';
+    // }
 
 }
