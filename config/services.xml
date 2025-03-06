@@ -6,6 +6,7 @@
 >
     <services>
         <defaults autowire="true"/>
+        <prototype namespace="OneToMany\RichBundle\" resource="../src/" exclude="../src/Function"/>
 
         <service id="OneToMany\RichBundle\EventSubscriber\ViewSubscriber">
             <tag>kernel.event_subscriber</tag>

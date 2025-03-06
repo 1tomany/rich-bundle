@@ -141,7 +141,9 @@ final class InputValueResolver implements ValueResolverInterface
                     throw new PropertySourceNotMappedException($property->name);
                 }
 
-                $this->sourceData->set($property->name, $property->getDefaultValue());
+                if (!$property->isPromoted() && $property->hasDefaultValue()) {
+                    $this->sourceData->set($property->name, $property->getDefaultValue());
+                }
             }
         }
 
