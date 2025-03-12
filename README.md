@@ -2,14 +2,79 @@
 This bundle makes it easy to incorporate the RICH architecture into your Symfony application.
 RICH stands for Request, Input, Command, Handler, and its goal is to make backend web application
 development as straightforward as possible. A RICH application applies the single responsibility
-principle to each action a user can take with your software. Once applying RICH practices,
-you'll no longer have to fear any side effects from modifying a specific component of your software.
+principle to each action a user can take with your software.
 
-## Getting Started
-1. **Install the bundle** Install the bundle using Composer:
-   ```shell
-   composer require 1tomany/rich-bundle
-   ```
+## RICH philosophy
+The central philosophy behind a RICH application is to apply to backend engineering what
+Tailwind CSS did to frontend engineering. Tailwind broke CSS down into very loosely coupled
+atomic components that you can apply as classes to HTML elements. This essentially undoes
+the Cascading in Cascading Style Sheets, but for good reason: you can safely modify the style
+of one element without much fear that it will radically alter the layout of your application.
+This is incredibly powerful for teams of developers: the tenured team member knows that the
+CSS class `.btn-blue` makes a full width block level red button across the application, but
+the developer that just started last week doesn't, and he accidentally destroyed the styling
+of the application with his first PR.
+
+RICH applies these sames principles to backend engineering: each input, command, and handler are
+separate PHP classes that only have a single responsibility. The naming of these classes should
+describe an action that can be performed in your application. For example, if your application
+allows users to be created and updated, you would have `CreateUserInput` and `UpdateUserInput`
+as your input classes, `CreateUserCommand` and `UpdateUserCommand` as your command classes,
+and you guessed it, `CreateUserHandler` and `UpdateUserHandler` as your handler classes. Like
+Tailwind, this may seem redundant and a source of code duplication, but the benefits an
+architecture like this provide far outweigh the negatives.
+
+## RICH structure
+**Input** A request, whether it be from an API request, a form submission, the command line, or
+elsewhere, is mapped onto an input object. The input object is responsible for manipulating and
+validating the request data. By default, this bundle uses the serializer and validator components
+bundled with Symfony, but you're welcome to manually map data and validate it however you see fit.
+
+Input objects can contain some basic logic, but should generally rely on no additional dependencies
+outside of the standard PHP library.
+
+**Command** If the request data is valid and successfully mapped to an input object, the input
+object will create a command object. A command object is as simple of a class as you can get in
+PHP. Ideally, it should be `final`, `readonly`, and use constructor promotion to ensure immutability.
+A command object is a POPO - Plain 'Ol PHP Object and should do its best to use scalar primitives
+(`null`, `bool`, `int`, `float`, and `string`), basic arrays, or other POPO's as its properties.
+In other words, a command object would use an `int` (or a simple value object) to refer to the
+primary key of a Doctrine entity rather than the entity itself. Command objects should be so simple
+they can easily be serialized and deserialized so they can used in an asynchronous message queue.
+
+**Handler** Once created, the command object is passed to the handler. For the vast majority of
+applications, this can (and should) be done manually - using an asynchronous message queue is not
+necessary. However, each handler should assume it is being called entirely statelessly, and hydrate
+the environment it needs without assuming it already exists. For example, the handler should not
+be aware of an HTTP request, session data, cookie data, or that an entity it relies on is already
+being managed by Doctrine.
+
+The handler that runs synchronously today may need to be placed in a message queue tomorrow for
+a variety of reason and having the foresight to make it stateless today will save you endless
+headaches tomorrow.
+
+## Getting started
+
+### Install the bundle
+Install the bundle using Composer:
+
+```shell
+composer require 1tomany/rich-bundle
+```
+
+### Create module structure
+
+### Create contracts
+
+### Create input class
+
+### Create command class
+
+### Create handler class
+
+### Wire to a controller
+
+1. **Install the bundle**
 
 2. **Create module structure** Next, you'll need to create the directory structure for your first module.
    There is no strict definition on what a module is, other than a set of features that are loosely related
