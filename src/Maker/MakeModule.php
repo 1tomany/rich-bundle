@@ -49,12 +49,12 @@ final class MakeModule extends AbstractMaker
             $input->getArgument('module')
         );
 
-        $templateDirectory = __DIR__ . '/../../templates';
-        $moduleNamespace = sprintf('%s\\Contract', $module);
+        $contractNamespace = sprintf('%s\\Contract', $module);
+        $templateDirectory = __DIR__ . '/../../templates/module';
 
         // Create the Doctrine repository interface contract
         $repositoryInterfaceClass = $generator->createClassNameDetails(
-            $module, $moduleNamespace, 'RepositoryInterface'
+            $module, $contractNamespace, 'RepositoryInterface'
         );
 
         try {
@@ -64,7 +64,7 @@ final class MakeModule extends AbstractMaker
             if ($this->kernel->getBundle($doctrineBundleName)) {
                 // App\<Module>\Contract\<Module>RepositoryInterface
                 if (!interface_exists($repositoryInterfaceClass->getFullName())) {
-                    $templateName = vsprintf('%s/module/Repository.tpl.php', [
+                    $templateName = vsprintf('%s/Repository.tpl.php', [
                         $templateDirectory,
                     ]);
 
@@ -78,12 +78,12 @@ final class MakeModule extends AbstractMaker
         }
         // Create the exception interface contract
         $exceptionClass = $generator->createClassNameDetails(
-            'Exception', $moduleNamespace . '\\Exception', 'Interface'
+            'Exception', $contractNamespace . '\\Exception', 'Interface'
         );
 
         // App\<Module>\Contract\Exception\ExceptionInterface
         if (!interface_exists($exceptionClass->getFullName())) {
-            $templateName = vsprintf('%s/module/Exception.tpl.php', [
+            $templateName = vsprintf('%s/Exception.tpl.php', [
                 $templateDirectory,
             ]);
 
