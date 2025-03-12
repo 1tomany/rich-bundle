@@ -15,6 +15,13 @@ class RichBundle extends AbstractBundle
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
         $container->import('../config/services.xml');
+
+        /** @var array<string, string> $bundles */
+        $bundles = $builder->getParameter('kernel.bundles');
+
+        if (isset($bundles['MakerBundle'])) {
+            $container->import('../config/makers.xml');
+        }
     }
 
 }
