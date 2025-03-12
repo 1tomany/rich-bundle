@@ -2,6 +2,6 @@
 
 namespace <?php echo $namespace; ?>;
 
-interface ExceptionInterface extends \Throwable
+interface <?php echo $class_name; ?> extends \Throwable
 {
 }
