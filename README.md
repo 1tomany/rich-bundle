@@ -39,7 +39,7 @@ outside of the standard PHP library.
 **Command** If the request data is valid and successfully mapped to an input object, the input
 object will create a command object. A command object is as simple of a class as you can get in
 PHP. Ideally, it should be `final`, `readonly`, and use constructor promotion to ensure immutability.
-A command object is a POPO - Plain 'Ol PHP Object and should do its best to use scalar primitives
+A command object is a POPO - Plain Old PHP Object - and should do its best to use scalar primitives
 (`null`, `bool`, `int`, `float`, and `string`), basic arrays, or other POPO's as its properties.
 In other words, a command object would use an `int` (or a simple value object) to refer to the
 primary key of a Doctrine entity rather than the entity itself. Command objects should be so simple
