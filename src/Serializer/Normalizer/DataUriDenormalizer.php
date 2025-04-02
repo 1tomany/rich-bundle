@@ -11,7 +11,7 @@ use function OneToMany\DataUri\parse_data;
 final readonly class DataUriDenormalizer implements DenormalizerInterface
 {
     /**
-     * @param null|string|UploadedFile $data
+     * @param string|UploadedFile|null $data
      * @param array<string, mixed> $context
      */
     public function denormalize(mixed $data, string $type, ?string $format = null, array $context = []): DataUri
