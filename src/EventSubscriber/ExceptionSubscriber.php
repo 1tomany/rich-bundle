@@ -33,29 +33,37 @@ final readonly class ExceptionSubscriber implements EventSubscriberInterface
 
     public function onKernelException(ExceptionEvent $event): void
     {
-        if ($format = $this->getResponseFormat($event->getRequest())) {
-            // Wrap to Prevent Information Leakage
-            $e = new WrappedException($event->getThrowable());
+        $format = $this->getResponseFormat(...[
+            'request' => $event->getRequest(),
+        ]);
 
-            // Create the Response
-            $errorResponse = new Response(...[
-                'status' => $e->getStatus(),
-            ]);
-
-            // Generate the Response Body Content
-            $body = $this->serializer->serialize($e, $format, [
-                'exception' => $event->getThrowable(),
-            ]);
-
-            $errorResponse->setContent($body);
-
-            // Resolve the Response Content-Type Header
-            $errorResponse->headers->replace(array_merge($e->getHeaders(), [
-                'Content-Type' => $event->getRequest()->getMimeType($format),
-            ]));
-
-            $event->setResponse($errorResponse);
+        if (!$format) {
+            return;
         }
+
+        // Prevent Data Leakages
+        $e = new WrappedException(
+            $event->getThrowable()
+        );
+
+        // Create the Response
+        $errorResponse = new Response(...[
+            'status' => $e->getStatus(),
+        ]);
+
+        // Generate the Response Body Content
+        $body = $this->serializer->serialize($e, $format, [
+            'exception' => $event->getThrowable(),
+        ]);
+
+        $errorResponse->setContent($body);
+
+        // Resolve the Response Content-Type Header
+        $errorResponse->headers->replace(array_merge($e->getHeaders(), [
+            'Content-Type' => $event->getRequest()->getMimeType($format),
+        ]));
+
+        $event->setResponse($errorResponse);
     }
 
     private function getResponseFormat(Request $request): ?string
