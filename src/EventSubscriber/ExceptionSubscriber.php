@@ -4,30 +4,22 @@ namespace OneToMany\RichBundle\EventSubscriber;
 
 use OneToMany\RichBundle\Exception\WrappedException;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
-use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 
 final readonly class ExceptionSubscriber implements EventSubscriberInterface
 {
     /**
-     * @var array{json: non-empty-string, xml: non-empty-string}
+     * @var list<non-empty-string>
      */
     private array $responseFormats;
 
-    public function __construct(
-        private SerializerInterface $serializer,
-        // private NormalizerInterface $normalizer,
-    )
+    public function __construct(private SerializerInterface $serializer)
     {
-        $this->responseFormats = [
-            'json' => 'application/json',
-            'xml' => 'application/xml',
-        ];
+        $this->responseFormats = ['json', 'xml'];
     }
 
     public static function getSubscribedEvents(): array
@@ -41,30 +33,28 @@ final readonly class ExceptionSubscriber implements EventSubscriberInterface
 
     public function onKernelException(ExceptionEvent $event): void
     {
-        $request = $event->getRequest();
-
-        if ($format = $this->getResponseFormat($request)) {
+        if ($format = $this->getResponseFormat($event->getRequest())) {
             // Wrap to Prevent Information Leakage
             $e = new WrappedException($event->getThrowable());
 
             // Create the Response
-            $response = new Response(...[
+            $errorResponse = new Response(...[
                 'status' => $e->getStatus(),
             ]);
 
             // Generate the Response Body Content
-            $content = $this->serializer->serialize($e, $format, [
+            $body = $this->serializer->serialize($e, $format, [
                 'exception' => $event->getThrowable(),
             ]);
 
-            $response->setContent($content);
+            $errorResponse->setContent($body);
 
             // Resolve the Response Content-Type Header
-            $response->headers->replace(array_merge($e->getHeaders(), [
-                'Content-Type' => $request->getMimeType($format),
+            $errorResponse->headers->replace(array_merge($e->getHeaders(), [
+                'Content-Type' => $event->getRequest()->getMimeType($format),
             ]));
 
-            $event->setResponse($response);
+            $event->setResponse($errorResponse);
         }
     }
 
@@ -76,6 +66,6 @@ final readonly class ExceptionSubscriber implements EventSubscriberInterface
             return null;
         }
 
-        return array_key_exists($format, $this->responseFormats) ? $format : null;
+        return in_array($format, $this->responseFormats, true) ? $format : null;
     }
 }
