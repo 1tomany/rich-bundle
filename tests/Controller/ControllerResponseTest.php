@@ -11,7 +11,6 @@ use PHPUnit\Framework\TestCase;
 #[Group('ControllerTests')]
 final class ControllerResponseTest extends TestCase
 {
-
     public function testConstructorRequiresValidHttpStatusCode(): void
     {
         $this->expectException(InvalidHttpStatusException::class);
@@ -29,5 +28,4 @@ final class ControllerResponseTest extends TestCase
     {
         $this->assertEquals(201, ControllerResponse::created(true)->status);
     }
-
 }

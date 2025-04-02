@@ -2,9 +2,9 @@
 
 namespace OneToMany\RichBundle\Tests\ValueResolver;
 
-use OneToMany\RichBundle\Tests\ValueResolver\Fixture\NotMappedInput;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\EmptyInput;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\IgnoredInput;
+use OneToMany\RichBundle\Tests\ValueResolver\Fixture\NotMappedInput;
 use OneToMany\RichBundle\ValueResolver\Exception\MalformedContentException;
 use OneToMany\RichBundle\ValueResolver\Exception\PropertySourceNotMappedException;
 use OneToMany\RichBundle\ValueResolver\InputValueResolver;
@@ -29,7 +29,6 @@ use Symfony\Component\Validator\Validation;
 #[Group('ValueResolverTests')]
 final class InputValueResolverTest extends TestCase
 {
-
     public function testResolvingValueRequiresObjectToImplementInputInterface(): void
     {
         $arguments = $this->createValueResolver()->resolve(
@@ -97,7 +96,6 @@ final class InputValueResolverTest extends TestCase
 
     public function testResolvingPropertiesFromSingleSource(): void
     {
-
     }
 
     private function createArgument(string $type = EmptyInput::class): ArgumentMetadata
@@ -128,12 +126,12 @@ final class InputValueResolverTest extends TestCase
         // Property type extractors
         $propertyTypeExtractors = [
             new ConstructorExtractor([
-                new PhpDocExtractor()
-            ])
+                new PhpDocExtractor(),
+            ]),
         ];
 
         $typeExtractor = new PropertyInfoExtractor(...[
-            'typeExtractors' => $propertyTypeExtractors
+            'typeExtractors' => $propertyTypeExtractors,
         ]);
 
         $normalizers[] = new ObjectNormalizer(...[
@@ -150,5 +148,4 @@ final class InputValueResolverTest extends TestCase
 
         return new InputValueResolver($containerBag, $serializer, $validator);
     }
-
 }

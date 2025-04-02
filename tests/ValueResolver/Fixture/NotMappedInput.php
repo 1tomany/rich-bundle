@@ -11,7 +11,6 @@ use OneToMany\RichBundle\Contract\InputInterface;
  */
 final class NotMappedInput implements InputInterface
 {
-
     #[SourceQuery]
     public string $name {
         set(string $v) => trim($v);
@@ -23,7 +22,6 @@ final class NotMappedInput implements InputInterface
 
     public function toCommand(): CommandInterface
     {
-        return new class() implements CommandInterface {};
+        return new class implements CommandInterface {};
     }
-
 }

@@ -10,15 +10,12 @@ use OneToMany\RichBundle\Contract\InputInterface;
  */
 final class EmptyInput implements InputInterface
 {
-
     public function __construct()
     {
-
     }
 
     public function toCommand(): CommandInterface
     {
         return new EmptyCommand();
     }
-
 }

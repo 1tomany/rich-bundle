@@ -11,7 +11,6 @@ use OneToMany\RichBundle\Contract\InputInterface;
  */
 final class IgnoredInput implements InputInterface
 {
-
     #[PropertyIgnored]
     public string $name = 'Modesto';
 
@@ -21,7 +20,6 @@ final class IgnoredInput implements InputInterface
 
     public function toCommand(): CommandInterface
     {
-        return new class() implements CommandInterface {};
+        return new class implements CommandInterface {};
     }
-
 }

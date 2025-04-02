@@ -34,7 +34,6 @@ use Symfony\Component\Validator\Exception\ValidationFailedException;
 #[Group('ExceptionTests')]
 final class WrappedExceptionTest extends TestCase
 {
-
     #[DataProvider('providerHttpExceptionAndStatusCode')]
     public function testConstructorResolvesStatusFromHttpException(HttpException $exception, int $statusCode): void
     {
@@ -91,7 +90,7 @@ final class WrappedExceptionTest extends TestCase
         $message = 'The data provided is not valid.';
 
         $violations = new ConstraintViolationList([
-            new ConstraintViolation('Required', null, [], null, null, null)
+            new ConstraintViolation('Required', null, [], null, null, null),
         ]);
 
         $exception = new ValidationFailedException(null, $violations);
@@ -116,12 +115,12 @@ final class WrappedExceptionTest extends TestCase
     {
         $headers = [
             'X-Token' => 'abc123',
-            'X-UserId' => '98133'
+            'X-UserId' => '98133',
         ];
 
         $exception = new HttpException(...[
             'statusCode' => 500,
-            'headers' => $headers
+            'headers' => $headers,
         ]);
 
         $wrapped = new WrappedException($exception);
@@ -135,19 +134,19 @@ final class WrappedExceptionTest extends TestCase
         $errors = [
             [
                 'property' => 'username',
-                'message' => 'Invalid email address.'
+                'message' => 'Invalid email address.',
             ],
             [
                 'property' => 'password',
-                'message' => 'Password too short.'
+                'message' => 'Password too short.',
             ],
             [
                 'property' => 'age',
-                'message' => 'Too young.'
-            ]
+                'message' => 'Too young.',
+            ],
         ];
 
-        $violations = \array_map(function(array $e): ConstraintViolationInterface {
+        $violations = \array_map(function (array $e): ConstraintViolationInterface {
             return new ConstraintViolation($e['message'], null, [], null, $e['property'], null);
         }, $errors);
 
@@ -162,17 +161,17 @@ final class WrappedExceptionTest extends TestCase
     public function testConstructorResolvesStack(): void
     {
         $exception1 = new \Exception(...[
-            'message' => 'Exception 1'
+            'message' => 'Exception 1',
         ]);
 
         $exception2 = new \Exception(...[
             'message' => 'Exception 2',
-            'previous' => $exception1
+            'previous' => $exception1,
         ]);
 
         $exception3 = new \Exception(...[
             'message' => 'Exception 3',
-            'previous' => $exception2
+            'previous' => $exception2,
         ]);
 
         $stack = [
@@ -180,20 +179,20 @@ final class WrappedExceptionTest extends TestCase
                 'class' => $exception3::class,
                 'message' => $exception3->getMessage(),
                 'file' => $exception3->getFile(),
-                'line' => $exception3->getLine()
+                'line' => $exception3->getLine(),
             ],
             [
                 'class' => $exception2::class,
                 'message' => $exception2->getMessage(),
                 'file' => $exception2->getFile(),
-                'line' => $exception2->getLine()
+                'line' => $exception2->getLine(),
             ],
             [
                 'class' => $exception1::class,
                 'message' => $exception1->getMessage(),
                 'file' => $exception1->getFile(),
-                'line' => $exception1->getLine()
-            ]
+                'line' => $exception1->getLine(),
+            ],
         ];
 
         $wrapped = new WrappedException($exception3);
@@ -232,5 +231,4 @@ final class WrappedExceptionTest extends TestCase
         $wrapped = new WrappedException($exception);
         $this->assertEquals($title, $wrapped->getTitle());
     }
-
 }

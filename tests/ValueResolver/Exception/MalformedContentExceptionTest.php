@@ -11,10 +11,8 @@ use PHPUnit\Framework\TestCase;
 #[Group('ExceptionTests')]
 final class MalformedContentExceptionTest extends TestCase
 {
-
     public function testGettingCode(): void
     {
         $this->assertEquals(400, (new MalformedContentException(null))->getCode());
     }
-
 }

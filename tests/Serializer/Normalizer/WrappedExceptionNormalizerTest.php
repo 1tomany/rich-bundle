@@ -12,21 +12,20 @@ use PHPUnit\Framework\TestCase;
 #[Group('NormalizerTests')]
 final class WrappedExceptionNormalizerTest extends TestCase
 {
-
     public function testNormalizingExceptionInDebugEnvironmentIncludesStack(): void
     {
         $exception1 = new \Exception(...[
-            'message' => 'Exception 1'
+            'message' => 'Exception 1',
         ]);
 
         $exception2 = new \Exception(...[
             'message' => 'Exception 2',
-            'previous' => $exception1
+            'previous' => $exception1,
         ]);
 
         $exception3 = new \Exception(...[
             'message' => 'Exception 3',
-            'previous' => $exception2
+            'previous' => $exception2,
         ]);
 
         $normalizer = new WrappedExceptionNormalizer(true);
@@ -42,12 +41,12 @@ final class WrappedExceptionNormalizerTest extends TestCase
     public function testNormalizingExceptionInNonDebugEnvironmentDoesNotIncludeStack(): void
     {
         $exception1 = new \Exception(...[
-            'message' => 'Exception 1'
+            'message' => 'Exception 1',
         ]);
 
         $exception2 = new \Exception(...[
             'message' => 'Exception 2',
-            'previous' => $exception1
+            'previous' => $exception1,
         ]);
 
         $normalizer = new WrappedExceptionNormalizer(false);
@@ -58,5 +57,4 @@ final class WrappedExceptionNormalizerTest extends TestCase
 
         $this->assertArrayNotHasKey('stack', $record);
     }
-
 }
