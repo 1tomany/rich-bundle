@@ -22,12 +22,7 @@
     "autoload": {
         "psr-4": {
             "OneToMany\\RichBundle\\": "src/"
-        },
-        "files": [
-            "src/Function/strlower.php",
-            "src/Function/strnull.php",
-            "src/Function/strtrim.php"
-        ]
+        }
     },
     "autoload-dev": {
         "psr-4": {

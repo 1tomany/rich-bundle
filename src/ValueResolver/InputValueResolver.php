@@ -16,7 +16,6 @@ use OneToMany\RichBundle\ValueResolver\Exception\MalformedContentException;
 use OneToMany\RichBundle\ValueResolver\Exception\PropertySourceNotMappedException;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
-use Symfony\Component\HttpFoundation\Exception\UnexpectedValueException;
 use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
@@ -30,12 +29,9 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 final class InputValueResolver implements ValueResolverInterface
 {
-    private ParameterBag $sourceData;
-    private InputBag $sourceQuery;
-    private InputBag $sourceRoute;
-    private InputBag $sourceRequest;
-
-    private const string ROUTE_PARAMETERS_KEY = '_route_params';
+    private ParameterBag $data;
+    private Request $request;
+    private InputBag $payload;
 
     public function __construct(
         private readonly ContainerBagInterface $containerBag,
@@ -43,10 +39,8 @@ final class InputValueResolver implements ValueResolverInterface
         private readonly ValidatorInterface $validator,
         private readonly ?TokenStorageInterface $tokenStorage = null,
     ) {
-        $this->sourceData = new ParameterBag();
-        $this->sourceQuery = new InputBag();
-        $this->sourceRoute = new InputBag();
-        $this->sourceRequest = new InputBag();
+        $this->data = new ParameterBag();
+        $this->payload = new InputBag();
     }
 
     /**
@@ -64,30 +58,7 @@ final class InputValueResolver implements ValueResolverInterface
         }
 
         // Initialize data sources
-        $this->resetDataSources();
-
-        $this->sourceQuery->replace(
-            $request->query->all()
-        );
-
-        try {
-            // Extract HTTP request body
-            $this->sourceRequest->replace(
-                $request->getPayload()->all()
-            );
-        } catch (JsonException $e) {
-            throw new MalformedContentException($e);
-        }
-
-        try {
-            // Extract route parameters from request
-            $routeParams = $request->attributes->all(
-                self::ROUTE_PARAMETERS_KEY
-            );
-
-            $this->sourceRoute->replace($routeParams);
-        } catch (UnexpectedValueException $e) {
-        }
+        $this->initializeRequestData($request);
 
         // Read the properties from the class
         $refClass = new \ReflectionClass($type);
@@ -140,20 +111,20 @@ final class InputValueResolver implements ValueResolverInterface
             }
 
             // Ensure a property has a value if possible
-            if (!$this->sourceData->has($property->name)) {
+            if (!$this->data->has($property->name)) {
                 if (!$property->isPromoted() && !$property->hasDefaultValue()) {
                     throw new PropertySourceNotMappedException($property->name);
                 }
 
                 if (!$property->isPromoted() && $property->hasDefaultValue()) {
-                    $this->sourceData->set($property->name, $property->getDefaultValue());
+                    $this->data->set($property->name, $property->getDefaultValue());
                 }
             }
         }
 
         try {
             /** @var InputInterface<CommandInterface> $input */
-            $input = $this->normalizer->denormalize($this->sourceData->all(), $type, null, [
+            $input = $this->normalizer->denormalize($this->data->all(), $type, null, [
                 'disable_type_enforcement' => true,
                 'collect_denormalization_errors' => true,
             ]);
@@ -179,41 +150,47 @@ final class InputValueResolver implements ValueResolverInterface
             return null;
         }
 
-        return is_a($type, InputInterface::class, true) ? $type : null;
+        return \is_a($type, InputInterface::class, true) ? $type : null;
     }
 
-    private function resetDataSources(): void
+    private function initializeRequestData(Request $request): void
     {
-        $this->sourceData->replace([]);
-        $this->sourceRoute->replace([]);
-        $this->sourceRequest->replace([]);
+        $this->data->replace([]);
+        $this->request = $request;
+
+        try {
+            // Extract HTTP request body
+            $this->payload = $request->getPayload();
+        } catch (JsonException $e) {
+            throw new MalformedContentException($e);
+        }
     }
 
     private function extractFromContainerBag(string $property, string $sourceKey): void
     {
-        if ($this->containerBag->has($sourceKey) && !$this->sourceData->has($property)) {
-            $this->sourceData->set($property, $this->containerBag->get($sourceKey));
+        if ($this->containerBag->has($sourceKey) && !$this->data->has($property)) {
+            $this->appendToData($property, $this->containerBag->get($sourceKey));
         }
     }
 
     private function extractFromQuery(string $property, string $sourceKey): void
     {
-        if ($this->sourceQuery->has($sourceKey) && !$this->sourceData->has($property)) {
-            $this->sourceData->set($property, $this->sourceQuery->get($sourceKey));
+        if ($this->request->query->has($sourceKey) && !$this->data->has($property)) {
+            $this->appendToData($property, $this->request->query->get($sourceKey));
         }
     }
 
     private function extractFromRequest(string $property, string $sourceKey): void
     {
-        if ($this->sourceRequest->has($sourceKey) && !$this->sourceData->has($property)) {
-            $this->sourceData->set($property, $this->sourceRequest->get($sourceKey));
+        if ($this->payload->has($sourceKey) && !$this->data->has($property)) {
+            $this->appendToData($property, $this->payload->get($sourceKey));
         }
     }
 
     private function extractFromRoute(string $property, string $sourceKey): void
     {
-        if ($this->sourceRoute->has($sourceKey) && !$this->sourceData->has($property)) {
-            $this->sourceData->set($property, $this->sourceRoute->get($sourceKey));
+        if ($this->request->attributes->has($sourceKey) && !$this->data->has($property)) {
+            $this->appendToData($property, $this->request->attributes->get($sourceKey));
         }
     }
 
@@ -222,7 +199,16 @@ final class InputValueResolver implements ValueResolverInterface
         $token = $this->tokenStorage?->getToken();
 
         if (null !== $userId = $token?->getUserIdentifier()) {
-            $this->sourceData->set($property, $userId);
+            $this->appendToData($property, $userId);
         }
+    }
+
+    private function appendToData(string $key, mixed $value): void
+    {
+        if (is_string($value)) {
+            $value = trim($value);
+        }
+
+        $this->data->set($key, $value);
     }
 }
