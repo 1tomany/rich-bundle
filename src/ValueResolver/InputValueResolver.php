@@ -89,9 +89,11 @@ final class InputValueResolver implements ValueResolverInterface
         } catch (UnexpectedValueException $e) {
         }
 
+        // Read the properties from the class
         $refClass = new \ReflectionClass($type);
 
         foreach ($refClass->getProperties() as $property) {
+            // Skip ignored properties
             $ignored = $property->getAttributes(
                 PropertyIgnored::class
             );
@@ -109,7 +111,7 @@ final class InputValueResolver implements ValueResolverInterface
                 $propertySources[] = $attribute->newInstance();
             }
 
-            // Use the HTTP request body by default if no sources are found
+            // Use the HTTP body by default if no sources are found
             $propertySources = $propertySources ?? [new SourceRequest()];
 
             foreach ($propertySources as $propertySource) {
