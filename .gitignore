@@ -1,5 +1,6 @@
-.DS_Store
-*.swp
-composer.lock
-/var/phpunit/
 /vendor/
+/.phpunit.cache/
+/.php-cs-fixer.cache/
+*.swp
+.DS_Store
+composer.lock
