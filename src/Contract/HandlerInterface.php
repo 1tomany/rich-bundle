@@ -8,11 +8,10 @@ namespace OneToMany\RichBundle\Contract;
  */
 interface HandlerInterface
 {
-
     /**
      * @param C $command
+     *
      * @return R
      */
     public function handle(CommandInterface $command): ResultInterface;
-
 }

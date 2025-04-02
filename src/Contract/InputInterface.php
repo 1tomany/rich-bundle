@@ -7,10 +7,8 @@ namespace OneToMany\RichBundle\Contract;
  */
 interface InputInterface
 {
-
     /**
      * @return C
      */
     public function toCommand(): CommandInterface;
-
 }

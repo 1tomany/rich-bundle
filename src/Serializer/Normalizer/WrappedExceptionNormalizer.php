@@ -7,7 +7,6 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 final readonly class WrappedExceptionNormalizer implements NormalizerInterface
 {
-
     public function __construct(private bool $debug = false)
     {
     }
@@ -15,6 +14,7 @@ final readonly class WrappedExceptionNormalizer implements NormalizerInterface
     /**
      * @param WrappedExceptionInterface $object
      * @param array<string, mixed> $context
+     *
      * @return array<string, mixed>
      */
     public function normalize(mixed $object, ?string $format = null, array $context = []): array
@@ -39,7 +39,7 @@ final readonly class WrappedExceptionNormalizer implements NormalizerInterface
      */
     public function supportsNormalization(mixed $data, ?string $format = null, array $context = []): bool
     {
-        return ($data instanceof WrappedExceptionInterface);
+        return $data instanceof WrappedExceptionInterface;
     }
 
     public function getSupportedTypes(?string $format): array
@@ -48,5 +48,4 @@ final readonly class WrappedExceptionNormalizer implements NormalizerInterface
             WrappedExceptionInterface::class => true,
         ];
     }
-
 }

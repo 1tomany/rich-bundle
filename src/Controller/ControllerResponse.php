@@ -7,7 +7,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 final readonly class ControllerResponse
 {
-
     /**
      * @param int<100, 599> $status
      * @param array<string, mixed> $context
@@ -18,8 +17,7 @@ final readonly class ControllerResponse
         public int $status,
         public array $context = [],
         public array $headers = [],
-    )
-    {
+    ) {
         if (!array_key_exists($status, Response::$statusTexts)) {
             throw new InvalidHttpStatusException($status);
         }
@@ -33,8 +31,7 @@ final readonly class ControllerResponse
         mixed $data,
         array $context = [],
         array $headers = [],
-    ): self
-    {
+    ): self {
         return new self($data, 200, $context, $headers);
     }
 
@@ -46,9 +43,7 @@ final readonly class ControllerResponse
         mixed $data,
         array $context = [],
         array $headers = [],
-    ): self
-    {
+    ): self {
         return new self($data, 201, $context, $headers);
     }
-
 }

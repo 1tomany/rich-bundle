@@ -4,9 +4,10 @@ namespace OneToMany\RichBundle\Exception;
 
 interface WrappedExceptionInterface
 {
-
     public function getStatus(): int;
+
     public function getTitle(): string;
+
     public function getMessage(): string;
 
     /**
@@ -23,5 +24,4 @@ interface WrappedExceptionInterface
      * @return list<array<string, string>>
      */
     public function getViolations(): array;
-
 }

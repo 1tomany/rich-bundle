@@ -10,7 +10,6 @@ use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 final class WrappedException implements WrappedExceptionInterface
 {
-
     private int $status = 500;
     private string $title = '';
     private string $message = '';
@@ -149,5 +148,4 @@ final class WrappedException implements WrappedExceptionInterface
             }
         }
     }
-
 }

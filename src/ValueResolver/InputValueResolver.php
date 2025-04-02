@@ -14,23 +14,22 @@ use OneToMany\RichBundle\Contract\InputInterface;
 use OneToMany\RichBundle\ValueResolver\Exception\InvalidMappingException;
 use OneToMany\RichBundle\ValueResolver\Exception\MalformedContentException;
 use OneToMany\RichBundle\ValueResolver\Exception\PropertySourceNotMappedException;
+use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
 use Symfony\Component\HttpFoundation\Exception\UnexpectedValueException;
+use Symfony\Component\HttpFoundation\InputBag;
+use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Controller\ValueResolverInterface;
 use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
-use Symfony\Component\HttpFoundation\InputBag;
-use Symfony\Component\HttpFoundation\ParameterBag;
-use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 final class InputValueResolver implements ValueResolverInterface
 {
-
     private ParameterBag $sourceData;
     private InputBag $sourceQuery;
     private InputBag $sourceRoute;
@@ -43,8 +42,7 @@ final class InputValueResolver implements ValueResolverInterface
         private readonly DenormalizerInterface $normalizer,
         private readonly ValidatorInterface $validator,
         private readonly ?TokenStorageInterface $tokenStorage = null,
-    )
-    {
+    ) {
         $this->sourceData = new ParameterBag();
         $this->sourceQuery = new InputBag();
         $this->sourceRoute = new InputBag();
@@ -88,7 +86,8 @@ final class InputValueResolver implements ValueResolverInterface
             );
 
             $this->sourceRoute->replace($routeParams);
-        } catch (UnexpectedValueException $e) { }
+        } catch (UnexpectedValueException $e) {
+        }
 
         foreach (new \ReflectionClass($type)->getProperties() as $property) {
             // Don't extract a property if it is explicitly ignored
@@ -104,7 +103,7 @@ final class InputValueResolver implements ValueResolverInterface
             $propertySources = null;
 
             foreach ($property->getAttributes(PropertySource::class, \ReflectionAttribute::IS_INSTANCEOF) as $attribute) {
-               $propertySources[] = $attribute->newInstance();
+                $propertySources[] = $attribute->newInstance();
             }
 
             // Use the HTTP request body by default if no sources are found
@@ -175,7 +174,7 @@ final class InputValueResolver implements ValueResolverInterface
             return null;
         }
 
-        return (is_a($type, InputInterface::class, true) ? $type : null);
+        return is_a($type, InputInterface::class, true) ? $type : null;
     }
 
     private function resetDataSources(): void
@@ -221,5 +220,4 @@ final class InputValueResolver implements ValueResolverInterface
             $this->sourceData->set($property, $userId);
         }
     }
-
 }

@@ -11,7 +11,6 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 final readonly class ViewSubscriber implements EventSubscriberInterface
 {
-
     public function __construct(private NormalizerInterface $normalizer)
     {
     }
@@ -21,7 +20,7 @@ final readonly class ViewSubscriber implements EventSubscriberInterface
         return [
             KernelEvents::VIEW => [
                 ['renderControllerResponse', 0],
-            ]
+            ],
         ];
     }
 
@@ -43,5 +42,4 @@ final readonly class ViewSubscriber implements EventSubscriberInterface
             $event->setResponse($response);
         }
     }
-
 }
