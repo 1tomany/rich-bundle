@@ -89,9 +89,12 @@ final class InputValueResolver implements ValueResolverInterface
         } catch (UnexpectedValueException $e) {
         }
 
-        foreach (new \ReflectionClass($type)->getProperties() as $property) {
-            // Don't extract a property if it is explicitly ignored
-            $ignored = $property->getAttributes(PropertyIgnored::class);
+        $refClass = new \ReflectionClass($type);
+
+        foreach ($refClass->getProperties() as $property) {
+            $ignored = $property->getAttributes(
+                PropertyIgnored::class
+            );
 
             if (count($ignored)) {
                 continue;
