@@ -63,6 +63,8 @@ final class InputValueResolver implements ValueResolverInterface
             return [];
         }
 
+        //Symfony\Component\Security\Core\User\UserInterface
+
         // Initialize data sources
         $this->resetDataSources();
 
@@ -130,6 +132,7 @@ final class InputValueResolver implements ValueResolverInterface
                 }
 
                 if ($propertySource instanceof SourceSecurity) {
+                    // $property->getSettableType();
                     $this->extractFromToken($property->name);
                 }
             }

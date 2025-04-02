@@ -19,12 +19,12 @@ final readonly class ViewSubscriber implements EventSubscriberInterface
     {
         return [
             KernelEvents::VIEW => [
-                ['renderControllerResponse', 0],
+                ['onKernelView', 0],
             ],
         ];
     }
 
-    public function renderControllerResponse(ViewEvent $event): void
+    public function onKernelView(ViewEvent $event): void
     {
         $result = $event->getControllerResult();
 
