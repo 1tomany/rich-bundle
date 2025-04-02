@@ -3,14 +3,14 @@
 namespace OneToMany\RichBundle\Tests\Serializer\Normalizer;
 
 use OneToMany\RichBundle\Exception\WrappedException;
-use OneToMany\RichBundle\Serializer\Normalizer\WrappedExceptionNormalizer;
+use OneToMany\RichBundle\Serializer\Normalizer\ExceptionNormalizer;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
 #[Group('UnitTests')]
 #[Group('SerializerTests')]
 #[Group('NormalizerTests')]
-final class WrappedExceptionNormalizerTest extends TestCase
+final class ExceptionNormalizerTest extends TestCase
 {
     public function testNormalizingExceptionInDebugEnvironmentIncludesStack(): void
     {
@@ -28,7 +28,7 @@ final class WrappedExceptionNormalizerTest extends TestCase
             'previous' => $exception2,
         ]);
 
-        $normalizer = new WrappedExceptionNormalizer(true);
+        $normalizer = new ExceptionNormalizer(true);
 
         $record = $normalizer->normalize(
             new WrappedException($exception3)
@@ -49,7 +49,7 @@ final class WrappedExceptionNormalizerTest extends TestCase
             'previous' => $exception1,
         ]);
 
-        $normalizer = new WrappedExceptionNormalizer(false);
+        $normalizer = new ExceptionNormalizer(false);
 
         $record = $normalizer->normalize(
             new WrappedException($exception2)

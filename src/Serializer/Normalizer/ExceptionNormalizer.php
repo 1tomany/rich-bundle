@@ -5,7 +5,7 @@ namespace OneToMany\RichBundle\Serializer\Normalizer;
 use OneToMany\RichBundle\Exception\WrappedExceptionInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
-final readonly class WrappedExceptionNormalizer implements NormalizerInterface
+final readonly class ExceptionNormalizer implements NormalizerInterface
 {
     public function __construct(private bool $debug = false)
     {

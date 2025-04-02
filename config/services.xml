@@ -8,7 +8,10 @@
     <service id="OneToMany\RichBundle\EventSubscriber\ViewSubscriber">
       <tag>kernel.event_subscriber</tag>
     </service>
-    <service id="OneToMany\RichBundle\Serializer\Normalizer\WrappedExceptionNormalizer">
+    <service id="OneToMany\RichBundle\Serializer\Normalizer\DataUriDenormalizer">
+      <tag>serializer.denormalizer</tag>
+    </service>
+    <service id="OneToMany\RichBundle\Serializer\Normalizer\ExceptionNormalizer">
       <tag>serializer.normalizer</tag>
       <argument key="$debug">%kernel.debug%</argument>
     </service>

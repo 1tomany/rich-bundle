@@ -5,6 +5,7 @@ namespace OneToMany\RichBundle\ValueResolver;
 use OneToMany\RichBundle\Attribute\PropertyIgnored;
 use OneToMany\RichBundle\Attribute\PropertySource;
 use OneToMany\RichBundle\Attribute\SourceContainer;
+use OneToMany\RichBundle\Attribute\SourceFile;
 use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceRoute;
@@ -93,6 +94,10 @@ final class InputValueResolver implements ValueResolverInterface
                     $this->extractFromContainerBag($property->name, $key);
                 }
 
+                if ($propertySource instanceof SourceFile) {
+                    $this->extractFromFiles($property->name, $key);
+                }
+
                 if ($propertySource instanceof SourceQuery) {
                     $this->extractFromQuery($property->name, $key);
                 }
@@ -170,6 +175,13 @@ final class InputValueResolver implements ValueResolverInterface
     {
         if ($this->containerBag->has($sourceKey) && !$this->data->has($property)) {
             $this->appendToData($property, $this->containerBag->get($sourceKey));
+        }
+    }
+
+    private function extractFromFiles(string $property, string $sourceKey): void
+    {
+        if ($this->request->files->has($sourceKey) && !$this->data->has($property)) {
+            $this->appendToData($property, $this->request->files->get($sourceKey));
         }
     }
 
