@@ -101,9 +101,9 @@ final class WrappedException implements WrappedExceptionInterface
             $this->message = $this->exception->getMessage();
         }
 
-        $class = new \ReflectionClass($this->exception);
+        $refClass = new \ReflectionClass($this->exception);
 
-        if (count($class->getAttributes(HasUserMessage::class))) {
+        if (\count($refClass->getAttributes(HasUserMessage::class))) {
             $this->message = $this->exception->getMessage();
         }
 

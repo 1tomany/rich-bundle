@@ -232,8 +232,8 @@ final class InputValueResolver implements ValueResolverInterface
 
     private function appendToData(string $key, mixed $value): void
     {
-        if (is_string($value)) {
-            $value = trim($value);
+        if (\is_string($value)) {
+            $value = \trim($value);
         }
 
         $this->data->set($key, $value);

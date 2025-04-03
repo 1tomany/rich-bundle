@@ -18,7 +18,7 @@ final readonly class ControllerResponse
         public array $context = [],
         public array $headers = [],
     ) {
-        if (!array_key_exists($status, Response::$statusTexts)) {
+        if (!\array_key_exists($status, Response::$statusTexts)) {
             throw new InvalidHttpStatusException($status);
         }
     }

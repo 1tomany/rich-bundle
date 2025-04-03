@@ -9,6 +9,6 @@ final class PropertySourceNotMappedException extends \RuntimeException implement
 {
     public function __construct(string $propertyName)
     {
-        parent::__construct(sprintf('All attempts to map the property "%s" were exhausted and no default value was provided.', $propertyName), 400);
+        parent::__construct(\sprintf('All attempts to map the property "%s" were exhausted and no default value was provided.', $propertyName), 400);
     }
 }
