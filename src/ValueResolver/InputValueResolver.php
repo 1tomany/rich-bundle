@@ -58,8 +58,11 @@ final class InputValueResolver implements ValueResolverInterface
             return [];
         }
 
-        // Initialize data sources
-        $this->initializeRequestData($request);
+        // Reset the Request object and
+        // parse the HTTP request body
+        $this->initializeDataSources(...[
+            'request' => $request,
+        ]);
 
         // Read the properties from the class
         $refClass = new \ReflectionClass($type);
@@ -163,16 +166,13 @@ final class InputValueResolver implements ValueResolverInterface
         return \is_a($type, InputInterface::class, true) ? $type : null;
     }
 
-    private function initializeRequestData(Request $request): void
+    private function initializeDataSources(Request $request): void
     {
         $this->request = $request;
-
-        // Reset containers
         $this->body->replace([]);
         $this->data->replace([]);
 
         try {
-            // Extract HTTP request body
             $this->body = new ParameterBag(
                 $request->getPayload()->all()
             );
