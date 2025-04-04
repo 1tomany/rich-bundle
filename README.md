@@ -30,7 +30,7 @@ architecture like this provide far outweigh the negatives.
 ## RICH structure
 **Input** A request, whether it be from an API request, a form submission, the command line, or
 elsewhere, is mapped onto an input object. The input object is responsible for manipulating and
-validating the request data. By default, this bundle uses the serializer and validator components
+validating the request data. By default, this bundle uses the Serializer and Validator components
 bundled with Symfony, but you're welcome to manually map data and validate it however you see fit.
 
 Input objects can contain some basic logic, but should generally rely on no additional dependencies
@@ -40,7 +40,9 @@ outside of the standard PHP library.
 object will create a command object. A command object is as simple of a class as you can get in
 PHP. Ideally, it should be `final`, `readonly`, and use constructor promotion to ensure immutability.
 A command object is a POPO - Plain Old PHP Object - and should do its best to use scalar primitives
-(`null`, `bool`, `int`, `float`, and `string`), basic arrays, or other POPO's as its properties.
+(`null`, `bool`, `int`, `float`, and `string`), basic arrays, standard PHP classes, or other easily
+serialized and deserialized objects as its properties.
+
 In other words, a command object would use an `int` (or a simple value object) to refer to the
 primary key of a Doctrine entity rather than the entity itself. Command objects should be so simple
 they can easily be serialized and deserialized so they can used in an asynchronous message queue.
@@ -54,7 +56,9 @@ being managed by Doctrine.
 
 The handler that runs synchronously today may need to be placed in a message queue tomorrow for
 a variety of reason and having the foresight to make it stateless today will save you endless
-headaches tomorrow.
+headaches tomorrow. This is also why you want your handlers to rehydrate your entity map: an
+entity that existed when the command was pushed onto an asynchronous queue may not exist when the
+handler is a
 
 Each handler should contain the business logic necessary to handle the command passed to it.
 Ideally, handlers should be `final` and `readonly` as well to ensure they don't accidentally
@@ -72,7 +76,7 @@ Install the bundle using Composer:
 composer require 1tomany/rich-bundle
 ```
 
-### Create module structure
+### Create the module structure
 Next, you'll need to create the directory structure for your first module. There is no strict
 definition on what a module is, other than a set of features that are loosely related to the
 same domain. To get started, it's easiest to think of a module as being related to each of
@@ -107,7 +111,7 @@ mkdir -p src/<Module>/{Action/{Command,Handler/Exception,Input,Result},Contract/
 Moving forward, lets assume we're working on a module named `Account` for a Doctrine entity also
 named `Account` which uses a repository (shockingly) named `AccountRepository`.
 
-### Create contracts
+### Create the module's contracts
 As the name implies, the `Contract` directory stores contracts to interact with this module. You should
 have, at minimum, two contracts to start with: a `RepositoryInterface` and `ExceptionInterface`. In the
 `Contract` directory, create a file named `<Entity>RepositoryInterface.php` where `<Entity>` is the
@@ -123,9 +127,7 @@ use App\Entity\Account;
 
 interface AccountRepositoryInterface
 {
-
     public function findOneById(?int $accountId): ?Account;
-
 }
 ```
 
@@ -158,7 +160,6 @@ use Doctrine\Persistence\ManagerRegistry;
 */
 class AccountRepository extends ServiceEntityRepository implements AccountRepositoryInterface
 {
-
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Account::class);
@@ -175,7 +176,6 @@ class AccountRepository extends ServiceEntityRepository implements AccountReposi
 
         return $this->find($accountId);
     }
-
 }
 ```
 
@@ -195,7 +195,7 @@ interface ExceptionInterface extends \Throwable
 }
 ```
 
-### Create command class
+### Create the command class
 Though the input class is used first, the command class is shared amongst the input and handler
 classes, so lets start by creating it first. In the `src/Account/Action/Command` directory,
 create a file named `CreateAccountCommand.php` and populate it with the following code:
@@ -209,25 +209,23 @@ use OneToMany\RichBundle\Contract\CommandInterface;
 
 final readonly class CreateAccountCommand implements CommandInterface
 {
-
     public function __construct(
-        public ?string $author,
+        public string ?$author,
         public string $name,
         public string $company,
         public string $email,
         public ?string $notes,
         public ?\DateTimeImmutable $foundedDate = null,
-    )
-    {
+        public ?string $ipAddress = null,
+    ) {
     }
-
 }
 ```
 
 ### Create input class
-Now that we have a command class, the input class that creates the command class once
-validated needs to be created. In the `src/Account/Action/Input` directory, create a
-file named `CreateAccountInput.php` and populate it with the following code:
+Now that we have a command class, the input class that creates the command class needs
+to be created. In the `src/Account/Action/Input` directory, create a file named
+`CreateAccountInput.php` and populate it with the following code:
 
 ```php
 <?php
@@ -235,62 +233,49 @@ file named `CreateAccountInput.php` and populate it with the following code:
 namespace App\Account\Action\Input;
 
 use App\Account\Action\Command\CreateAccountCommand;
+use OneToMany\RichBundle\Attribute\SourceIpAddress;
 use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceSecurity;
 use OneToMany\RichBundle\Contract\CommandInterface;
 use OneToMany\RichBundle\Contract\InputInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
-use function OneToMany\RichBundle\Function\strlower;
-use function OneToMany\RichBundle\Function\strnull;
-use function OneToMany\RichBundle\Function\strtrim;
-
 /**
  * @implements InputInterface<CreateAccountCommand>
  */
 final class CreateAccountInput implements InputInterface
 {
-
     public function __construct(
         #[Assert\Email]
         #[Assert\Length(max: 128)]
         #[SourceSecurity]
-        public ?string $author = null {
-            set(mixed $v) => strnull($v);
-        },
+        private(set) public ?string $author,
 
         #[Assert\Length(min: 4, max: 128)]
         #[SourceRequest]
-        public string $name = '' {
-            set(mixed $v) => strtrim($v);
-        },
+        private(set) public string $name,
 
         #[Assert\Length(min: 4, max: 48)]
         #[SourceRequest]
-        public string $company = '' {
-            set(mixed $v) => strtrim($v);
-        },
+        private(set) public string $company,
 
         #[Assert\NotBlank]
         #[Assert\Email]
         #[Assert\Length(max: 128)]
         #[SourceRequest]
-        public string $email = '' {
-            set(mixed $v) => strlower($v);
-        },
+        private(set) public string $email,
 
         #[Assert\Length(max: 1024)]
         #[SourceRequest]
-        public ?string $notes = null {
-            set(mixed $v) => strnull($v);
-        },
+        private(set) public ?string $notes,
 
         #[SourceRequest]
-        public ?\DateTimeImmutable $foundedDate = null {
-            set(mixed $v) => $v instanceof \DateTimeImmutable ? $v : null;
-        },
-    )
-    {
+        private(set) public ?\DateTimeImmutable $foundedDate = null,
+
+        #[Assert\Ip(version: 'all')]
+        #[SourceIpAddress]
+        private(set) public ?string $ipAddress = null,
+    ) {
     }
 
     public function toCommand(): CommandInterface
@@ -302,12 +287,93 @@ final class CreateAccountInput implements InputInterface
             'email' => $this->email,
             'notes' => $this->notes,
             'foundedDate' => $this->foundedDate,
+            'ipAddress' => $this->ipAddress,
         ]);
     }
-
 }
-
 ```
+
+While the input class is also fairly simple in nature, it accomplishes a lot. First, I recommend
+you take advantage of asymmetric visibility in PHP 8.4. Making the class `readonly` limits
+what can be done with property hooks, so it's best to make the setters private and the getters public.
+
+You'll also notice some new attributes: `SourceSecurity`, `SourceRequest`, and `SourceIpAddress`.
+These allow you to indicate where in the request the data should come from. The `MapRequestPayload`
+attribute that was announced in Symfony 6.3 is powerful, but limiting in that it assumes everything
+comes from the request body. There are eight attributes provided by this bundle that allow you to
+specify both the source and name of the data from the request.
+
+- `#[SourceContainer(name: 'app.custom_property')]` Fetches a parameter named `app.custom_property` from the container.
+- `#[SourceFile(name: 'file')]` Fetches a parameter named `file` from the `Request::$files` bag and converts it to
+   a [`OneToMany\DataUri\DataUri`](https://github.com/1tomany/data-uri) object.
+- `#[SourceIpAddress]` Fetches the value returned by the `Request::getClientIp()` method.
+- `#[SourceQuery(name: 'query')]` Fetches a parameter named `query` from the `Request::$query` bag.
+- `#[SourceRequest(name: 'user')]` Fetches a parameter named `user` from the result of the `Request::getPayload()` method.
+- `#[SourceRoute(name: 'productId')]` Fetches a parameter named `productId` from the parsed route.
+- `#[SourceSecurity]` Fetches the value returned by the `Symfony\Component\Security\Core\Authentication\TokenInterface::getUserIdentifier()` method
+   if the request is made by an authenticated user. This is helpful if you want to bind this input object to an authorized request.
+- `#[PropertyIgnored]` Forces the parser to ignore this property.
+
+If a property is not explicitly ignored or sourced, the value resolver will assume it uses
+the `#[SourceRequest]` attribute.
+
+Additionaly, the `name` argument for each attribute is optional. The value resolver will use
+the name of the property if a `name` is not given. The `#[SourceIpAddress]` and `#[SourceSecurity]`
+attributes do not have a `name` argument because their values are the results of a method call.
+
+Sources are also chainable. This allows you to support multiple versions of an API without
+having to change the underlying input object. For example, the first version if your API might
+have used a property named `email` but the second version of your API changed that to `username`.
+All attributes are chainable, but `#[SourceIpAddress]` and `#[SourceSecurity]` are not repeatable.
+
+In the example below, the `$username` property could be mapped from either of the following URLs:
+
+- `/api/v1/accounts?email=vic@1tomany.com`
+- `/api/v2/accounts?username=vic@1tomany.com`
+
+```php
+<?php
+
+namespace App\Account\Action\Input;
+
+use App\Account\Action\Command\ReadAccountCommand;
+use OneToMany\RichBundle\Attribute\SourceRequest;
+use OneToMany\RichBundle\Contract\CommandInterface;
+use OneToMany\RichBundle\Contract\InputInterface;
+use Symfony\Component\Validator\Constraints as Assert;
+
+/**
+ * @implements InputInterface<ReadAccountCommand>
+ */
+final class ReadAccountInput implements InputInterface
+{
+    public function __construct(
+        #[Assert\Email]
+        #[Assert\NotBlank]
+        #[Assert\Length(max: 128)]
+        #[SourceQuery('email')]
+        #[SourceQuery('username')]
+        private(set) public string $username,
+    ) {
+    }
+
+    public function toCommand(): CommandInterface
+    {
+        return new ReadAccountCommand($this->username);
+    }
+}
+```
+
+The value resolver will attempt to extract a value from a source until it finds one. Note that this
+means a `NULL` or falsy value is valid! In the URL `/api/v1/accounts?email=&username=vic@1tomany.com`,
+the value of the `$username` property would be an empty string because the key `email` is present
+and comes before the `username` key.
+
+You can also mix chained sources. For example, you can have both a `#[SourceRequest]` and `#[SourceContainer]`
+attribute on a property: if the value wasn't found in the request body, then it would be retrieved from
+the container parameters.
+
+### Create the result class
 
 ### Create handler class
 
