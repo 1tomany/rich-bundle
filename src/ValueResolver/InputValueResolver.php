@@ -27,6 +27,8 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 use Symfony\Component\Serializer\Encoder\DecoderInterface;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
+use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
+use Symfony\Component\Serializer\SerializerInterface;
 // use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -39,8 +41,8 @@ final class InputValueResolver implements ValueResolverInterface
 
     public function __construct(
         private readonly ContainerBagInterface $containerBag,
-        private readonly DecoderInterface $decoder,
-        private readonly DenormalizerInterface $normalizer,
+        // private readonly DecoderInterface $decoder,
+        private readonly SerializerInterface&DecoderInterface&DenormalizerInterface $serializer,
         private readonly ValidatorInterface $validator,
         private readonly ?TokenStorageInterface $tokenStorage = null,
     ) {
@@ -141,7 +143,7 @@ final class InputValueResolver implements ValueResolverInterface
 
         try {
             /** @var InputInterface<CommandInterface> $input */
-            $input = $this->normalizer->denormalize($this->data->all(), $type, null, [
+            $input = $this->serializer->denormalize($this->data->all(), $type, null, [
                 'disable_type_enforcement' => true,
                 'collect_denormalization_errors' => true,
             ]);
@@ -201,9 +203,13 @@ final class InputValueResolver implements ValueResolverInterface
             throw new ContentTypeHeaderMissingException();
         }
 
+        if (!$format) {
+            return;
+        }
+
         try {
             // Attempt to decode all other formats
-            $decodedContent = $this->decoder->decode(
+            $decodedContent = $this->serializer->decode(
                 $request->getContent(), $format
             );
 

@@ -18,6 +18,8 @@ use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
 use Symfony\Component\PropertyInfo\Extractor\ConstructorExtractor;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
+use Symfony\Component\Serializer\Encoder\JsonEncoder;
+use Symfony\Component\Serializer\Encoder\XmlEncoder;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
 use Symfony\Component\Serializer\Normalizer\BackedEnumNormalizer;
 use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
@@ -43,6 +45,9 @@ final class InputValueResolverTest extends TestCase
         $this->expectException(MalformedRequestContentException::class);
 
         $request = new Request(...[
+            'server' => [
+                'HTTP_CONTENT_TYPE' => 'application/json',
+            ],
             'content' => '{"malformed: JSON, }',
         ]);
 
@@ -116,6 +121,12 @@ final class InputValueResolverTest extends TestCase
             new Container($parameters)
         );
 
+        // Default encoders
+        $encoders = [
+            new JsonEncoder(),
+            new XmlEncoder(),
+        ];
+
         // Default normalizers
         $normalizers = [
             new BackedEnumNormalizer(),
@@ -140,6 +151,7 @@ final class InputValueResolverTest extends TestCase
 
         $serializer = new Serializer(...[
             'normalizers' => $normalizers,
+            'encoders' => $encoders,
         ]);
 
         $validator = Validation::createValidatorBuilder()
