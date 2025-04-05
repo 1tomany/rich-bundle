@@ -2,7 +2,7 @@
 
 namespace OneToMany\RichBundle\Tests\ValueResolver\Exception;
 
-use OneToMany\RichBundle\ValueResolver\Exception\MalformedContentException;
+use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
@@ -13,6 +13,6 @@ final class MalformedContentExceptionTest extends TestCase
 {
     public function testGettingCode(): void
     {
-        $this->assertEquals(400, (new MalformedContentException(null))->getCode());
+        $this->assertEquals(400, (new MalformedRequestContentException(null))->getCode());
     }
 }

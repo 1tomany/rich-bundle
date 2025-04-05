@@ -5,7 +5,7 @@ namespace OneToMany\RichBundle\Tests\ValueResolver;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\EmptyInput;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\IgnoredInput;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\NotMappedInput;
-use OneToMany\RichBundle\ValueResolver\Exception\MalformedContentException;
+use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
 use OneToMany\RichBundle\ValueResolver\Exception\PropertySourceNotMappedException;
 use OneToMany\RichBundle\ValueResolver\InputValueResolver;
 use PHPUnit\Framework\Attributes\Group;
@@ -40,7 +40,7 @@ final class InputValueResolverTest extends TestCase
 
     public function testResolvingValueRequiresValidJson(): void
     {
-        $this->expectException(MalformedContentException::class);
+        $this->expectException(MalformedRequestContentException::class);
 
         $request = new Request(...[
             'content' => '{"malformed: JSON, }',
