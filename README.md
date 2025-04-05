@@ -121,7 +121,7 @@ class AccountRepository extends ServiceEntityRepository implements AccountReposi
 
 We also need an exception interface that all exceptions from this module originate from. This makes it easy for any other module using services from this module to catch all thrown exceptions.
 
-In the `src/Account/Contract/Exception` directory, create a file named `ExceptionInterface.php` and populate it with the following code:
+Create a file named `ExceptionInterface.php` in the `src/Account/Contract/Exception` directory and populate it with the following code:
 
 ```php
 <?php
@@ -134,7 +134,9 @@ interface ExceptionInterface extends \Throwable
 ```
 
 ### Create the command class
-Though the input class is used first, the command class is shared amongst the input and handler classes, so lets start by creating it first. In the `src/Account/Action/Command` directory, create a file named `CreateAccountCommand.php` and populate it with the following code:
+Though the input class is used first, the command class is shared amongst the input and handler classes, so lets start by creating it. Each command class must implement the `OneToMany\RichBundle\Contract\CommandInterface` interface.
+
+Create a file named `CreateAccountCommand.php` in the `src/Account/Action/Command` directory and populate it with the following code:
 
 ```php
 <?php
@@ -159,7 +161,7 @@ final readonly class CreateAccountCommand implements CommandInterface
 ```
 
 ### Create the input class
-Now that we have a command class, we need an input class that creates the command object after the request data has been mapped and validated.
+Now that we have a command class, we need an input class that creates the command object after the request data has been mapped and validated. Each input class must implement the `OneToMany\RichBundle\Contract\InputInterface` interface.
 
 Create a file named `CreateAccountInput.php` in the `src/Account/Action/Input` directory and populate it with the following code:
 
@@ -238,7 +240,7 @@ While the input class is also fairly simple in nature, it accomplishes a lot. Fi
 You'll also notice some new attributes: `#[SourceSecurity]`, `#[SourceRequest]`, and `#[SourceIpAddress]`. These allow you to indicate where in the request the data should come from. The `#[MapRequestPayload]` attribute that was announced in Symfony 6.3 is powerful, but limiting in that it assumes everything comes from the request body. There are eight attributes provided by this bundle that allow you to specify both the source and name of the data from the request.
 
 - `#[SourceContainer(name: 'app.name')]` Fetches a parameter named `app.name` from the container bag.
-- `#[SourceFile(name: 'file')]` Fetches a parameter named `file` from the `Symfony\Component\HttpFoundation\Request::$files` bag. The property should be type hinted with the `Symfony\Component\HttpFoundation\File;UploadedFile` class.
+- `#[SourceFile(name: 'file')]` Fetches a parameter named `file` from the `Symfony\Component\HttpFoundation\Request::$files` bag. The property should be type hinted with the `Symfony\Component\HttpFoundation\File\UploadedFile` class.
 - `#[SourceIpAddress]` Fetches the value returned by the `Symfony\Component\HttpFoundation\Request::getClientIp()` method.
 - `#[SourceQuery(name: 'query')]` Fetches a parameter named `query` from the `Symfony\Component\HttpFoundation\Request::$query` bag.
 - `#[SourceRequest(name: 'user')]` Fetches a parameter named `user` from the result of the `Symfony\Component\HttpFoundation\Request::getPayload()` method.
@@ -248,7 +250,7 @@ You'll also notice some new attributes: `#[SourceSecurity]`, `#[SourceRequest]`,
 
 If a property is not explicitly ignored or sourced, the value resolver will assume it uses the `#[SourceRequest]` attribute.
 
-Additionaly, the `name` argument for each attribute is optional. The value resolver will use the name of the property if a `name` is not given. The `#[SourceIpAddress]` and `#[SourceSecurity]` attributes do not have a `name` argument because their values are the results of a method call.
+Additionally, the `name` argument for each attribute is optional. The value resolver will use the name of the property if a `name` is not given. The `#[SourceIpAddress]` and `#[SourceSecurity]` attributes do not have a `name` argument because their values are the results of a method call.
 
 Sources are also chainable. This allows you to support multiple versions of an API without having to change the underlying input object. For example, the first version if your API might have used a property named `email` but the second version of your API changed that to `username`. All attributes are chainable, but `#[SourceIpAddress]` and `#[SourceSecurity]` are not repeatable.
 
@@ -294,8 +296,35 @@ The value resolver will attempt to extract a value from a source until it finds 
 
 You can also mix chained sources. For example, you can have both a `#[SourceRequest]` and `#[SourceContainer]` attribute on a property: if the value wasn't found in the request body, then it would be retrieved from the container parameters.
 
+If all attempts to find a value for a property, and the property does not have a default value, the value resolver will throw a `OneToMany\RichBundle\ValueResolver\Exception\PropertySourceNotMappedException` exception.
+
+The input object is validated after it is hydrated. The value resolver will throw a `Symfony\Component\Validator\Exception\ValidationFailedException` exception if validation fails.
+
 ### Create the result class
+We're almost there! We've defined our input object and the command object the input object creates after validation. Next, we need to define a class, the result, that the handler returns upon successful execution.
 
-### Create handler class
+Each result class must implement the `OneToMany\RichBundle\Contract\ResultInterface` interface.
 
-### Wire to a controller
+Create a file named `AccountCreatedResult.php` in the `src/Account/Action/Result` directory and populate it with the following code:
+
+```php
+<?php
+
+namespace App\Account\Action\Result;
+
+use App\Entity\Account;
+use OneToMany\RichBundle\Contract\ResultInterface;
+
+final readonly class AccountCreatedResult implements ResultInterface
+{
+    public function __construct(public Account $account)
+    {
+    }
+}
+```
+
+Like your input and command classes, result classes should be very simple. However, because they are immediately returned by a handler, it's fine for them to contain Doctrine entities or other "complex" objects. They should contain as much data as necessary to respond to the user that the request was successful.
+
+### Create the handler class
+
+### Wire the input and handler to a controller
