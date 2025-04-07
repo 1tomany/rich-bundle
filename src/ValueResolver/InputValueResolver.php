@@ -199,7 +199,7 @@ final class InputValueResolver implements ValueResolverInterface
 
     private function isPropertyIgnored(\ReflectionProperty $property): bool
     {
-        return (\count($property->getAttributes(PropertyIgnored::class)) > 0);
+        return 0 !== \count($property->getAttributes(PropertyIgnored::class));
     }
 
     /**
