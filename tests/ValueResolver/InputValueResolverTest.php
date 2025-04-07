@@ -100,6 +100,9 @@ final class InputValueResolverTest extends TestCase
         );
     }
 
+    /**
+     * @return list<list<non-empty-string>>
+     */
     public static function providerContentTypeAndMalformedContent(): array
     {
         $provider = [
