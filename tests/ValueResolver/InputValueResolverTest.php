@@ -2,7 +2,6 @@
 
 namespace OneToMany\RichBundle\Tests\ValueResolver;
 
-use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\EmptyInput;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\IgnoredInput;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\NotMappedInput;

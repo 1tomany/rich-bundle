@@ -20,8 +20,7 @@ final class SourceRequestInput implements InputInterface
 
         #[SourceRequest]
         private(set) public string $email,
-    )
-    {
+    ) {
     }
 
     public function toCommand(): CommandInterface
