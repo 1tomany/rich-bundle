@@ -2,21 +2,25 @@
 
 namespace OneToMany\RichBundle\Tests\ValueResolver\Fixture;
 
-use OneToMany\RichBundle\Attribute\SourceQuery;
+use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Contract\CommandInterface;
 use OneToMany\RichBundle\Contract\InputInterface;
 
 /**
  * @implements InputInterface<CommandInterface>
  */
-final class NotMappedInput implements InputInterface
+final class SourceRequestInput implements InputInterface
 {
-    #[SourceQuery]
-    private(set) public string $name {
-        set(string $v) => trim($v);
-    }
+    public function __construct(
+        #[SourceRequest]
+        private(set) public string $name,
 
-    public function __construct()
+        #[SourceRequest]
+        private(set) public int $age,
+
+        #[SourceRequest]
+        private(set) public string $email,
+    )
     {
     }
 

@@ -2,12 +2,16 @@
 
 namespace OneToMany\RichBundle\Tests\ValueResolver;
 
+use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\EmptyInput;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\IgnoredInput;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\NotMappedInput;
+use OneToMany\RichBundle\Tests\ValueResolver\Fixture\SourceRequestInput;
+use OneToMany\RichBundle\ValueResolver\Exception\ContentTypeHeaderMissingException;
 use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
 use OneToMany\RichBundle\ValueResolver\Exception\PropertySourceNotMappedException;
 use OneToMany\RichBundle\ValueResolver\InputValueResolver;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\Container;
@@ -40,22 +44,71 @@ final class InputValueResolverTest extends TestCase
         $this->assertCount(0, $arguments);
     }
 
-    public function testResolvingValueRequiresValidJson(): void
+    public function testResolvingValueRequiresContentTypeHeaderWithNonEmptyBody(): void
+    {
+        $this->expectException(ContentTypeHeaderMissingException::class);
+
+        $request = new Request(...[
+            'content' => '{"id": 10}',
+        ]);
+
+        $this->assertNotEmpty($request->getContent());
+        $this->assertEmpty($request->headers->get('CONTENT_TYPE'));
+
+        $this->createValueResolver()->resolve(
+            $request, $this->createArgument()
+        );
+    }
+
+    public function testResolvingValueRequiresValidFormatAndDecoder(): void
     {
         $this->expectException(MalformedRequestContentException::class);
 
         $request = new Request(...[
             'server' => [
-                'HTTP_CONTENT_TYPE' => 'application/json',
+                'HTTP_CONTENT_TYPE' => 'text/plain',
             ],
-            'content' => '{"malformed: JSON, }',
+            'content' => 'My|pipe|delmited|format',
         ]);
 
         $this->assertNotEmpty($request->getContent());
+        $this->assertNotEmpty($request->getContentTypeFormat());
 
         $this->createValueResolver()->resolve(
             $request, $this->createArgument()
         );
+    }
+
+    #[DataProvider('providerContentTypeAndMalformedContent')]
+    public function testResolvingValueRequiresNonMalformedContent(string $contentType, string $format, string $content): void
+    {
+        $this->expectException(MalformedRequestContentException::class);
+        $this->expectExceptionMessage('The request content is expected to be "'.$format.'" but could not be decoded because it is malformed.');
+
+        $request = new Request(...[
+            'server' => [
+                'HTTP_CONTENT_TYPE' => $contentType,
+            ],
+            'content' => $content,
+        ]);
+
+        $this->assertNotEmpty($request->getContent());
+        $this->assertNotEmpty($request->getContentTypeFormat());
+
+        $this->createValueResolver()->resolve(
+            $request, $this->createArgument()
+        );
+    }
+
+    public static function providerContentTypeAndMalformedContent(): array
+    {
+        $provider = [
+            ['text/xml', 'xml', '<?xml version="1.0" encoding="UTF-8"?><root><id>10</id>'],
+            ['application/xml', 'xml', '<?xml><root><id>10</root>'],
+            ['application/json', 'json', '{"id": 10, "name: "Marcus Wolffe"}'],
+        ];
+
+        return $provider;
     }
 
     public function testResolvingNonPromotedPropertiesRequiresDefaultValueIfValueNotMapped(): void
@@ -99,8 +152,31 @@ final class InputValueResolverTest extends TestCase
         $this->assertNotEquals($nameFromRequest, $inputs[0]->name);
     }
 
-    public function testResolvingPropertiesFromSingleSource(): void
+    public function testResolvingPropertiesFromMultipartFormDataRequest(): void
     {
+        $formData = [
+            'name' => 'Vic',
+            'age' => 40,
+            'email' => 'vcherubini@gmail.com',
+            'height' => 74,
+        ];
+
+        $request = new Request(...[
+            'request' => $formData,
+        ]);
+
+        $argumentMetadata = $this->createArgument(...[
+            'type' => SourceRequestInput::class,
+        ]);
+
+        $inputs = $this->createValueResolver()->resolve(
+            $request, $argumentMetadata
+        );
+
+        $this->assertInstanceOf(SourceRequestInput::class, $inputs[0]);
+        $this->assertEquals($formData['name'], $inputs[0]->name);
+        $this->assertEquals($formData['age'], $inputs[0]->age);
+        $this->assertEquals($formData['email'], $inputs[0]->email);
     }
 
     private function createArgument(string $type = EmptyInput::class): ArgumentMetadata

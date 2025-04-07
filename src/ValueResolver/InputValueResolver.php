@@ -27,7 +27,6 @@ use Symfony\Component\Serializer\Encoder\DecoderInterface;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\SerializerInterface;
-// use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -39,7 +38,6 @@ final class InputValueResolver implements ValueResolverInterface
 
     public function __construct(
         private readonly ContainerBagInterface $containerBag,
-        // private readonly DecoderInterface $decoder,
         private readonly SerializerInterface&DecoderInterface&DenormalizerInterface $serializer,
         private readonly ValidatorInterface $validator,
         private readonly ?TokenStorageInterface $tokenStorage = null,
@@ -179,17 +177,8 @@ final class InputValueResolver implements ValueResolverInterface
             return;
         }
 
-        // Resolve the format from the Content-Type
-        $contentType = $request->headers->get(...[
-            'key' => 'CONTENT_TYPE',
-        ]);
-
-        $format = $request->getFormat(...[
-            'mimeType' => $contentType,
-        ]);
-
         // Content-Type: multipart/form-data
-        if (\in_array($format, ['form'])) {
+        if ($request->request->count() > 0) {
             $this->body = new ParameterBag(
                 $request->request->all()
             );
@@ -197,11 +186,18 @@ final class InputValueResolver implements ValueResolverInterface
             return;
         }
 
-        if (!$format && !empty($request->getContent())) {
-            throw new ContentTypeHeaderMissingException();
-        }
+        // Resolve the format from the Content-Type
+        $format = $request->getContentTypeFormat();
+
+        var_dump($format);
+        var_dump($request->getRequestFormat(null));
+        exit;
 
         if (!$format) {
+            if (!empty($request->getContent())) {
+                throw new ContentTypeHeaderMissingException();
+            }
+
             return;
         }
 
