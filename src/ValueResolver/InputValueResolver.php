@@ -117,7 +117,9 @@ final class InputValueResolver implements ValueResolverInterface
                 }
 
                 if ($source instanceof SourceSecurity) {
-                    $this->extractFromSecurityToken($property, $source);
+                    $this->extractFromSecurityToken(
+                        $property, $source
+                    );
                 }
             }
         }
