@@ -9,10 +9,13 @@ use OneToMany\RichBundle\Contract\InputInterface;
 /**
  * @implements InputInterface<CommandInterface>
  */
-final class NotMappedInput implements InputInterface
+final class PartiallyMappedInput implements InputInterface
 {
     #[SourceQuery]
-    public string $name;
+    public int $id;
+
+    #[SourceQuery]
+    public string $name = 'Modesto';
 
     public function __construct()
     {
