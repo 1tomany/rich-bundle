@@ -293,9 +293,11 @@ final class ReadAccountInput implements InputInterface
 }
 ```
 
-The value resolver will attempt to extract a value from a source until it finds one. Note that this means a `NULL` or falsy value is valid! In the URL `/api/v1/accounts?email=&username=vic@1tomany.com`, the value of the `$username` property would be an empty string because the key `email` is present and comes before the `username` key.
+The value resolver will attempt to extract a value from a source until it finds one. Behind the scenes, `\array_key_exists()` is used to determine if a value has found for a property, so `NULL` or falsy values are still considered "found".
 
-You can also mix chained sources. For example, you can have both a `#[SourceRequest]` and `#[SourceContainer]` attribute on a property: if the value wasn't found in the request body, then it would be retrieved from the container parameters.
+In the URL `/api/v1/accounts?email=&username=vic@1tomany.com`, the value of the `$username` property would be an empty string because the key `email` is present and comes before the `username` key.
+
+You can also combine chained sources. For example, you can have both a `#[SourceRequest]` and `#[SourceContainer]` attribute on a property: if the value wasn't found in the request content, then it would be retrieved from the container parameters.
 
 #### Additional property source arguments
 Each source attribute has boolean `$trim` and `$nullify` arguments as well. By default, `$trim` is `true` and `$nullify` is `false`. When `$trim` is `true`, the resolver will convert any scalar value to a string and run the `\trim()` function in it. The value will then be coerced back to the type specified by the property of the input class during denormalization.
