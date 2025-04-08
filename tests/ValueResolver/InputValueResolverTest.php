@@ -2,14 +2,12 @@
 
 namespace OneToMany\RichBundle\Tests\ValueResolver;
 
-use OneToMany\RichBundle\Exception\WrappedException;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\EmptyInput;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\IgnoredInput;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\NotMappedInput;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\SourceRequestInput;
 use OneToMany\RichBundle\ValueResolver\Exception\ContentTypeHeaderMissingException;
 use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
-use OneToMany\RichBundle\ValueResolver\Exception\PropertySourceNotMappedException;
 use OneToMany\RichBundle\ValueResolver\InputValueResolver;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
