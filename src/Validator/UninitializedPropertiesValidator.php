@@ -7,7 +7,7 @@ use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 use Symfony\Component\Validator\Exception\UnexpectedTypeException;
 
-final class MissingPropertiesValidator extends ConstraintValidator
+final class UninitializedPropertiesValidator extends ConstraintValidator
 {
     public function validate(mixed $value, Constraint $constraint): void
     {

@@ -5,7 +5,7 @@ namespace OneToMany\RichBundle\Tests\Validator;
 use OneToMany\RichBundle\Contract\CommandInterface;
 use OneToMany\RichBundle\Contract\InputInterface;
 use OneToMany\RichBundle\Validator\UninitializedProperties;
-use OneToMany\RichBundle\Validator\MissingPropertiesValidator;
+use OneToMany\RichBundle\Validator\UninitializedPropertiesValidator;
 use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\ConstraintValidatorInterface;
@@ -13,11 +13,11 @@ use Symfony\Component\Validator\Exception\UnexpectedTypeException;
 use Symfony\Component\Validator\Test\ConstraintValidatorTestCase;
 
 /**
- * @extends ConstraintValidatorTestCase<MissingPropertiesValidator>
+ * @extends ConstraintValidatorTestCase<UninitializedPropertiesValidator>
  */
 #[Group('UnitTests')]
 #[Group('ValidatorTests')]
-final class MissingPropertiesValidatorTest extends ConstraintValidatorTestCase
+final class UninitializedPropertiesValidatorTest extends ConstraintValidatorTestCase
 {
     public function testValidationRequiresInputInterfaceValue(): void
     {
@@ -30,7 +30,7 @@ final class MissingPropertiesValidatorTest extends ConstraintValidatorTestCase
     public function testValidationRequiresMissingPropertiesConstraint(): void
     {
         $this->expectException(UnexpectedTypeException::class);
-        $this->expectExceptionMessage('Expected argument of type "OneToMany\RichBundle\Validator\MissingProperties", "Symfony\Component\Validator\Constraints\IsNull" given');
+        $this->expectExceptionMessage('Expected argument of type "OneToMany\RichBundle\Validator\UninitializedProperties", "Symfony\Component\Validator\Constraints\IsNull" given');
 
         $input = new class implements InputInterface {
             public function toCommand(): CommandInterface
@@ -83,6 +83,6 @@ final class MissingPropertiesValidatorTest extends ConstraintValidatorTestCase
 
     protected function createValidator(): ConstraintValidatorInterface
     {
-        return new MissingPropertiesValidator();
+        return new UninitializedPropertiesValidator();
     }
 }
