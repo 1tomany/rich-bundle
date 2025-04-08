@@ -13,10 +13,10 @@ use OneToMany\RichBundle\Attribute\SourceRoute;
 use OneToMany\RichBundle\Attribute\SourceSecurity;
 use OneToMany\RichBundle\Contract\CommandInterface;
 use OneToMany\RichBundle\Contract\InputInterface;
+use OneToMany\RichBundle\Validator\MissingProperties;
 use OneToMany\RichBundle\ValueResolver\Exception\ContentTypeHeaderMissingException;
 use OneToMany\RichBundle\ValueResolver\Exception\InvalidMappingException;
 use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
-use OneToMany\RichBundle\ValueResolver\Exception\PropertySourceNotMappedException;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,6 +25,8 @@ use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Serializer\Encoder\DecoderInterface;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
@@ -33,7 +35,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 final class InputValueResolver implements ValueResolverInterface
 {
     private Request $request;
-    private ParameterBag $body;
+    private ParameterBag $content;
     private ParameterBag $data;
 
     public function __construct(
@@ -42,7 +44,7 @@ final class InputValueResolver implements ValueResolverInterface
         private readonly ValidatorInterface $validator,
         private readonly ?TokenStorageInterface $tokenStorage = null,
     ) {
-        $this->body = new ParameterBag();
+        $this->content = new ParameterBag();
         $this->data = new ParameterBag();
     }
 
@@ -78,54 +80,77 @@ final class InputValueResolver implements ValueResolverInterface
                 $name = $source->getName($property->name);
 
                 if ($source instanceof SourceContainer) {
-                    $this->extractFromContainerBag($property->name, $name);
+                    $this->extractFromContainerBag(
+                        $property->name, $name
+                    );
                 }
 
                 if ($source instanceof SourceFile) {
-                    $this->extractFromFiles($property->name, $name);
+                    $this->extractFromUploadedFiles(
+                        $property->name, $name
+                    );
                 }
 
                 if ($source instanceof SourceIpAddress) {
-                    $this->extractClientIpAddress($property->name);
+                    $this->extractClientIpAddress(...[
+                        'property' => $property->name,
+                    ]);
                 }
 
                 if ($source instanceof SourceQuery) {
-                    $this->extractFromQuery($property->name, $name);
+                    $this->extractFromQueryString(
+                        $property->name, $name,
+                    );
                 }
 
                 if ($source instanceof SourceRequest) {
-                    $this->extractFromRequest($property->name, $name);
+                    $this->extractFromRequestContent(
+                        $property->name, $name
+                    );
                 }
 
                 if ($source instanceof SourceRoute) {
-                    $this->extractFromRoute($property->name, $name);
+                    $this->extractFromRouteParameters(
+                        $property->name, $name
+                    );
                 }
 
                 if ($source instanceof SourceSecurity) {
-                    $this->extractFromToken($property->name);
+                    $this->extractFromSecurityToken(...[
+                        'property' => $property->name,
+                    ]);
                 }
-            }
-
-            /*
-             * Finally, we attempt to get the default value for non-promoted
-             * properties if the property was not mapped from the request.
-             *
-             * We're only interested in non-promoted properties because a
-             * promoted property is also a constructor parameter, and the
-             * Symfony Normalizer will the default value of the parameter.
-             */
-            if (!$this->data->has($property->name) && !$property->isPromoted()) {
-                $this->attemptToAppendPropertyDefaultValueToData($property);
             }
         }
 
         try {
             /** @var InputInterface<CommandInterface> $input */
             $input = $this->serializer->denormalize($this->data->all(), $type, null, [
-                'disable_type_enforcement' => true,
+                AbstractNormalizer::FILTER_BOOL => true,
+                AbstractObjectNormalizer::DISABLE_TYPE_ENFORCEMENT => true,
             ]);
         } catch (\Throwable $e) {
             throw new InvalidMappingException($e);
+        }
+
+        $missing = [];
+
+        $refClass = new \ReflectionClass($input);
+
+        foreach ($refClass->getProperties() as $property) {
+            if (!$property->isInitialized($input)) {
+                $missing[] = $property->name;
+            }
+        }
+
+        if (\count($missing) > 0) {
+            $violations = $this->validator->validate($missing, [
+                new MissingProperties(),
+            ]);
+
+            if ($violations->count() > 0) {
+                throw new ValidationFailedException($missing, $violations);
+            }
         }
 
         $violations = $this->validator->validate($input);
@@ -154,13 +179,13 @@ final class InputValueResolver implements ValueResolverInterface
         $this->data->replace([]);
         $this->request = $request;
 
-        if ($this->body->count()) {
+        if ($this->content->count()) {
             return;
         }
 
         // Content-Type: multipart/form-data
         if ($request->request->count() > 0) {
-            $this->body = new ParameterBag(
+            $this->content = new ParameterBag(
                 $request->request->all()
             );
 
@@ -191,7 +216,7 @@ final class InputValueResolver implements ValueResolverInterface
             throw new MalformedRequestContentException($format, $e);
         }
 
-        $this->body = new ParameterBag(...[
+        $this->content = new ParameterBag(...[
             'parameters' => $decodedContent,
         ]);
     }
@@ -218,67 +243,58 @@ final class InputValueResolver implements ValueResolverInterface
     private function extractFromContainerBag(string $property, string $key): void
     {
         if ($this->containerBag->has($key) && !$this->data->has($property)) {
-            $this->appendToData($property, $this->containerBag->get($key));
+            $this->appendPropertyValue($property, $this->containerBag->get($key));
         }
     }
 
-    private function extractFromFiles(string $property, string $key): void
+    private function extractFromUploadedFiles(string $property, string $key): void
     {
         if ($this->request->files->has($key) && !$this->data->has($property)) {
-            $this->appendToData($property, $this->request->files->get($key));
+            $this->appendPropertyValue($property, $this->request->files->get($key));
         }
     }
 
     private function extractClientIpAddress(string $property): void
     {
-        $this->appendToData($property, $this->request->getClientIp());
+        $this->appendPropertyValue($property, $this->request->getClientIp());
     }
 
-    private function extractFromQuery(string $property, string $key): void
+    private function extractFromQueryString(string $property, string $key): void
     {
         if ($this->request->query->has($key) && !$this->data->has($property)) {
-            $this->appendToData($property, $this->request->query->get($key));
+            $this->appendPropertyValue($property, $this->request->query->get($key));
         }
     }
 
-    private function extractFromRequest(string $property, string $key): void
+    private function extractFromRequestContent(string $property, string $key): void
     {
-        if ($this->body->has($key) && !$this->data->has($property)) {
-            $this->appendToData($property, $this->body->get($key));
+        if ($this->content->has($key) && !$this->data->has($property)) {
+            $this->appendPropertyValue($property, $this->content->get($key));
         }
     }
 
-    private function extractFromRoute(string $property, string $key): void
+    private function extractFromRouteParameters(string $property, string $key): void
     {
         if ($this->request->attributes->has($key) && !$this->data->has($property)) {
-            $this->appendToData($property, $this->request->attributes->get($key));
+            $this->appendPropertyValue($property, $this->request->attributes->get($key));
         }
     }
 
-    private function extractFromToken(string $property): void
+    private function extractFromSecurityToken(string $property): void
     {
         $token = $this->tokenStorage?->getToken();
 
-        if ($userId = $token?->getUserIdentifier()) {
-            $this->appendToData($property, $userId);
+        if (null !== $userId = $token?->getUserIdentifier()) {
+            $this->appendPropertyValue($property, $userId);
         }
     }
 
-    private function appendToData(string $key, mixed $value): void
+    private function appendPropertyValue(string $key, mixed $value): void
     {
         if (\is_string($value)) {
             $value = \trim($value);
         }
 
         $this->data->set($key, $value);
-    }
-
-    private function attemptToAppendPropertyDefaultValueToData(\ReflectionProperty $property): void
-    {
-        if (!$property->hasDefaultValue()) {
-            throw new PropertySourceNotMappedException($property->name);
-        }
-
-        $this->appendToData($property->name, $property->getDefaultValue());
     }
 }

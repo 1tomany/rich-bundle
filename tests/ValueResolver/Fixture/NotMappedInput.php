@@ -12,7 +12,7 @@ use OneToMany\RichBundle\Contract\InputInterface;
 final class NotMappedInput implements InputInterface
 {
     #[SourceQuery]
-    private(set) public string $name;
+    public string $name;
 
     public function __construct()
     {

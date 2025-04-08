@@ -2,6 +2,7 @@
 
 namespace OneToMany\RichBundle\Tests\ValueResolver;
 
+use OneToMany\RichBundle\Exception\WrappedException;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\EmptyInput;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\IgnoredInput;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\NotMappedInput;
@@ -28,6 +29,7 @@ use Symfony\Component\Serializer\Normalizer\BackedEnumNormalizer;
 use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Serializer;
+use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validation;
 
 #[Group('UnitTests')]
@@ -115,7 +117,7 @@ final class InputValueResolverTest extends TestCase
 
     public function testResolvingNonPromotedPropertiesRequiresDefaultValueIfValueNotMapped(): void
     {
-        $this->expectException(PropertySourceNotMappedException::class);
+        $this->expectException(ValidationFailedException::class);
 
         $request = new Request(...[
             'query' => ['id' => 10],
