@@ -4,7 +4,7 @@ namespace OneToMany\RichBundle\Validator;
 
 use Symfony\Component\Validator\Constraint;
 
-final class MissingProperties extends Constraint
+final class UninitializedProperties extends Constraint
 {
     public readonly string $message;
 

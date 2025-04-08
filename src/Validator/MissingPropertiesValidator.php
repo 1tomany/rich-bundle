@@ -15,8 +15,8 @@ final class MissingPropertiesValidator extends ConstraintValidator
             throw new UnexpectedTypeException($value, InputInterface::class);
         }
 
-        if (!$constraint instanceof MissingProperties) {
-            throw new UnexpectedTypeException($constraint, MissingProperties::class);
+        if (!$constraint instanceof UninitializedProperties) {
+            throw new UnexpectedTypeException($constraint, UninitializedProperties::class);
         }
 
         foreach (new \ReflectionClass($value)->getProperties() as $property) {

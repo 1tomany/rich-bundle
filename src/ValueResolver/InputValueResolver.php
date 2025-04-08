@@ -13,7 +13,7 @@ use OneToMany\RichBundle\Attribute\SourceRoute;
 use OneToMany\RichBundle\Attribute\SourceSecurity;
 use OneToMany\RichBundle\Contract\CommandInterface;
 use OneToMany\RichBundle\Contract\InputInterface;
-use OneToMany\RichBundle\Validator\MissingProperties;
+use OneToMany\RichBundle\Validator\UninitializedProperties;
 use OneToMany\RichBundle\ValueResolver\Exception\ContentTypeHeaderMissingException;
 use OneToMany\RichBundle\ValueResolver\Exception\InvalidMappingException;
 use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
@@ -135,7 +135,7 @@ final class InputValueResolver implements ValueResolverInterface
 
         // Ensure all input class properties are mapped
         $violations = $this->validator->validate($input, [
-            new MissingProperties(),
+            new UninitializedProperties(),
         ]);
 
         // Validate the input class itself

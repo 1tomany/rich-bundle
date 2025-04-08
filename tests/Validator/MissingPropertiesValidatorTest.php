@@ -4,7 +4,7 @@ namespace OneToMany\RichBundle\Tests\Validator;
 
 use OneToMany\RichBundle\Contract\CommandInterface;
 use OneToMany\RichBundle\Contract\InputInterface;
-use OneToMany\RichBundle\Validator\MissingProperties;
+use OneToMany\RichBundle\Validator\UninitializedProperties;
 use OneToMany\RichBundle\Validator\MissingPropertiesValidator;
 use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -24,7 +24,7 @@ final class MissingPropertiesValidatorTest extends ConstraintValidatorTestCase
         $this->expectException(UnexpectedTypeException::class);
         $this->expectExceptionMessage('Expected argument of type "OneToMany\RichBundle\Contract\InputInterface", "string" given');
 
-        $this->validator->validate('string', new MissingProperties());
+        $this->validator->validate('string', new UninitializedProperties());
     }
 
     public function testValidationRequiresMissingPropertiesConstraint(): void
@@ -53,7 +53,7 @@ final class MissingPropertiesValidatorTest extends ConstraintValidatorTestCase
             }
         };
 
-        $this->validator->validate($input, $constraint = new MissingProperties());
+        $this->validator->validate($input, $constraint = new UninitializedProperties());
 
         $this->buildViolation($constraint->message)->atPath('property.path.name')->assertRaised();
     }
@@ -76,7 +76,7 @@ final class MissingPropertiesValidatorTest extends ConstraintValidatorTestCase
             }
         };
 
-        $this->validator->validate($input, new MissingProperties());
+        $this->validator->validate($input, new UninitializedProperties());
 
         $this->assertNoViolation();
     }
