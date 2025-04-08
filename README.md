@@ -403,7 +403,7 @@ The **R**equest has been handled, the **I**nput has been validated, and the **C*
 
 Each handler class must implement the `OneToMany\RichBundle\Contract\HandlerInterface`. This requires creating a method named `handle()` that takes an object of type `OneToMany\RichBundle\Contract\CommandInterface` as it's argument and returns an object of type `OneToMany\RichBundle\Contract\ResultInterface`.
 
-Each handler must also specify the command and result types. Let's see what this class looks like:
+Let's see what this class looks like:
 
 ```php
 <?php
@@ -445,7 +445,7 @@ final readonly class CreateAccountHandler implements HandlerInterface
             'ipAddress' => $command->ipAddress,
         ]);
 
-        // Associate With User
+        // Attempt to Find Author User
         if (null !== $command->author) {
             $author = $this->userRepository->findOneByUsername(...[
                 'username' => $command->author,
@@ -468,7 +468,7 @@ final readonly class CreateAccountHandler implements HandlerInterface
 
 Classes that implement the `OneToMany\RichBundle\Contract\HandlerInterface` should use the `@implements` annotation to indicate the type of command the handler handles and the type of result the handler returns.
 
-Next, if an author was provided, then the handler attempts to find that record. If not found, an exception (see below) is thrown. This is personal preference: my feeling is that if a nullable property has a value and that value isn't valid, an exception should be thrown rather than silently discarding the value.
+Next, if an author was provided, the handler attempts to find that record. If not found, an exception is thrown. This is personal preference: my feeling is that if a nullable property has a value and that value isn't valid, an exception should be thrown rather than silently discarding the value.
 
 Finally, the new `App\Entity\Account` object is persisted, flushed, and returned. If there were other actions that needed to be taken, such as creating a record in another system, you could easily inject the Symfony message bus and enqueue a command to create a new customer record in Stripe, for instance.
 
