@@ -4,7 +4,6 @@ namespace OneToMany\RichBundle\Tests\ValueResolver;
 
 use OneToMany\RichBundle\Attribute\PropertyIgnored;
 use OneToMany\RichBundle\Attribute\SourceQuery;
-use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Contract\CommandInterface;
 use OneToMany\RichBundle\Contract\InputInterface;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\EmptyInput;
@@ -28,7 +27,6 @@ use Symfony\Component\PropertyInfo\Extractor\ConstructorExtractor;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
-use Symfony\Component\Serializer\Attribute\Context;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Encoder\XmlEncoder;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;

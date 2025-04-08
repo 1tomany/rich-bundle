@@ -8,8 +8,7 @@ abstract readonly class PropertySource
         public ?string $name = null,
         public bool $trim = true,
         public bool $nullify = false,
-    )
-    {
+    ) {
     }
 
     public function getName(string $property): string

@@ -280,10 +280,9 @@ final class InputValueResolver implements ValueResolverInterface
         \ReflectionProperty $property,
         PropertySource $source,
         mixed $value,
-    ): void
-    {
+    ): void {
         if (true === \is_scalar($value)) {
-            $value = (string)$value;
+            $value = (string) $value;
 
             if (true === $source->trim) {
                 $value = \trim($value);

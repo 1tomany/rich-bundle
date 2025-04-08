@@ -3,7 +3,6 @@
 namespace OneToMany\RichBundle\Tests\ValueResolver\Exception;
 
 use OneToMany\RichBundle\ValueResolver\Exception\ContentTypeHeaderMissingException;
-use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
