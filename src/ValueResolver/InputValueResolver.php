@@ -69,9 +69,9 @@ final class InputValueResolver implements ValueResolverInterface
         ]);
 
         // Read the properties from the class
-        $refClass = new \ReflectionClass($type);
+        $class = new \ReflectionClass($type);
 
-        foreach ($refClass->getProperties() as $property) {
+        foreach ($class->getProperties() as $property) {
             // Skip explicitly ignored properties
             if ($this->isPropertyIgnored($property)) {
                 continue;
