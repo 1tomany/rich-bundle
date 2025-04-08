@@ -153,7 +153,7 @@ final readonly class CreateAccountCommand implements CommandInterface
         public string $company,
         public string $email,
         public ?string $notes,
-        public ?\DateTimeImmutable $foundedDate = null,
+        public ?\DateTimeImmutable $founded = null,
         public ?string $ipAddress = null,
     ) {
     }
@@ -186,7 +186,7 @@ final class CreateAccountInput implements InputInterface
     public function __construct(
         #[Assert\Email]
         #[Assert\Length(max: 128)]
-        #[SourceSecurity]
+        #[SourceSecurity(nullify: true)]
         private(set) public ?string $author,
 
         #[Assert\Length(min: 4, max: 128)]
@@ -204,18 +204,18 @@ final class CreateAccountInput implements InputInterface
         private(set) public string $email,
 
         #[Assert\Length(max: 1024)]
-        #[SourceRequest]
+        #[SourceRequest(nullify: true)]
         private(set) public ?string $notes,
 
         #[Assert\Range(
             min: '1900-01-01',
             max: 'today',
         )]
-        #[SourceRequest]
-        private(set) public ?\DateTimeImmutable $foundedDate = null,
+        #[SourceRequest(nullify: true)]
+        private(set) public ?\DateTimeImmutable $founded = null,
 
         #[Assert\Ip(version: 'all')]
-        #[SourceIpAddress]
+        #[SourceIpAddress(nullify: true)]
         private(set) public ?string $ipAddress = null,
     ) {
     }
@@ -228,7 +228,7 @@ final class CreateAccountInput implements InputInterface
             'company' => $this->company,
             'email' => $this->email,
             'notes' => $this->notes,
-            'foundedDate' => $this->foundedDate,
+            'founded' => $this->founded,
             'ipAddress' => $this->ipAddress,
         ]);
     }
@@ -239,7 +239,7 @@ While the input class is also fairly simple in nature, it accomplishes a lot. Fi
 
 You'll also notice some new attributes: `#[SourceSecurity]`, `#[SourceRequest]`, and `#[SourceIpAddress]`. These allow you to indicate where in the request the data should come from. The `#[MapRequestPayload]` attribute that was announced in Symfony 6.3 is powerful, but limiting in that it assumes everything comes from the request body. There are eight attributes provided by this bundle that allow you to specify both the source and name of the data from the request.
 
-- `#[SourceContainer(name: 'app.name')]` Fetches a parameter named `app.name` from the container bag.
+- `#[SourceContainer(name: 'app.config_setting')]` Fetches a parameter named `app.config_setting` from the container bag. While the `$name` argument is not strictly required, unless the container property is named identically to the class property, you'll need to supply it.
 - `#[SourceFile(name: 'file')]` Fetches a parameter named `file` from the `Symfony\Component\HttpFoundation\Request::$files` bag. The property should be type hinted with the `Symfony\Component\HttpFoundation\File\UploadedFile` class.
 - `#[SourceIpAddress]` Fetches the value returned by the `Symfony\Component\HttpFoundation\Request::getClientIp()` method.
 - `#[SourceQuery(name: 'query')]` Fetches a parameter named `query` from the `Symfony\Component\HttpFoundation\Request::$query` bag.
@@ -250,7 +250,7 @@ You'll also notice some new attributes: `#[SourceSecurity]`, `#[SourceRequest]`,
 
 If a property is not explicitly ignored or sourced, the value resolver will assume it uses the `#[SourceRequest]` attribute.
 
-Additionally, the `name` argument for each attribute is optional. The value resolver will use the name of the property if a `name` is not given. The `#[SourceIpAddress]` and `#[SourceSecurity]` attributes do not have a `name` argument because their values are the results of a method call.
+The `name` argument for each attribute is optional. The value resolver will use the name of the property if a `name` is not given. The `#[SourceIpAddress]` and `#[SourceSecurity]` attributes do not have a `name` argument because their values are the results of a method call.
 
 Sources are also chainable. This allows you to support multiple versions of an API without having to change the underlying input object. For example, the first version if your API might have used a property named `email` but the second version of your API changed that to `username`. All attributes are chainable, but `#[SourceIpAddress]` and `#[SourceSecurity]` are not repeatable.
 
@@ -296,7 +296,68 @@ The value resolver will attempt to extract a value from a source until it finds 
 
 You can also mix chained sources. For example, you can have both a `#[SourceRequest]` and `#[SourceContainer]` attribute on a property: if the value wasn't found in the request body, then it would be retrieved from the container parameters.
 
-If all attempts to find a value for a property, and the property does not have a default value, the value resolver will throw a `OneToMany\RichBundle\ValueResolver\Exception\PropertySourceNotMappedException` exception.
+Each source attribute has boolean `$trim` and `$nullify` arguments as well. By default, `$trim` is `true` and `$nullify` is `false`. When `$trim` is `true`, the resolver will convert the value of each scalar property to a string and run the `\trim()` function in it. The value will then be coerced back to the type specified by the input class during denormalization.
+
+When `$nullify` is `true`, the resolver will convert the value of any scalar property to `null` if the value is exactly an empty string. The underlying property must also allow null values, otherwise an `OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException` exception is thrown.
+
+Take the following input class as an example:
+
+```php
+<?php
+
+namespace App\Account\Action\Input;
+
+use OneToMany\RichBundle\Attribute\SourceRequest;
+use OneToMany\RichBundle\Attribute\SourceSecurity;
+use OneToMany\RichBundle\Contract\InputInterface;
+
+final class UpdateAccountInput implements InputInterface
+{
+    public function __construct(
+        #[SourceRequest(trim: true, nullify: true)]
+        private(set) public string $name,
+
+        #[SourceRequest(trim: true, nullify: true)]
+        private(set) public ?string $email,
+
+        #[SourceRequest(trim: false, nullify: false)]
+        private(set) public string $notes,
+
+        #[SourceRequest(trim: true, nullify: false)]
+        private(set) int $pin,
+
+        #[SourceRequest(trim: true, nullify: true)]
+        private(set) ?\DateTimeImmutable $birth,
+    ) {
+    }
+}
+```
+
+The following request content would be decoded correctly.
+
+```json
+{
+  "name": "Modesto Herman   ",
+  "email": " mh@example.com  ",
+  "notes": " Please call back! \n",
+  "pin": "  8891",
+  "birth": ""
+}
+```
+
+1. `$name` would have the value `string(14) "Modesto Herman"` because `$trim` is `true`.
+2. `$email` would have the value `string(14) "mh@example.com"` because `$trim` is `true`.
+3. `$notes` would have the value `string(20) " Please call back! \n"` because `$trim` is `false`.
+4. `$pin` would have the value `int(8891)` because `$trim` is `true`.
+5. `$birth` would have the value `NULL` because `$trim` and `$nullify` are true. After being trimmed, the value is identical to an empty string and is nullified.
+
+However, if an empty string was used for the the `name` property, a `OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException` would be thrown because the `UpdateAccountInput::$name` is not nullable, yet the source was explicitly set to nullify the value.
+
+In practice, you would only set `$nullify` to `true` on properties that are nullable.
+
+
+
+
 
 The input object is validated after it is hydrated. The value resolver will throw a `Symfony\Component\Validator\Exception\ValidationFailedException` exception if validation fails.
 
