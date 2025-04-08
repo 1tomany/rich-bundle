@@ -235,7 +235,9 @@ final class CreateAccountInput implements InputInterface
 }
 ```
 
-While the input class is also fairly simple in nature, it accomplishes a lot. First, I recommend you take advantage of asymmetric visibility in PHP 8.4. Making the class `readonly` limits what can be done with property hooks, so it's best to make the setters private and the getters public.
+While the input class is also fairly simple in nature, it accomplishes a lot. If possible, I recommend you take advantage of asymmetric visibility in PHP 8.4. Making the class `readonly` limits what can be done with property hooks, so it's best to make the setters private and the getters public.
+
+Classes that implement the `OneToMany\RichBundle\Contract\InputInterface` interface should use the `@implements` annotation to indicate the type of command the `toCommand()` method creates.
 
 #### Property sources
 You'll also notice some new attributes: `#[SourceSecurity]`, `#[SourceRequest]`, and `#[SourceIpAddress]`. These allow you to indicate where in the request the data should come from. The `#[MapRequestPayload]` attribute that was announced in Symfony 6.3 is powerful, but limiting in that it assumes everything comes from the request body. There are eight attributes provided by this bundle that allow you to specify both the source and name of the data from the request.
@@ -293,9 +295,9 @@ final class ReadAccountInput implements InputInterface
 }
 ```
 
-The value resolver will attempt to extract a value from a source until it finds one. Behind the scenes, `\array_key_exists()` is used to determine if a value has found for a property, so `NULL` or falsy values are still considered "found".
+The value resolver will attempt to extract a value from all configured sources until it finds one. Behind the scenes, `\array_key_exists()` is used to determine if a value was found for a property, so `NULL` or falsy values are still considered "found".
 
-In the URL `/api/v1/accounts?email=&username=vic@1tomany.com`, the value of the `$username` property would be an empty string because the key `email` is present and comes before the `username` key.
+For instance, given the query string `email=&username=vic@1tomany.com`, the resolver would map an empty string to the `$username` property because the key `email` is present and comes before the `username` key.
 
 You can also combine chained sources. For example, you can have both a `#[SourceRequest]` and `#[SourceContainer]` attribute on a property: if the value wasn't found in the request content, then it would be retrieved from the container parameters.
 
@@ -464,7 +466,7 @@ final readonly class CreateAccountHandler implements HandlerInterface
 }
 ```
 
-To start, the `@implements` annotation indicates to your IDE and static analysis tools that this class takes a command of type `App\Account\Action\Command\CreateAccountCommand` and returns a result of type `App\Account\Action\Result\AccountCreatedResult`.
+Classes that implement the `OneToMany\RichBundle\Contract\HandlerInterface` should use the `@implements` annotation to indicate the type of command the handler handles and the type of result the handler returns.
 
 Next, if an author was provided, then the handler attempts to find that record. If not found, an exception (see below) is thrown. This is personal preference: my feeling is that if a nullable property has a value and that value isn't valid, an exception should be thrown rather than silently discarding the value.
 
