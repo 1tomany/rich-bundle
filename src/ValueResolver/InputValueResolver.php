@@ -133,27 +133,15 @@ final class InputValueResolver implements ValueResolverInterface
             throw new InvalidMappingException($e);
         }
 
-        $missing = [];
+        // Ensure all input class properties are mapped
+        $violations = $this->validator->validate($input, [
+            new MissingProperties(),
+        ]);
 
-        $refClass = new \ReflectionClass($input);
-
-        foreach ($refClass->getProperties() as $property) {
-            if (!$property->isInitialized($input)) {
-                $missing[] = $property->name;
-            }
+        // Validate the input class itself
+        if (0 === $violations->count()) {
+            $violations = $this->validator->validate($input);
         }
-
-        if (\count($missing) > 0) {
-            $violations = $this->validator->validate($missing, [
-                new MissingProperties(),
-            ]);
-
-            if ($violations->count() > 0) {
-                throw new ValidationFailedException($missing, $violations);
-            }
-        }
-
-        $violations = $this->validator->validate($input);
 
         if ($violations->count() > 0) {
             throw new ValidationFailedException($input, $violations);
@@ -183,17 +171,17 @@ final class InputValueResolver implements ValueResolverInterface
             return;
         }
 
+        // Resolve the format from the Content-Type
+        $format = $request->getContentTypeFormat();
+
         // Content-Type: multipart/form-data
-        if ($request->request->count() > 0) {
+        if (\in_array($format, ['form'])) {
             $this->content = new ParameterBag(
                 $request->request->all()
             );
 
             return;
         }
-
-        // Resolve the format from the Content-Type
-        $format = $request->getContentTypeFormat();
 
         if (!$format) {
             if (!empty($request->getContent())) {

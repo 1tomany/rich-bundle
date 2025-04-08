@@ -12,6 +12,11 @@ final class MissingProperties extends Constraint
     {
         parent::__construct([], $groups, $payload);
 
-        $this->message = 'The property "{{ property }}" could not be mapped because it was not found in the request and has no default value.';
+        $this->message = 'This property could not be mapped because it was not found in the request and has no default value.';
+    }
+
+    public function getTargets(): string
+    {
+        return self::CLASS_CONSTRAINT;
     }
 }

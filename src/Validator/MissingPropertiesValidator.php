@@ -2,26 +2,26 @@
 
 namespace OneToMany\RichBundle\Validator;
 
+use OneToMany\RichBundle\Contract\InputInterface;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 use Symfony\Component\Validator\Exception\UnexpectedTypeException;
-use Symfony\Component\Validator\Exception\UnexpectedValueException;
 
 final class MissingPropertiesValidator extends ConstraintValidator
 {
     public function validate(mixed $value, Constraint $constraint): void
     {
+        if (!$value instanceof InputInterface) {
+            throw new UnexpectedTypeException($value, InputInterface::class);
+        }
+
         if (!$constraint instanceof MissingProperties) {
             throw new UnexpectedTypeException($constraint, MissingProperties::class);
         }
 
-        if (!\is_array($value) || !\array_is_list($value)) {
-            throw new UnexpectedValueException($value, 'list<string>');
-        }
-
-        foreach ($value as $property) {
-            if (\is_string($property) && !empty($property)) {
-                $this->context->buildViolation($constraint->message)->setParameter('{{ property }}', $property)->atPath($property)->addViolation();
+        foreach (new \ReflectionClass($value)->getProperties() as $property) {
+            if (!$property->isInitialized($value)) {
+                $this->context->buildViolation($constraint->message)->atPath($property->name)->addViolation();
             }
         }
     }

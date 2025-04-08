@@ -66,7 +66,7 @@ final class InputValueResolverTest extends TestCase
 
         $request = new Request(...[
             'server' => [
-                'HTTP_CONTENT_TYPE' => 'text/plain',
+                'CONTENT_TYPE' => 'text/plain',
             ],
             'content' => 'My|pipe|delmited|format',
         ]);
@@ -87,7 +87,7 @@ final class InputValueResolverTest extends TestCase
 
         $request = new Request(...[
             'server' => [
-                'HTTP_CONTENT_TYPE' => $contentType,
+                'CONTENT_TYPE' => $contentType,
             ],
             'content' => $content,
         ]);
@@ -219,6 +219,9 @@ final class InputValueResolverTest extends TestCase
 
         $request = new Request(...[
             'request' => $formData,
+            'server' => [
+                'CONTENT_TYPE' => 'multipart/form-data',
+            ],
         ]);
 
         $argumentMetadata = $this->createArgument(...[
