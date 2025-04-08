@@ -2,6 +2,11 @@
 
 namespace OneToMany\RichBundle\Tests\ValueResolver;
 
+use OneToMany\RichBundle\Attribute\PropertyIgnored;
+use OneToMany\RichBundle\Attribute\SourceQuery;
+use OneToMany\RichBundle\Attribute\SourceRequest;
+use OneToMany\RichBundle\Contract\CommandInterface;
+use OneToMany\RichBundle\Contract\InputInterface;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\EmptyInput;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\IgnoredInput;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\NotMappedInput;
@@ -9,6 +14,7 @@ use OneToMany\RichBundle\Tests\ValueResolver\Fixture\PartiallyMappedInput;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\SourceRequestInput;
 use OneToMany\RichBundle\ValueResolver\Exception\ContentTypeHeaderMissingException;
 use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
+use OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException;
 use OneToMany\RichBundle\ValueResolver\InputValueResolver;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -20,7 +26,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
 use Symfony\Component\PropertyInfo\Extractor\ConstructorExtractor;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
+use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
+use Symfony\Component\Serializer\Attribute\Context;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Encoder\XmlEncoder;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
@@ -186,7 +194,7 @@ final class InputValueResolverTest extends TestCase
         $this->assertEquals($request->query->get('name'), $inputs[0]->name);
     }
 
-    public function testResolvingIgnoredPropertiesDoesNotOverwritePropertyValue(): void
+    public function testResolvingIgnoredPropertiesDoesNotOverwriteDefaultPropertyValue(): void
     {
         $request = new Request(...[
             'query' => [
@@ -206,6 +214,119 @@ final class InputValueResolverTest extends TestCase
 
         $this->assertInstanceOf(IgnoredInput::class, $inputs[0]);
         $this->assertNotEquals($request->query->get('name'), $inputs[0]->name);
+    }
+
+    public function testTrimmingNonNullScalarValues(): void
+    {
+        $input = new class implements InputInterface {
+            #[SourceQuery(trim: true)]
+            public int $id;
+
+            #[SourceQuery(trim: true)]
+            public string $name;
+
+            #[SourceQuery(trim: true)]
+            public \DateTimeImmutable $dob;
+
+            #[PropertyIgnored]
+            public string $birthday {
+                get => $this->dob->format('Y-m-d');
+            }
+
+            public function toCommand(): CommandInterface
+            {
+                return new class implements CommandInterface {};
+            }
+        };
+
+        $id = \random_int(1, 100);
+        $name = 'Vic Cherubini';
+        $dob = '1984-08-25';
+
+        $request = new Request(...[
+            'query' => [
+                'id' => " {$id} ",
+                'name' => " {$name} ",
+                'dob' => " {$dob} ",
+            ],
+        ]);
+
+        $inputs = $this->createValueResolver()->resolve(
+            $request, $this->createArgument($input::class)
+        );
+
+        $this->assertInstanceOf($input::class, $inputs[0]);
+        $this->assertEquals($id, $inputs[0]->id);
+        $this->assertEquals($name, $inputs[0]->name);
+        $this->assertEquals($dob, $inputs[0]->birthday);
+    }
+
+    public function testResolvingPropertiesRequiresThemToAllowNullsIfNullable(): void
+    {
+        $this->expectException(PropertyIsNotNullableException::class);
+
+        $input = new class implements InputInterface {
+            #[SourceQuery(nullify: true)]
+            public string $name;
+
+            public function toCommand(): CommandInterface
+            {
+                return new class implements CommandInterface {};
+            }
+        };
+
+        $request = new Request(...[
+            'query' => [
+                'name' => ' ',
+            ],
+        ]);
+
+        $this->createValueResolver()->resolve(
+            $request, $this->createArgument($input::class)
+        );
+    }
+
+    public function testResolvingNullablePropertiesNullifiesThemIfValueIsEmptyString(): void
+    {
+        $input = new class implements InputInterface {
+            #[SourceQuery]
+            public int $id;
+
+            #[SourceQuery(nullify: true)]
+            public ?int $age;
+
+            #[SourceQuery(nullify: true)]
+            public ?string $name;
+
+            #[SourceQuery(nullify: true)]
+            public ?string $color;
+
+            public function toCommand(): CommandInterface
+            {
+                return new class implements CommandInterface {};
+            }
+        };
+
+        $id = \random_int(1, 100);
+
+        $request = new Request(...[
+            'query' => [
+                'id' => $id,
+                'age' => null,
+                'name' => '',
+                'color' => '  ',
+            ],
+        ]);
+
+        $inputs = $this->createValueResolver()->resolve(
+            $request, $this->createArgument($input::class)
+        );
+
+        $this->assertInstanceOf($input::class, $inputs[0]);
+        $this->assertEquals($id, $inputs[0]->id);
+        $this->assertNull($inputs[0]->age);
+        $this->assertNull($inputs[0]->name);
+        $this->assertNull($inputs[0]->color);
     }
 
     public function testResolvingPropertiesFromMultipartFormDataRequest(): void
@@ -271,6 +392,7 @@ final class InputValueResolverTest extends TestCase
 
         // Property type extractors
         $propertyTypeExtractors = [
+            new ReflectionExtractor(),
             new ConstructorExtractor([
                 new PhpDocExtractor(),
             ]),
