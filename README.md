@@ -520,7 +520,7 @@ namespace App\Account\Framework\Controller\Api;
 
 use App\Account\Action\Handler\CreateAccountHandler;
 use App\Account\Action\Input\CreateAccountInput;
-use App\Framework\Controller\ControllerResult;
+use OneToMany\RichBundle\Controller\ControllerResponse;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 
 #[AsController]
@@ -531,13 +531,13 @@ final readonly class CreateAccountController
     {
     }
 
-    public function __invoke(CreateAccountInput $createAccountInput): ControllerResult
+    public function __invoke(CreateAccountInput $createAccountInput): ControllerResponse
     {
         $result = $this->createAccountHandler->handle(
             $createAccountInput->toCommand()
         );
 
-        return ControllerResult::created($result->account, [
+        return ControllerResponse::created($result->account, [
             'groups' => ['read']
         ]);
     }
