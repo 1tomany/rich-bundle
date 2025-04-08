@@ -510,4 +510,37 @@ Despite what I said about writing handlers that are not HTTP aware, I typically 
 2. HTTP has a very well defined list of standard [response status codes](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status) that aren't likely to change.
 3. Any non-HTTP environment or context can simply ignore the exception's code or map it to one of their own.
 
-### Wire the input and handler to a controller
+### Create the controller
+One beautiful result of the RICH architecture is your controllers are usually very small. Because Symfony treats a controller as any other service, you can place them wherever you like. We'll take advantage of that and place them in the same root directory and namespace that the input, command, handler, and result classes live.
+
+```php
+<?php
+
+namespace App\Account\Framework\Controller\Api;
+
+use App\Account\Action\Handler\CreateAccountHandler;
+use App\Account\Action\Input\CreateAccountInput;
+use App\Framework\Controller\ControllerResult;
+use Symfony\Component\HttpKernel\Attribute\AsController;
+
+#[AsController]
+final readonly class CreateAccountController
+{
+
+    public function __construct(private CreateAccountHandler $createAccountHandler)
+    {
+    }
+
+    public function __invoke(CreateAccountInput $createAccountInput): ControllerResult
+    {
+        $result = $this->createAccountHandler->handle(
+            $createAccountInput->toCommand()
+        );
+
+        return ControllerResult::created($result->account, [
+            'groups' => ['read']
+        ]);
+    }
+
+}
+```
