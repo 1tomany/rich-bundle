@@ -13,6 +13,6 @@ final class InvalidMappingExceptionTest extends TestCase
 {
     public function testGettingCode(): void
     {
-        $this->assertEquals(400, (new InvalidMappingException(null))->getCode());
+        $this->assertEquals(400, new InvalidMappingException(null)->getCode());
     }
 }

@@ -2,13 +2,14 @@
 
 namespace OneToMany\RichBundle\Tests\ValueResolver;
 
-use OneToMany\RichBundle\Tests\ValueResolver\Fixture\EmptyInput;
-use OneToMany\RichBundle\Tests\ValueResolver\Fixture\IgnoredInput;
-use OneToMany\RichBundle\Tests\ValueResolver\Fixture\NotMappedInput;
-use OneToMany\RichBundle\Tests\ValueResolver\Fixture\PartiallyMappedInput;
-use OneToMany\RichBundle\Tests\ValueResolver\Fixture\SourceRequestInput;
+use OneToMany\RichBundle\Attribute\PropertyIgnored;
+use OneToMany\RichBundle\Attribute\SourceQuery;
+use OneToMany\RichBundle\Attribute\SourceRequest;
+use OneToMany\RichBundle\Contract\CommandInterface;
+use OneToMany\RichBundle\Contract\InputInterface;
 use OneToMany\RichBundle\ValueResolver\Exception\ContentTypeHeaderMissingException;
 use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
+use OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException;
 use OneToMany\RichBundle\ValueResolver\InputValueResolver;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -20,6 +21,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
 use Symfony\Component\PropertyInfo\Extractor\ConstructorExtractor;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
+use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Encoder\XmlEncoder;
@@ -118,129 +120,296 @@ final class InputValueResolverTest extends TestCase
     {
         $this->expectException(ValidationFailedException::class);
 
+        $input = new class implements InputInterface {
+            #[SourceQuery]
+            public string $name;
+
+            public function toCommand(): CommandInterface
+            {
+                return new class implements CommandInterface {};
+            }
+        };
+
+        $id = \random_int(1, 100);
+
         $request = new Request(...[
-            'query' => ['id' => 10],
+            'query' => [
+                'id' => $id,
+            ],
         ]);
 
         $this->assertFalse($request->query->has('name'));
 
-        $notMappedArgument = $this->createArgument(...[
-            'type' => NotMappedInput::class,
-        ]);
-
         $this->createValueResolver()->resolve(
-            $request, $notMappedArgument
+            $request, $this->createArgument($input::class)
         );
     }
 
     public function testResolvingPropertiesUsesDefaultValueIfNotMapped(): void
     {
-        $refProp = new \ReflectionProperty(
-            PartiallyMappedInput::class, 'name'
-        );
+        $input = new class implements InputInterface {
+            #[SourceQuery]
+            public int $id;
+
+            #[SourceQuery]
+            public string $name = 'Modesto';
+
+            public function toCommand(): CommandInterface
+            {
+                return new class implements CommandInterface {};
+            }
+        };
+
+        $id = \random_int(1, 100);
+        $name = new \ReflectionProperty($input, 'name')->getDefaultValue();
 
         $request = new Request(...[
             'query' => [
-                'id' => 10,
+                'id' => $id,
             ],
         ]);
 
         $this->assertTrue($request->query->has('id'));
         $this->assertFalse($request->query->has('name'));
 
-        $partiallyMappedArgument = $this->createArgument(...[
-            'type' => PartiallyMappedInput::class,
-        ]);
-
         $inputs = $this->createValueResolver()->resolve(
-            $request, $partiallyMappedArgument
+            $request, $this->createArgument($input::class)
         );
 
-        $this->assertInstanceOf(PartiallyMappedInput::class, $inputs[0]);
-        $this->assertEquals($request->query->get('id'), $inputs[0]->id);
-        $this->assertEquals($refProp->getDefaultValue(), $inputs[0]->name);
+        $this->assertInstanceOf($input::class, $inputs[0]);
+        $this->assertEquals($id, $inputs[0]->id);
+        $this->assertEquals($name, $inputs[0]->name);
     }
 
     public function testResolvingPropertiesOverwritesDefaultValueIfMapped(): void
     {
+        $input = new class implements InputInterface {
+            #[SourceQuery]
+            public int $id;
+
+            #[SourceQuery]
+            public string $name = 'Modesto';
+
+            public function toCommand(): CommandInterface
+            {
+                return new class implements CommandInterface {};
+            }
+        };
+
+        $id = \random_int(1, 100);
+        $name = 'Vic Cherubini';
+
         $request = new Request(...[
             'query' => [
-                'id' => 10,
-                'name' => 'Vic',
+                'id' => $id,
+                'name' => $name,
             ],
         ]);
 
         $this->assertTrue($request->query->has('id'));
         $this->assertTrue($request->query->has('name'));
 
-        $partiallyMappedArgument = $this->createArgument(...[
-            'type' => PartiallyMappedInput::class,
-        ]);
-
         $inputs = $this->createValueResolver()->resolve(
-            $request, $partiallyMappedArgument
+            $request, $this->createArgument($input::class)
         );
 
-        $this->assertInstanceOf(PartiallyMappedInput::class, $inputs[0]);
-        $this->assertEquals($request->query->get('id'), $inputs[0]->id);
-        $this->assertEquals($request->query->get('name'), $inputs[0]->name);
+        $this->assertInstanceOf($input::class, $inputs[0]);
+        $this->assertEquals($id, $inputs[0]->id);
+        $this->assertEquals($name, $inputs[0]->name);
     }
 
-    public function testResolvingIgnoredPropertiesDoesNotOverwritePropertyValue(): void
+    public function testResolvingIgnoredPropertiesDoesNotOverwriteDefaultPropertyValue(): void
     {
+        $input = new class implements InputInterface {
+            #[PropertyIgnored]
+            public string $name = 'Modesto';
+
+            public function toCommand(): CommandInterface
+            {
+                return new class implements CommandInterface {};
+            }
+        };
+
+        $name = 'Vic Cherubini';
+
         $request = new Request(...[
             'query' => [
-                'name' => 'Vic',
+                'name' => $name,
             ],
         ]);
 
         $this->assertTrue($request->query->has('name'));
 
-        $ignoredArgument = $this->createArgument(...[
-            'type' => IgnoredInput::class,
+        $inputs = $this->createValueResolver()->resolve(
+            $request, $this->createArgument($input::class)
+        );
+
+        $this->assertInstanceOf($input::class, $inputs[0]);
+        $this->assertNotEquals($name, $inputs[0]->name);
+    }
+
+    public function testTrimmingNonNullScalarValues(): void
+    {
+        $input = new class implements InputInterface {
+            #[SourceQuery(trim: true)]
+            public int $id;
+
+            #[SourceQuery(trim: true)]
+            public string $name;
+
+            #[SourceQuery(trim: true)]
+            public \DateTimeImmutable $dob;
+
+            #[PropertyIgnored]
+            public string $birthday {
+                get => $this->dob->format('Y-m-d');
+            }
+
+            public function toCommand(): CommandInterface
+            {
+                return new class implements CommandInterface {};
+            }
+        };
+
+        $id = \random_int(1, 100);
+        $name = 'Vic Cherubini';
+        $dob = '1984-08-25';
+
+        $request = new Request(...[
+            'query' => [
+                'id' => " {$id} ",
+                'name' => " {$name} ",
+                'dob' => " {$dob} ",
+            ],
         ]);
 
         $inputs = $this->createValueResolver()->resolve(
-            $request, $ignoredArgument
+            $request, $this->createArgument($input::class)
         );
 
-        $this->assertInstanceOf(IgnoredInput::class, $inputs[0]);
-        $this->assertNotEquals($request->query->get('name'), $inputs[0]->name);
+        $this->assertInstanceOf($input::class, $inputs[0]);
+        $this->assertEquals($id, $inputs[0]->id);
+        $this->assertEquals($name, $inputs[0]->name);
+        $this->assertEquals($dob, $inputs[0]->birthday);
+    }
+
+    public function testResolvingPropertiesRequiresThemToAllowNullsIfNullable(): void
+    {
+        $this->expectException(PropertyIsNotNullableException::class);
+
+        $input = new class implements InputInterface {
+            #[SourceQuery(nullify: true)]
+            public string $name;
+
+            public function toCommand(): CommandInterface
+            {
+                return new class implements CommandInterface {};
+            }
+        };
+
+        $request = new Request(...[
+            'query' => [
+                'name' => ' ',
+            ],
+        ]);
+
+        $this->createValueResolver()->resolve(
+            $request, $this->createArgument($input::class)
+        );
+    }
+
+    public function testResolvingNullablePropertiesNullifiesThemIfValueIsEmptyString(): void
+    {
+        $input = new class implements InputInterface {
+            #[SourceQuery]
+            public int $id;
+
+            #[SourceQuery(nullify: true)]
+            public ?int $age;
+
+            #[SourceQuery(nullify: true)]
+            public ?string $name;
+
+            #[SourceQuery(nullify: true)]
+            public ?string $color;
+
+            public function toCommand(): CommandInterface
+            {
+                return new class implements CommandInterface {};
+            }
+        };
+
+        $id = \random_int(1, 100);
+
+        $request = new Request(...[
+            'query' => [
+                'id' => $id,
+                'age' => null,
+                'name' => '',
+                'color' => '  ',
+            ],
+        ]);
+
+        $inputs = $this->createValueResolver()->resolve(
+            $request, $this->createArgument($input::class)
+        );
+
+        $this->assertInstanceOf($input::class, $inputs[0]);
+        $this->assertEquals($id, $inputs[0]->id);
+        $this->assertNull($inputs[0]->age);
+        $this->assertNull($inputs[0]->name);
+        $this->assertNull($inputs[0]->color);
     }
 
     public function testResolvingPropertiesFromMultipartFormDataRequest(): void
     {
-        $formData = [
-            'name' => 'Vic',
-            'age' => 40,
-            'email' => 'vcherubini@gmail.com',
-            'height' => 74,
-        ];
+        $input = new class(0, '', '') implements InputInterface {
+            public function __construct(
+                #[SourceRequest]
+                private(set) public int $id,
+
+                #[SourceRequest]
+                private(set) public string $name,
+
+                #[SourceRequest]
+                private(set) public string $email,
+            ) {
+            }
+
+            public function toCommand(): CommandInterface
+            {
+                return new class implements CommandInterface {};
+            }
+        };
+
+        $id = \random_int(1, 100);
+        $name = 'Vic Cherubini';
+        $email = 'vcherubini@gmail.com';
 
         $request = new Request(...[
-            'request' => $formData,
+            'request' => [
+                'id' => $id,
+                'name' => $name,
+                'email' => $email,
+            ],
             'server' => [
                 'CONTENT_TYPE' => 'multipart/form-data',
             ],
         ]);
 
-        $argumentMetadata = $this->createArgument(...[
-            'type' => SourceRequestInput::class,
-        ]);
-
         $inputs = $this->createValueResolver()->resolve(
-            $request, $argumentMetadata
+            $request, $this->createArgument($input::class)
         );
 
-        $this->assertInstanceOf(SourceRequestInput::class, $inputs[0]);
-        $this->assertEquals($formData['name'], $inputs[0]->name);
-        $this->assertEquals($formData['age'], $inputs[0]->age);
-        $this->assertEquals($formData['email'], $inputs[0]->email);
+        $this->assertInstanceOf($input::class, $inputs[0]);
+        $this->assertEquals($id, $inputs[0]->id);
+        $this->assertEquals($name, $inputs[0]->name);
+        $this->assertEquals($email, $inputs[0]->email);
     }
 
-    private function createArgument(string $type = EmptyInput::class): ArgumentMetadata
+    private function createArgument(?string $type = null): ArgumentMetadata
     {
-        return new ArgumentMetadata('input', $type, false, false, null);
+        return new ArgumentMetadata('input', $type ?? InputInterface::class, false, false, null);
     }
 
     /**
@@ -271,6 +440,7 @@ final class InputValueResolverTest extends TestCase
 
         // Property type extractors
         $propertyTypeExtractors = [
+            new ReflectionExtractor(),
             new ConstructorExtractor([
                 new PhpDocExtractor(),
             ]),
