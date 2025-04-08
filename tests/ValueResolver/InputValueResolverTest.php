@@ -5,6 +5,7 @@ namespace OneToMany\RichBundle\Tests\ValueResolver;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\EmptyInput;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\IgnoredInput;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\NotMappedInput;
+use OneToMany\RichBundle\Tests\ValueResolver\Fixture\PartiallyMappedInput;
 use OneToMany\RichBundle\Tests\ValueResolver\Fixture\SourceRequestInput;
 use OneToMany\RichBundle\ValueResolver\Exception\ContentTypeHeaderMissingException;
 use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
@@ -113,7 +114,7 @@ final class InputValueResolverTest extends TestCase
         return $provider;
     }
 
-    public function testResolvingNonPromotedPropertiesRequiresDefaultValueIfValueNotMapped(): void
+    public function testResolvingPropertiesRequiresDefaultValueIfValueNotMapped(): void
     {
         $this->expectException(ValidationFailedException::class);
 
@@ -132,12 +133,65 @@ final class InputValueResolverTest extends TestCase
         );
     }
 
+    public function testResolvingPropertiesUsesDefaultValueIfNotMapped(): void
+    {
+        $refProp = new \ReflectionProperty(
+            PartiallyMappedInput::class, 'name'
+        );
+
+        $request = new Request(...[
+            'query' => [
+                'id' => 10,
+            ],
+        ]);
+
+        $this->assertTrue($request->query->has('id'));
+        $this->assertFalse($request->query->has('name'));
+
+        $partiallyMappedArgument = $this->createArgument(...[
+            'type' => PartiallyMappedInput::class,
+        ]);
+
+        $inputs = $this->createValueResolver()->resolve(
+            $request, $partiallyMappedArgument
+        );
+
+        $this->assertInstanceOf(PartiallyMappedInput::class, $inputs[0]);
+        $this->assertEquals($request->query->get('id'), $inputs[0]->id);
+        $this->assertEquals($refProp->getDefaultValue(), $inputs[0]->name);
+    }
+
+    public function testResolvingPropertiesOverwritesDefaultValueIfMapped(): void
+    {
+        $request = new Request(...[
+            'query' => [
+                'id' => 10,
+                'name' => 'Vic',
+            ],
+        ]);
+
+        $this->assertTrue($request->query->has('id'));
+        $this->assertTrue($request->query->has('name'));
+
+        $partiallyMappedArgument = $this->createArgument(...[
+            'type' => PartiallyMappedInput::class,
+        ]);
+
+        $inputs = $this->createValueResolver()->resolve(
+            $request, $partiallyMappedArgument
+        );
+
+        $this->assertInstanceOf(PartiallyMappedInput::class, $inputs[0]);
+        $this->assertEquals($request->query->get('id'), $inputs[0]->id);
+        $this->assertEquals($request->query->get('name'), $inputs[0]->name);
+    }
+
     public function testResolvingIgnoredPropertiesDoesNotOverwritePropertyValue(): void
     {
-        $nameFromRequest = 'Vic';
-
-        $request = new Request(query: [
-            'name' => $nameFromRequest,
+        $request = new Request(...[
+            'query' => [
+                'name' => 'Vic',
+            ],
         ]);
 
         $this->assertTrue($request->query->has('name'));
@@ -151,7 +205,7 @@ final class InputValueResolverTest extends TestCase
         );
 
         $this->assertInstanceOf(IgnoredInput::class, $inputs[0]);
-        $this->assertNotEquals($nameFromRequest, $inputs[0]->name);
+        $this->assertNotEquals($request->query->get('name'), $inputs[0]->name);
     }
 
     public function testResolvingPropertiesFromMultipartFormDataRequest(): void
