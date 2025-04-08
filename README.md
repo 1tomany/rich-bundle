@@ -237,22 +237,23 @@ final class CreateAccountInput implements InputInterface
 
 While the input class is also fairly simple in nature, it accomplishes a lot. First, I recommend you take advantage of asymmetric visibility in PHP 8.4. Making the class `readonly` limits what can be done with property hooks, so it's best to make the setters private and the getters public.
 
+#### Property sources
 You'll also notice some new attributes: `#[SourceSecurity]`, `#[SourceRequest]`, and `#[SourceIpAddress]`. These allow you to indicate where in the request the data should come from. The `#[MapRequestPayload]` attribute that was announced in Symfony 6.3 is powerful, but limiting in that it assumes everything comes from the request body. There are eight attributes provided by this bundle that allow you to specify both the source and name of the data from the request.
 
 - `#[SourceContainer(name: 'app.config_setting')]` Fetches a parameter named `app.config_setting` from the container bag. While the `$name` argument is not strictly required, unless the container property is named identically to the class property, you'll need to supply it.
 - `#[SourceFile(name: 'file')]` Fetches a parameter named `file` from the `Symfony\Component\HttpFoundation\Request::$files` bag. The property should be type hinted with the `Symfony\Component\HttpFoundation\File\UploadedFile` class.
 - `#[SourceIpAddress]` Fetches the value returned by the `Symfony\Component\HttpFoundation\Request::getClientIp()` method.
 - `#[SourceQuery(name: 'query')]` Fetches a parameter named `query` from the `Symfony\Component\HttpFoundation\Request::$query` bag.
-- `#[SourceRequest(name: 'user')]` Fetches a parameter named `user` from the result of the `Symfony\Component\HttpFoundation\Request::getPayload()` method.
+- `#[SourceRequest(name: 'user')]` Fetches a parameter named `user` from the request content. This bundle uses HTTP content negotiation via the `Content-Type` request header to attempt to determine the type of content submitted. A standard Symfony installation allows you to use `form`, `json`, and `xml` formats by default.
 - `#[SourceRoute(name: 'productId')]` Fetches a parameter named `productId` from the route.
-- `#[SourceSecurity]` Fetches the value returned by the `Symfony\Component\Security\Core\Authentication\TokenInterface::getUserIdentifier()` method if the request is made by an authenticated user. This is helpful if you want to bind this input object to an authorized request.
+- `#[SourceSecurity]` Fetches the value returned by the `Symfony\Component\Security\Core\Authentication\TokenInterface::getUserIdentifier()` method if the request is made by an authenticated user. This is helpful if you want to bind this input object to an authenticated request.
 - `#[PropertyIgnored]` Indicates that the value resolver should ignore this property.
 
 If a property is not explicitly ignored or sourced, the value resolver will assume it uses the `#[SourceRequest]` attribute.
 
-The `name` argument for each attribute is optional. The value resolver will use the name of the property if a `name` is not given. The `#[SourceIpAddress]` and `#[SourceSecurity]` attributes do not have a `name` argument because their values are the results of a method call.
+The `$name` argument for each attribute is optional. The value resolver will use the name of the property if a `$name` is not given. The `#[SourceIpAddress]` and `#[SourceSecurity]` attributes do not have a `$name` argument because their values are the results of a method call.
 
-Sources are also chainable. This allows you to support multiple versions of an API without having to change the underlying input object. For example, the first version if your API might have used a property named `email` but the second version of your API changed that to `username`. All attributes are chainable, but `#[SourceIpAddress]` and `#[SourceSecurity]` are not repeatable.
+Sources are also chainable. This allows you to support multiple versions of an API without having to change the underlying input object. For example, the first version if your API might use a key named `email` but the second version of your API changed that to `username`. All attributes are chainable, but `#[SourceIpAddress]` and `#[SourceSecurity]` are not repeatable.
 
 In the example below, the `$username` property could be mapped from either of the following URLs:
 
@@ -296,9 +297,10 @@ The value resolver will attempt to extract a value from a source until it finds 
 
 You can also mix chained sources. For example, you can have both a `#[SourceRequest]` and `#[SourceContainer]` attribute on a property: if the value wasn't found in the request body, then it would be retrieved from the container parameters.
 
-Each source attribute has boolean `$trim` and `$nullify` arguments as well. By default, `$trim` is `true` and `$nullify` is `false`. When `$trim` is `true`, the resolver will convert the value of each scalar property to a string and run the `\trim()` function in it. The value will then be coerced back to the type specified by the input class during denormalization.
+#### Additional property source arguments
+Each source attribute has boolean `$trim` and `$nullify` arguments as well. By default, `$trim` is `true` and `$nullify` is `false`. When `$trim` is `true`, the resolver will convert any scalar value to a string and run the `\trim()` function in it. The value will then be coerced back to the type specified by the property of the input class during denormalization.
 
-When `$nullify` is `true`, the resolver will convert the value of any scalar property to `null` if the value is exactly an empty string. The underlying property must also allow null values, otherwise an `OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException` exception is thrown.
+When `$nullify` is `true`, the resolver will convert any scalar value to `null` if the value is exactly an empty string. The underlying property must also allow null values, otherwise an `OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException` exception is thrown.
 
 Take the following input class as an example:
 
@@ -351,18 +353,24 @@ The following request content would be decoded correctly.
 4. `$pin` would have the value `int(8891)` because `$trim` is `true`.
 5. `$birth` would have the value `NULL` because `$trim` and `$nullify` are true. After being trimmed, the value is identical to an empty string and is nullified.
 
-However, if an empty string was used for the the `name` property, a `OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException` would be thrown because the `UpdateAccountInput::$name` is not nullable, yet the source was explicitly set to nullify the value.
+However, if an empty string was used for the value of the key `name` the request, a `OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException` would be thrown because the `$name` property is not nullable, yet the source was explicitly set to nullify the value.
 
 In practice, you would only set `$nullify` to `true` on properties that are nullable.
 
+#### Input denormalization
+Once the data from the request has been extracted, it is denormalized and used to construct an object of type `OneToMany\RichBundle\Contract\InputInterface`. If any exception is thrown during the denormalization process, it is captured and wrapped in an `OneToMany\RichBundle\ValueResolver\Exception\InvalidMappingException` exception. This exception provides a nicer message to the end user while still allowing a developer to review the exception stack.
 
+#### Input validation
+The final step when resolving the input class is validating it. Each class goes through two rounds of validation. The first uses an internal validation constraint named `OneToMany\RichBundle\Validator\UninitializedProperties`. This constraint ensures that there are no uninitialized properties in the input object.
 
+A property is uninitialized if it was explicitly ignored or not mapped and does not have a default value.
 
+If all properties are initialized, the resolver then validates the hydrated input object.
 
-The input object is validated after it is hydrated. The value resolver will throw a `Symfony\Component\Validator\Exception\ValidationFailedException` exception if validation fails.
+The value resolver will throw a `Symfony\Component\Validator\Exception\ValidationFailedException` exception if the input object has uninitialized properties or validation fails, whichever happens first.
 
 ### Create the result class
-We're almost there! We've defined our input object and the command object the input object creates after validation. Next, we need to define a class, the result, that the handler returns upon successful execution.
+We're almost there! We've defined our input object and the command object the input object creates after validation. Next, we need to define a class that the handler returns upon successful execution. Unsurprisingly, this is known as the result.
 
 Each result class must implement the `OneToMany\RichBundle\Contract\ResultInterface` interface.
 
@@ -387,5 +395,115 @@ final readonly class AccountCreatedResult implements ResultInterface
 Like your input and command classes, result classes should be very simple. However, because they are immediately returned by a handler, it's fine for them to contain Doctrine entities or other "complex" objects. They should contain as much data as necessary to respond to the user that the request was successful.
 
 ### Create the handler class
+The **R**equest has been handled, the **I**nput has been validated, and the **C**ommand can be created. It's finally time to **H**andle the command with the handler class.
+
+Each handler class must implement the `OneToMany\RichBundle\Contract\HandlerInterface`. This requires creating a method named `handle()` that takes an object of type `OneToMany\RichBundle\Contract\CommandInterface` as it's argument and returns an object of type `OneToMany\RichBundle\Contract\ResultInterface`.
+
+Each handler must also specify the command and result types. Let's see what this class looks like:
+
+```php
+<?php
+
+namespace App\Account\Action\Handler;
+
+use App\Account\Action\Command\CreateAccountCommand;
+use App\Account\Action\Input\CreateCustomerInput;
+use App\Account\Action\Input\CreateSubscriberInput;
+use App\Account\Action\Handler\Exception\UserNotFoundForCreatingAccountException;
+use App\Account\Action\Result\AccountCreatedResult;
+use App\Entity\Account;
+use App\User\Contract\UserRepositoryInterface;
+use Doctrine\ORM\EntityManagerInterface;
+use OneToMany\RichBundle\Contract\CommandInterface;
+use OneToMany\RichBundle\Contract\HandlerInterface;
+use OneToMany\RichBundle\Contract\ResultInterface;
+
+/**
+ * @implements HandlerInterface<CreateAccountCommand, AccountCreatedResult>
+ */
+final readonly class CreateAccountHandler implements HandlerInterface
+{
+    public function __construct(
+        private UserRepositoryInterface $userRepository,
+        private EntityManagerInterface $entityManager,
+    ) {
+    }
+
+    public function handle(CommandInterface $command): ResultInterface
+    {
+        // Create Account
+        $account = Account::create(...[
+            'name' => $command->name,
+            'company' => $command->company,
+            'email' => $command->email,
+            'notes' => $command->notes,
+            'founded' => $command->founded,
+            'ipAddress' => $command->ipAddress,
+        ]);
+
+        // Associate With User
+        if (null !== $command->author) {
+            $author = $this->userRepository->findOneByUsername(...[
+                'username' => $command->author,
+            ]);
+
+            if (null === $author) {
+                throw new UserNotFoundForCreatingAccountException($command->author);
+            }
+
+            $account->setAuthor($author);
+        }
+
+        $this->entityManager->persist($account);
+        $this->entityManager->flush();
+
+        return new AccountCreatedResult($account);
+    }
+}
+```
+
+To start, the `@implements` annotation indicates to your IDE and static analysis tools that this class takes a command of type `App\Account\Action\Command\CreateAccountCommand` and returns a result of type `App\Account\Action\Result\AccountCreatedResult`.
+
+Next, if an author was provided, then the handler attempts to find that record. If not found, an exception (see below) is thrown. This is personal preference: my feeling is that if a nullable property has a value and that value isn't valid, an exception should be thrown rather than silently discarding the value.
+
+Finally, the new `App\Entity\Account` object is persisted, flushed, and returned. If there were other actions that needed to be taken, such as creating a record in another system, you could easily inject the Symfony message bus and enqueue a command to create a new customer record in Stripe, for instance.
+
+#### Unecessary queries
+The query to find the author user may seem unecessary - if the request was previously authenticated by Symfony and we _know_ the author user, why query for them again?
+
+Your intuition is right, in a simple environment, this is likely a redundant query that returns the same user object that was already loaded and hydrated by the Symfony security system. However, we want to build robust systems that can operate in a variety of different contexts, so you can't always make that assumption:
+
+* This handler may be placed behind a message queue on a server unaware of the HTTP request.
+* This handler may be used from the command line which is unaware of any authenticated users.
+* This handler may be used for bulk data imports where each row in a CSV file can have a different author.
+
+In each of these scenarios, the handler is unaware of the HTTP context, so it can't rely on it to exist to function properly. Ensuring each handler can operate in isolation also makes them easier to test: you can write a functional test without worrying about bootstrapping an HTTP environment.
+
+#### Handler exceptions
+A very sepcifically named exception `App\Account\Action\Handler\Exception\UserNotFoundForCreatingAccountException` is thrown when the author user can't be found. I prefer to create a new exception class for each exception state. From just the name of the class, any developer can quickly tell what caused it to be thrown. A unique class for each exception also lets you standardize the error message and exception code.
+
+```php
+<?php
+
+namespace App\Account\Action\Handler\Exception;
+
+use App\Account\Contract\Exception\ExceptionInterface;
+use OneToMany\RichBundle\Exception\HasUserMessage;
+
+#[HasUserMessage]
+final class UserNotFoundForCreatingAccountException extends \RuntimeException implements ExceptionInterface
+{
+    public function __construct(?string $username)
+    {
+        parent::__construct(\sprintf('The account could not be created because a user with username "%s" could not be found.', $username), 404);
+    }
+}
+```
+
+Despite what I said about writing handlers that are not HTTP aware, I typically make the `$code` argument of my exceptions mirror HTTP status codes:
+
+1. Most handlers _are_ called in an HTTP context, so it's easiest if any exception they throw easily provides the correct HTTP status code.
+2. HTTP has a very well defined list of standard [response status codes](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status) that aren't likely to change.
+3. Any non-HTTP environment or context can simply ignore the exception's code or map it to one of their own.
 
 ### Wire the input and handler to a controller
