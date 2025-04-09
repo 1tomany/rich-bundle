@@ -8,6 +8,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Validator\ConstraintViolationInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
+use function count;
+
 final class WrappedException implements WrappedExceptionInterface
 {
     private int $status = 500;
@@ -103,7 +105,7 @@ final class WrappedException implements WrappedExceptionInterface
 
         $refClass = new \ReflectionClass($this->exception);
 
-        if (\count($refClass->getAttributes(HasUserMessage::class))) {
+        if (count($refClass->getAttributes(HasUserMessage::class))) {
             $this->message = $this->exception->getMessage();
         }
 

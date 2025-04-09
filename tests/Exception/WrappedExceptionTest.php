@@ -30,6 +30,10 @@ use Symfony\Component\Validator\ConstraintViolationInterface;
 use Symfony\Component\Validator\ConstraintViolationList;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
+use function array_map;
+use function array_rand;
+use function random_int;
+
 #[Group('UnitTests')]
 #[Group('ExceptionTests')]
 final class WrappedExceptionTest extends TestCase
@@ -146,7 +150,7 @@ final class WrappedExceptionTest extends TestCase
             ],
         ];
 
-        $violations = \array_map(function (array $e): ConstraintViolationInterface {
+        $violations = array_map(function (array $e): ConstraintViolationInterface {
             return new ConstraintViolation($e['message'], null, [], null, $e['property'], null);
         }, $errors);
 
@@ -206,7 +210,7 @@ final class WrappedExceptionTest extends TestCase
             Response::HTTP_INTERNAL_SERVER_ERROR
         ];
 
-        $httpStatus = \random_int(1000, 2000);
+        $httpStatus = random_int(1000, 2000);
         $this->assertArrayNotHasKey($httpStatus, Response::$statusTexts);
 
         $exception = new \RuntimeException($title, $httpStatus);
@@ -219,7 +223,7 @@ final class WrappedExceptionTest extends TestCase
     public function testGettingTitleFromValidHttpStatus(): void
     {
         /** @var positive-int $httpStatus */
-        $httpStatus = \array_rand(Response::$statusTexts);
+        $httpStatus = array_rand(Response::$statusTexts);
         $this->assertArrayHasKey($httpStatus, Response::$statusTexts);
 
         /** @var non-empty-string $title */

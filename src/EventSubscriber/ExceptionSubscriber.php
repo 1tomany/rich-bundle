@@ -10,6 +10,8 @@ use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Serializer\SerializerInterface;
 
+use function in_array;
+
 final readonly class ExceptionSubscriber implements EventSubscriberInterface
 {
     /**
@@ -93,6 +95,6 @@ final readonly class ExceptionSubscriber implements EventSubscriberInterface
             return null;
         }
 
-        return \in_array($format, $this->responseFormats, true) ? $format : null;
+        return in_array($format, $this->responseFormats, true) ? $format : null;
     }
 }

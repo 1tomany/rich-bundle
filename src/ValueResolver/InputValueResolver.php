@@ -33,6 +33,13 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+use function count;
+use function in_array;
+use function is_a;
+use function is_array;
+use function is_scalar;
+use function trim;
+
 final class InputValueResolver implements ValueResolverInterface
 {
     private Request $request;
@@ -160,7 +167,7 @@ final class InputValueResolver implements ValueResolverInterface
             return null;
         }
 
-        return \is_a($type, InputInterface::class, true) ? $type : null;
+        return is_a($type, InputInterface::class, true) ? $type : null;
     }
 
     private function initializeDataSources(Request $request): void
@@ -176,7 +183,7 @@ final class InputValueResolver implements ValueResolverInterface
         $format = $request->getContentTypeFormat();
 
         // Content-Type: multipart/form-data
-        if (\in_array($format, ['form'])) {
+        if (in_array($format, ['form'])) {
             $this->content = new ParameterBag(
                 $request->request->all()
             );
@@ -198,7 +205,7 @@ final class InputValueResolver implements ValueResolverInterface
                 $request->getContent(), $format
             );
 
-            if (!\is_array($decodedContent)) {
+            if (!is_array($decodedContent)) {
                 throw new MalformedRequestContentException($format);
             }
         } catch (SerializerExceptionInterface $e) {
@@ -212,7 +219,7 @@ final class InputValueResolver implements ValueResolverInterface
 
     private function isPropertyIgnored(\ReflectionProperty $property): bool
     {
-        return 0 !== \count($property->getAttributes(PropertyIgnored::class));
+        return 0 !== count($property->getAttributes(PropertyIgnored::class));
     }
 
     /**
@@ -283,11 +290,11 @@ final class InputValueResolver implements ValueResolverInterface
         PropertySource $source,
         mixed $value,
     ): void {
-        if (true === \is_scalar($value)) {
+        if (true === is_scalar($value)) {
             $value = (string) $value;
 
             if (true === $source->trim) {
-                $value = \trim($value);
+                $value = trim($value);
             }
 
             if (true === $source->nullify && '' === $value) {

@@ -33,6 +33,8 @@ use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validation;
 
+use function random_int;
+
 #[Group('UnitTests')]
 #[Group('ValueResolverTests')]
 final class InputValueResolverTest extends TestCase
@@ -130,7 +132,7 @@ final class InputValueResolverTest extends TestCase
             }
         };
 
-        $id = \random_int(1, 100);
+        $id = random_int(1, 100);
 
         $request = new Request(...[
             'query' => [
@@ -160,7 +162,7 @@ final class InputValueResolverTest extends TestCase
             }
         };
 
-        $id = \random_int(1, 100);
+        $id = random_int(1, 100);
         $name = new \ReflectionProperty($input, 'name')->getDefaultValue();
 
         $request = new Request(...[
@@ -196,7 +198,7 @@ final class InputValueResolverTest extends TestCase
             }
         };
 
-        $id = \random_int(1, 100);
+        $id = random_int(1, 100);
         $name = 'Vic Cherubini';
 
         $request = new Request(...[
@@ -271,7 +273,7 @@ final class InputValueResolverTest extends TestCase
             }
         };
 
-        $id = \random_int(1, 100);
+        $id = random_int(1, 100);
         $name = 'Vic Cherubini';
         $dob = '1984-08-25';
 
@@ -339,7 +341,7 @@ final class InputValueResolverTest extends TestCase
             }
         };
 
-        $id = \random_int(1, 100);
+        $id = random_int(1, 100);
 
         $request = new Request(...[
             'query' => [
@@ -382,7 +384,7 @@ final class InputValueResolverTest extends TestCase
             }
         };
 
-        $id = \random_int(1, 100);
+        $id = random_int(1, 100);
         $name = 'Vic Cherubini';
         $email = 'vcherubini@gmail.com';
 

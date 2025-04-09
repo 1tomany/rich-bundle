@@ -6,6 +6,8 @@ use OneToMany\DataUri\DataUri;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
+use function is_a;
+use function is_string;
 use function OneToMany\DataUri\parse_data;
 
 final readonly class DataUriDenormalizer implements DenormalizerInterface
@@ -24,7 +26,7 @@ final readonly class DataUriDenormalizer implements DenormalizerInterface
      */
     public function supportsDenormalization(mixed $data, string $type, ?string $format = null, array $context = []): bool
     {
-        return (\is_string($data) || $data instanceof File) && \is_a($type, DataUri::class, true);
+        return (is_string($data) || $data instanceof File) && is_a($type, DataUri::class, true);
     }
 
     public function getSupportedTypes(?string $format): array
