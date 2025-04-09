@@ -9,6 +9,6 @@ final class InvalidHttpStatusException extends \InvalidArgumentException impleme
 {
     public function __construct(int $status)
     {
-        parent::__construct(sprintf('The HTTP status code "%d" is invalid and can not be used.', $status), 500);
+        parent::__construct(\sprintf('The HTTP status code "%d" is invalid and can not be used.', $status), 500);
     }
 }
