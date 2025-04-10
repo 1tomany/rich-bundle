@@ -8,12 +8,12 @@
     <service id="OneToMany\RichBundle\EventSubscriber\ViewSubscriber">
       <tag>kernel.event_subscriber</tag>
     </service>
-    <service id="OneToMany\RichBundle\Serializer\Normalizer\DataUriDenormalizer">
-      <tag>serializer.denormalizer</tag>
-    </service>
     <service id="OneToMany\RichBundle\Serializer\Normalizer\ExceptionNormalizer">
       <tag>serializer.normalizer</tag>
       <argument key="$debug">%kernel.debug%</argument>
+    </service>
+    <service id="OneToMany\RichBundle\Serializer\Normalizer\LocalFileDenormalizer">
+      <tag>serializer.denormalizer</tag>
     </service>
     <service id="OneToMany\RichBundle\ValueResolver\InputValueResolver">
       <tag>controller.argument_value_resolver</tag>

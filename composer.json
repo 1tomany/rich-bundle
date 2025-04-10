@@ -1,12 +1,12 @@
 {
     "name": "1tomany/rich-bundle",
-    "description": "Symfony bundle that provides easy scaffolding to support RICH applications",
+    "description": "Symfony bundle that provides easy scaffolding to build RICH applications",
     "license": "MIT",
     "type": "symfony-bundle",
     "minimum-stability": "stable",
     "require": {
         "php": ">=8.4",
-        "1tomany/data-uri": "^2.6",
+        "1tomany/data-uri": "^3.0",
         "symfony/dependency-injection": "^7.2",
         "symfony/event-dispatcher": "^7.2",
         "symfony/http-foundation": "^7.2",
