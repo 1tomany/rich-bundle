@@ -2,22 +2,30 @@
 This bundle makes it easy to incorporate the RICH architecture into your Symfony application. RICH stands for Request, Input, Command, Handler, and its goal is to make backend web application development as easy, straightforward, and futureproof as possible. RICH applications apply the single responsibility principle to each action a user can take with your application which guarantees that it can mutate over time without unintended consequences.
 
 ## RICH philosophy
-The central philosophy behind a RICH application is to apply to backend engineering what Tailwind CSS did to frontend engineering minus the unecessary complexity of hexagonal architecture, domain driven design, and CQRS.
+The central philosophy behind a RICH application is to apply to backend engineering what Tailwind CSS did to frontend engineering without introducing the unnecessary complexity of hexagonal architecture, domain driven design, and CQRS.
 
-Tailwind broke CSS down into very loosely coupled atomic components that you can apply as classes to HTML elements. This essentially undoes the Cascading in Cascading Style Sheets, but for good reason: you can safely modify the style of one element without much fear that it will radically alter the layout of your application. This is incredibly powerful for teams of developers: the tenured team member knows that the CSS class `.btn-blue` makes a full width block level red button across the application, but the developer that started last week doesn't, and he accidentally destroyed the styling of the application with his first PR.
+Tailwind decoupled CSS into atomic components that you can apply as classes to HTML elements. This essentially undoes the Cascading in Cascading Style Sheets, but for good reason: you can safely modify the style of one element without much fear that it will radically alter the layout of your application. This is incredibly powerful for teams of developers: the tenured team member knows that the CSS class `.btn-blue` renders a full width block level button with a red background, but the developer that started last week doesn't, and he accidentally destroyed the styling of the application with his first PR.
 
 RICH applies these sames principles to backend engineering: each input, command, and handler are separate PHP classes that only have a single responsibility. The naming of these classes should describe an action that can be performed in your application. For example, if your application allows users to be created and updated, you would have `CreateUserInput` and `UpdateUserInput` as your input classes, `CreateUserCommand` and `UpdateUserCommand` as your command classes, and you guessed it, `CreateUserHandler` and `UpdateUserHandler` as your handler classes. Like Tailwind, this may seem redundant and a source of code duplication, but the benefits an architecture like this provide far outweigh the negatives.
 
 ## RICH structure
-**Input** A request, whether it be from an API request, a form submission, the command line, or elsewhere, is mapped onto an input object. The input object is responsible for manipulating and validating the request data. By default, this bundle uses the Serializer and Validator components bundled with Symfony, but you're welcome to manually map data and validate it however you see fit.
+**Request** Everything starts with an action taken by an outside actor. The request is content and metadata associated with that action. Almost anything can generate a request: another system that has integrated with your REST API, a user submitting a form, a developer running a console command, or even another module from within your application.
+
+**Input** Once sent, the request content and metadata is mapped onto an input object and validated. By default, this bundle uses the Symfony serializer and validator components, but you're welcome to manually map data and validate it however you see fit.
 
 Input objects can contain some basic logic, but should generally rely on no additional dependencies outside of the standard PHP library.
 
-**Command** If the request data is valid and successfully mapped to an input object, the input object will create a command object. A command object is as simple of a class as you can get in PHP. Ideally, it should be `final`, `readonly`, and use constructor promotion to ensure immutability. A command object is a POPO - Plain Old PHP Object - and should do its best to use scalar primitives (`null`, `bool`, `int`, `float`, and `string`), basic arrays, standard PHP classes, or other easily serialized and deserialized objects as its properties.
+In this bundle, all input objects must implement the interface defined in `OneToMany\RichBundle\Contract\InputInterface`.
+
+**Command** The input object creates the command object once the request is successfully mapped and validated. A command object is as simple of a class as you can get in PHP. Ideally, it should be `final`, `readonly`, and use constructor promotion to ensure immutability.
+
+A command object is a POPO - Plain Old PHP Object - and should do its best to use scalar primitives (`null`, `bool`, `int`, `float`, and `string`), basic arrays, standard PHP classes, or other value objects.
 
 In other words, a command object would use an `int` (or a simple value object) to refer to the primary key of a Doctrine entity rather than the entity itself. Command objects should be so simple they can easily be serialized and deserialized so they can used in an asynchronous message queue.
 
-**Handler** Once created, the command object is passed to the handler. For the vast majority of applications, this can (and should) be done manually - using an asynchronous message queue is not necessary. However, each handler should assume it is being called entirely statelessly, and hydrate the environment it needs without assuming it already exists. For example, the handler should not be aware of an HTTP request, session data, cookie data, or that an entity it relies on is already being managed by Doctrine.
+In this bundle, all command objects must implement the interface defined in `OneToMany\RichBundle\Contract\CommandInterface`.
+
+**Handler** Once created, the command object is passed to the handler. For the vast majority of applications, this can (and should) be done manually - using an asynchronous message queue is not necessary. A handler should hydrate the environment it needs without assuming it already exists. It should not be aware of an HTTP request, session data, cookie data, or that an entity it relies on is already being managed by Doctrine.
 
 The handler that runs synchronously today may need to be placed in a message queue tomorrow for a variety of reason and having the foresight to make it stateless today will save you endless headaches tomorrow. This is also why you want your handlers to rehydrate your entity map: an entity that existed when the command was pushed onto an asynchronous queue may not exist when the handler is executed.
 
@@ -34,7 +42,9 @@ composer require 1tomany/rich-bundle
 ```
 
 ### Create the module structure
-Next, you'll need to create the directory structure for your first module. There is no strict definition on what a module is, other than a set of features that are loosely related to the same domain. To get started, it's easiest to think of a module as being related to each of your "primary" entities.
+Next, you'll need to create the directory structure for your first module. There is no strict definition on what a module is, other than a set of features that are loosely related to the same domain.
+
+It's easiest to think of a module as being related to each of your "primary" entities where a "primary" entity is one that can (mostly) exist without a parent entity. For example, `Invoice` would be a "primary" entity, but `InvoiceLine` would not be because an `InvoiceLine` can't exist without a parent `Invoice`.
 
 I recommend the following directory structure for each module:
 
@@ -64,7 +74,9 @@ mkdir -p src/<Module>/{Action/{Command,Handler/Exception,Input,Result},Contract/
 Moving forward, lets assume we're working on a module named `Account` for a Doctrine entity also named `Account` which uses a repository (shockingly) named `AccountRepository`.
 
 ### Create the module's contracts
-As the name implies, the `Contract` directory stores contracts to interact with this module. You should have, at minimum, two contracts to start with: a `RepositoryInterface` and `ExceptionInterface`. In the `Contract` directory, create a file named `<Entity>RepositoryInterface.php` where `<Entity>` is the Doctrine entity that will use this repository. Create a file named `AccountRepositoryInterface.php` in `src/Account/Contract` and populate it with the following code:
+As the name implies, the `Contract` directory stores contracts to interact with this module. You should have, at minimum, two contracts to start with: a `<Entity>RepositoryInterface` and `ExceptionInterface`.
+
+In the `Contract` directory, create a file named `<Entity>RepositoryInterface.php` where `<Entity>` is the Doctrine entity that will use this repository. Create a file named `AccountRepositoryInterface.php` in `src/Account/Contract` and populate it with the following code:
 
 ```php
 <?php
@@ -81,9 +93,11 @@ interface AccountRepositoryInterface
 
 Again, a RICH application is flexible by nature so you're not required to create a method named `findOneById()`, but I find it more descriptive and extensible than just `find()`.
 
-A RICH application encourages you to keep your Doctrine entities and repositories in their original locations. There's no reason to struggle with the Doctrine configuration to force each entity to reside in a directory or namespace different than what it expects. While modules remain loosely coupled in a RICH application, entities will always remain tightly coupled, so it's best to leave them in `src/Entity`.
+A RICH application encourages you to keep your Doctrine entities and repositories in their original locations. There's no reason to fight with the Doctrine configuration to force each entity to reside in a directory or namespace different than what it expects. While modules remain loosely coupled in a RICH application, entities will always remain tightly coupled, so it's best to leave them in `src/Entity`.
 
-Assuming the `Account` entity and `AccountRepository` repository already exist, update the `AccountRepository` class to implement your new `AccountRepositoryInterface`. If you only have a single class implementing an interface, you can inject that interface into a service and Symfony will know to inject an instance of the class implementing it - it's fantastic!
+Assuming the `Account` entity and `AccountRepository` repository already exist, update the `AccountRepository` class to implement your new `AccountRepositoryInterface`.
+
+Because only a single class will implement the `App\Account\Contract\AccountRepositoryInterface` interface, you can use it as a typehint and the Symfony container will know what class to inject.
 
 ```php
 <?php
@@ -119,7 +133,7 @@ class AccountRepository extends ServiceEntityRepository implements AccountReposi
 }
 ```
 
-We also need an exception interface that all exceptions from this module originate from. This makes it easy for any other module using services from this module to catch all thrown exceptions.
+We also need an interface that all exceptions from this module originate from. This makes it easy for any other module using services from this module to catch all thrown exceptions.
 
 Create a file named `ExceptionInterface.php` in the `src/Account/Contract/Exception` directory and populate it with the following code:
 
@@ -132,6 +146,8 @@ interface ExceptionInterface extends \Throwable
 {
 }
 ```
+
+Finally, I'll generally place other value objects and enums in the `Contract` directory for a module. It loosely indicates they will be used in other modules or domains in your application.
 
 ### Create the command class
 Though the input class is used first, the command class is shared amongst the input and handler classes, so lets start by creating it. Each command class must implement the `OneToMany\RichBundle\Contract\CommandInterface` interface.
@@ -161,7 +177,7 @@ final readonly class CreateAccountCommand implements CommandInterface
 ```
 
 ### Create the input class
-Now that we have a command class, we need an input class that creates the command object after the request data has been mapped and validated. Each input class must implement the `OneToMany\RichBundle\Contract\InputInterface` interface.
+Now that we have a command class, we need an input class that creates the command object after the request has been mapped and validated. Each input class must implement the `OneToMany\RichBundle\Contract\InputInterface` interface.
 
 Create a file named `CreateAccountInput.php` in the `src/Account/Action/Input` directory and populate it with the following code:
 
@@ -235,12 +251,12 @@ final class CreateAccountInput implements InputInterface
 }
 ```
 
-While the input class is also fairly simple in nature, it accomplishes a lot. If possible, I recommend you take advantage of asymmetric visibility in PHP 8.4. Making the class `readonly` limits what can be done with property hooks, so it's best to make the setters private and the getters public.
+While the input class is also fairly simple in nature, it accomplishes a lot. If possible, I recommend you take advantage of asymmetric visibility in PHP 8.4: making the class `readonly` limits what can be done with property hooks, so it's best to make the setters private and the getters public.
 
 Classes that implement the `OneToMany\RichBundle\Contract\InputInterface` interface should use the `@implements` annotation to indicate the type of command the `toCommand()` method creates.
 
 #### Property sources
-You'll also notice some new attributes: `#[SourceSecurity]`, `#[SourceRequest]`, and `#[SourceIpAddress]`. These allow you to indicate where in the request the data should come from. The `#[MapRequestPayload]` attribute that was announced in Symfony 6.3 is powerful, but limiting in that it assumes everything comes from the request body. There are eight attributes provided by this bundle that allow you to specify both the source and name of the data from the request.
+You'll also notice some new attributes: `#[SourceSecurity]`, `#[SourceRequest]`, and `#[SourceIpAddress]`. These allow you to indicate where in the request the data should come from. The `#[MapRequestPayload]` attribute that was announced in Symfony 6.3 is powerful, but limiting in that it assumes everything comes from the request content. There are eight attributes provided by this bundle that allow you to specify the source of the data from the request.
 
 - `#[SourceContainer(name: 'app.config_setting')]` Fetches a parameter named `app.config_setting` from the container bag. While the `$name` argument is not strictly required, unless the container property is named identically to the class property, you'll need to supply it.
 - `#[SourceFile(name: 'file')]` Fetches a parameter named `file` from the `Symfony\Component\HttpFoundation\Request::$files` bag. The property should be type hinted with the `Symfony\Component\HttpFoundation\File\UploadedFile` class.
@@ -399,7 +415,7 @@ final readonly class AccountCreatedResult implements ResultInterface
 Like your input and command classes, result classes should be very simple. However, because they are immediately returned by a handler, it's fine for them to contain Doctrine entities or other "complex" objects. They should contain as much data as necessary to respond to the user that the request was successful.
 
 ### Create the handler class
-The **R**equest has been handled, the **I**nput has been validated, and the **C**ommand can be created. It's finally time to **H**andle the command with the handler class.
+The **R**equest has been handled, the **I**nput has been validated, and the **C**ommand can be created. It's now time to **H**andle the command with the handler class.
 
 Each handler class must implement the `OneToMany\RichBundle\Contract\HandlerInterface`. This requires creating a method named `handle()` that takes an object of type `OneToMany\RichBundle\Contract\CommandInterface` as it's argument and returns an object of type `OneToMany\RichBundle\Contract\ResultInterface`.
 
@@ -472,8 +488,8 @@ Next, if an author was provided, the handler attempts to find that record. If no
 
 Finally, the new `App\Entity\Account` object is persisted, flushed, and returned. If there were other actions that needed to be taken, such as creating a record in another system, you could easily inject the Symfony message bus and enqueue a command to create a new customer record in Stripe, for instance.
 
-#### Unecessary queries
-The query to find the author user may seem unecessary - if the request was previously authenticated by Symfony and we _know_ the author user, why query for them again?
+#### Unnecessary queries
+The query to find the author user may seem unnecessary - if the request was previously authenticated by Symfony and we _know_ the author user, why query for them again?
 
 Your intuition is right, in a simple environment, this is likely a redundant query that returns the same user object that was already loaded and hydrated by the Symfony security system. However, we want to build robust systems that can operate in a variety of different contexts, so you can't always make that assumption:
 
@@ -484,7 +500,7 @@ Your intuition is right, in a simple environment, this is likely a redundant que
 In each of these scenarios, the handler is unaware of the HTTP context, so it can't rely on it to exist to function properly. Ensuring each handler can operate in isolation also makes them easier to test: you can write a functional test without worrying about bootstrapping an HTTP environment.
 
 #### Handler exceptions
-A very sepcifically named exception `App\Account\Action\Handler\Exception\UserNotFoundForCreatingAccountException` is thrown when the author user can't be found. I prefer to create a new exception class for each exception state. From just the name of the class, any developer can quickly tell what caused it to be thrown. A unique class for each exception also lets you standardize the error message and exception code.
+A very specifically named exception `App\Account\Action\Handler\Exception\UserNotFoundForCreatingAccountException` is thrown when the author user can't be found. I prefer to create a new exception class for each exception state. From just the name of the class, any developer can quickly tell what caused it to be thrown. A unique class for each exception also lets you standardize the error message and exception code.
 
 ```php
 <?php
@@ -526,7 +542,6 @@ use Symfony\Component\HttpKernel\Attribute\AsController;
 #[AsController]
 final readonly class CreateAccountController
 {
-
     public function __construct(private CreateAccountHandler $createAccountHandler)
     {
     }
@@ -541,6 +556,24 @@ final readonly class CreateAccountController
             'groups' => ['read']
         ]);
     }
-
 }
 ```
+
+It's that simple! You can now start the Symfony development server and make a request to your API:
+
+```bash
+curl --location 'https://localhost:8000/api/accounts' \
+  --header 'Accept: application/json' \
+  --header 'Content-Type: application/json' \
+  --data-raw '{
+    "name": "Modesto Herman",
+    "company": "Flurp Plumbing, LLC",
+    "notes": "Plumbing company based out of Dallas, TX",
+    "founded": "2002-08-25"
+  }'
+```
+
+## Conclusion
+I've been using this bundle (or rather, the code in this bundle) in production applications for over a year, and it's provided a delightful developer experience. Each class has a single purpose, I can easily throw a long running handler into a message queue, testing is much simpler, and most importantly, I can change individual components without fear they'll break something unrelated.
+
+Make your application RICH!
