@@ -6,6 +6,7 @@ use OneToMany\RichBundle\Attribute\PropertyIgnored;
 use OneToMany\RichBundle\Attribute\PropertySource;
 use OneToMany\RichBundle\Attribute\SourceContainer;
 use OneToMany\RichBundle\Attribute\SourceFile;
+use OneToMany\RichBundle\Attribute\SourceHeader;
 use OneToMany\RichBundle\Attribute\SourceIpAddress;
 use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
@@ -95,6 +96,12 @@ final class InputValueResolver implements ValueResolverInterface
 
                 if ($source instanceof SourceFile) {
                     $this->extractFromUploadedFiles(
+                        $property, $source, $name
+                    );
+                }
+
+                if ($source instanceof SourceHeader) {
+                    $this->extractFromRequestHeaders(
                         $property, $source, $name
                     );
                 }
@@ -247,6 +254,13 @@ final class InputValueResolver implements ValueResolverInterface
     {
         if ($this->request->files->has($name) && !$this->data->has($property->name)) {
             $this->appendPropertyValue($property, $source, $this->request->files->get($name));
+        }
+    }
+
+    private function extractFromRequestHeaders(\ReflectionProperty $property, PropertySource $source, string $name): void
+    {
+        if ($this->request->headers->has($name) && !$this->data->has($property->name)) {
+            $this->appendPropertyValue($property, $source, $this->request->headers->get($name));
         }
     }
 

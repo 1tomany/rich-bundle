@@ -3,6 +3,7 @@
 namespace OneToMany\RichBundle\Tests\ValueResolver;
 
 use OneToMany\RichBundle\Attribute\PropertyIgnored;
+use OneToMany\RichBundle\Attribute\SourceHeader;
 use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Contract\CommandInterface;
@@ -361,6 +362,48 @@ final class InputValueResolverTest extends TestCase
         $this->assertNull($inputs[0]->age);
         $this->assertNull($inputs[0]->name);
         $this->assertNull($inputs[0]->color);
+    }
+
+    public function testResolvingSourceHeader(): void
+    {
+        $faker = \Faker\Factory::create();
+
+        $input = new class implements InputInterface {
+            #[SourceHeader(name: 'ACCEPT')]
+            public ?string $accept;
+
+            #[SourceHeader(name: 'content-type')]
+            public ?string $contentType;
+
+            #[SourceHeader(name: 'X-Custom-Id')]
+            public ?string $customId;
+
+            public function toCommand(): CommandInterface
+            {
+                return new class implements CommandInterface {};
+            }
+        };
+
+        $acceptType = $faker->mimeType();
+        $contentType = $faker->mimeType();
+        $customId = $faker->sha256();
+
+        $request = new Request(...[
+            'server' => [
+                'HTTP_ACCEPT' => $acceptType,
+                'HTTP_CONTENT_TYPE' => $contentType,
+                'HTTP_X_CUSTOM_ID' => $customId,
+            ],
+        ]);
+
+        $inputs = $this->createValueResolver()->resolve(
+            $request, $this->createArgument($input::class)
+        );
+
+        $this->assertInstanceOf($input::class, $inputs[0]);
+        $this->assertEquals($acceptType, $inputs[0]->accept);
+        $this->assertEquals($contentType, $inputs[0]->contentType);
+        $this->assertEquals($customId, $inputs[0]->customId);
     }
 
     public function testResolvingPropertiesFromMultipartFormDataRequest(): void
