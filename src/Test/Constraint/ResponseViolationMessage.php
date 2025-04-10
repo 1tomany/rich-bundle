@@ -2,10 +2,10 @@
 
 namespace OneToMany\RichBundle\Test\Constraint;
 
+use OneToMany\RichBundle\Test\Constraint\Exception\UnexpectedTypeException;
 use PHPUnit\Framework\Constraint\Constraint;
 use Symfony\Component\HttpFoundation\Response;
 
-use function get_debug_type;
 use function is_array;
 use function json_decode;
 use function sprintf;
@@ -29,7 +29,7 @@ final class ResponseViolationMessage extends Constraint
     protected function matches(mixed $response): bool
     {
         if (!$response instanceof Response) {
-            throw new \InvalidArgumentException(sprintf('Expected argument of type "%s", "%s" given.', Response::class, get_debug_type($response)));
+            throw new UnexpectedTypeException($response, Response::class);
         }
 
         $content = $response->getContent();
