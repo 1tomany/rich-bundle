@@ -31,6 +31,8 @@ The handler that runs synchronously today may need to be placed in a message que
 
 Each handler should contain the business logic necessary to handle the command passed to it. Ideally, handlers should be `final` and `readonly` as well to ensure they don't accidentally rely on any previous state to handle a command.
 
+<img src="https://raw.githubusercontent.com/1tomany/rich-bundle/refs/heads/main/assets/architecture.png">
+
 ## Getting started
 Because this is a new bundle, you'll have to manually create the structure for each module in your application. My goal is to leverage the Symfony Maker Bundle to allow you to create the RICH structure for each action similar to how you would create a Doctrine entity.
 
@@ -418,7 +420,7 @@ Like your input and command classes, result classes should be very simple. Howev
 ### Create the handler class
 The **R**equest has been handled, the **I**nput has been validated, and the **C**ommand can be created. It's now time to **H**andle the command with the handler class.
 
-Each handler class must implement the `OneToMany\RichBundle\Contract\HandlerInterface`. This requires creating a method named `handle()` that takes an object of type `OneToMany\RichBundle\Contract\CommandInterface` as it's argument and returns an object of type `OneToMany\RichBundle\Contract\ResultInterface`.
+Each handler class must implement the `OneToMany\RichBundle\Contract\HandlerInterface` interface. This requires creating a method named `handle()` that takes an object of type `OneToMany\RichBundle\Contract\CommandInterface` as it's argument and returns an object of type `OneToMany\RichBundle\Contract\ResultInterface`.
 
 Let's see what this class looks like:
 
