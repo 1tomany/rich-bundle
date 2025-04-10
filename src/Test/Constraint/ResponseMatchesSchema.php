@@ -8,6 +8,12 @@ use OneToMany\RichBundle\Test\Constraint\Exception\UnexpectedTypeException;
 use PHPUnit\Framework\Constraint\Constraint;
 use Symfony\Component\HttpFoundation\Response;
 
+use function is_array;
+use function is_object;
+use function is_string;
+use function json_decode;
+use function json_encode;
+
 final class ResponseMatchesSchema extends Constraint
 {
     private readonly object $schema;
@@ -17,16 +23,16 @@ final class ResponseMatchesSchema extends Constraint
      */
     public function __construct(string|array|object $schema)
     {
-        if ($schema && \is_array($schema)) {
-            $schema = \json_encode($schema);
+        if ($schema && is_array($schema)) {
+            $schema = json_encode($schema);
         }
 
-        if ($schema && \is_string($schema)) {
-            $schema = \json_decode($schema);
+        if ($schema && is_string($schema)) {
+            $schema = json_decode($schema);
         }
 
-        if (!\is_object($schema)) {
-            throw new InvalidArgumentException('The JSON schema is not a valid JSON document.');
+        if (!is_object($schema)) {
+            throw new InvalidArgumentException('The schema is not a valid JSON document.');
         }
 
         $this->schema = $schema;
@@ -53,9 +59,9 @@ final class ResponseMatchesSchema extends Constraint
             return false;
         }
 
-        $json = \json_decode($content);
+        $json = json_decode($content);
 
-        if (!\is_object($json)) {
+        if (!is_object($json)) {
             throw new InvalidArgumentException('The response content is not a valid JSON document.');
         }
 
