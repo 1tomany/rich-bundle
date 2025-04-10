@@ -10,6 +10,9 @@ use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Response;
 
+use function json_encode;
+use function random_int;
+
 #[Group('UnitTests')]
 #[Group('TestTests')]
 #[Group('ConstraintTests')]
@@ -44,8 +47,6 @@ final class ResponseMatchesSchemaTest extends TestCase
 
     public function testMatchingSchema(): void
     {
-        $faker = \Faker\Factory::create();
-
         $schema = [
             'title' => 'Test Schema',
             'type' => 'object',
@@ -64,16 +65,16 @@ final class ResponseMatchesSchemaTest extends TestCase
             ],
         ];
 
-        $content = \json_encode([
-            'id' => \random_int(1, 100),
-            'name' => $faker->name('male'),
-            'age' => \random_int(1, 100),
+        $encodedJson = json_encode([
+            'id' => random_int(1, 100),
+            'name' => 'Vic Cherubini',
+            'age' => random_int(1, 100),
         ]);
 
-        $this->assertIsString($content);
+        $this->assertIsString($encodedJson);
 
-        $matches = new ResponseMatchesSchema(['id' => 1])->evaluate(new Response($content), '', true);
-
-        $this->assertTrue($matches);
+        new ResponseMatchesSchema($schema)->evaluate(
+            new Response($encodedJson),
+        );
     }
 }
