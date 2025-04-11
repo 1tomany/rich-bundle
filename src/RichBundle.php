@@ -18,10 +18,10 @@ class RichBundle extends AbstractBundle
 
         // $container->instanceof(HandlerInterface::class)->tag('messenger.message_handler');
 
-        // $builder
-        //             ->registerForAutoconfiguration(HandlerInterface::class)
-        //             ->addTag('messenger.message_handler', ['method' => 'handle'])
-        //         ;
+        $builder
+                    ->registerForAutoconfiguration(HandlerInterface::class)
+                    ->addTag('messenger.message_handler', ['method' => 'handle'])
+                ;
 
         // $def = $builder->findDefinition(HandlerInterface::class);
         // var_dump(gettype($def));

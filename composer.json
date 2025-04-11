@@ -11,7 +11,6 @@
         "opis/json-schema": "^2.4",
         "symfony/dependency-injection": "^7.2",
         "symfony/event-dispatcher": "^7.2",
-        "symfony/framework-bundle": "^7.2",
         "symfony/http-foundation": "^7.2",
         "symfony/http-kernel": "^7.2",
         "symfony/notifier": "^7.2",
