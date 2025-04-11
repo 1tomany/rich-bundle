@@ -4,7 +4,6 @@ namespace OneToMany\RichBundle\Test\Constraint;
 
 use OneToMany\RichBundle\Test\Constraint\Exception\InvalidArgumentException;
 use OneToMany\RichBundle\Test\Constraint\Exception\UnexpectedTypeException;
-use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\Constraint\Constraint;
 use Symfony\Component\HttpFoundation\Response;
 

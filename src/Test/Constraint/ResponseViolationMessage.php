@@ -46,7 +46,6 @@ final class ResponseViolationMessage extends ResponseMatchesSchema
 
             // @phpstan-ignore-next-line
             if ($this->property === $v->property) {
-
                 // @phpstan-ignore-next-line
                 if ($this->message === $v->message) {
                     $hasPropertyAndMessage = true;
@@ -56,5 +55,4 @@ final class ResponseViolationMessage extends ResponseMatchesSchema
 
         return $hasPropertyAndMessage;
     }
-
 }
