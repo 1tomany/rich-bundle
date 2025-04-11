@@ -29,77 +29,13 @@ final class ResponseViolationMessageTest extends TestCase
         new ResponseViolationMessage('name', 'Required')->evaluate('Vic Cherubini');
     }
 
-    public function testEvaluationRequiresNonEmptyResponseContent(): void
-    {
-        $this->expectException(ExpectationFailedException::class);
-
-        new ResponseViolationMessage('name', 'Required')->evaluate(new Response(''));
-    }
-
-    public function testEvaluationRequiresResponseContentToBeValidJson(): void
+    public function testEvaluationRequiresResponseContentToMatchJsonSchema(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('The response content is not a valid JSON document.');
-
-        new ResponseViolationMessage('name', 'Required')->evaluate(
-            new Response('{"id: "Vic" {, "age": 40}')
-        );
-    }
-
-    public function testEvaluationRequiresResponseContentToHaveViolationsProperty(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('The response content does not have a "violations" property.');
+        $this->expectExceptionMessage('The response content does not match the JSON schema defined in "OneToMany\RichBundle\Serializer\Contract\ExceptionSchema".');
 
         new ResponseViolationMessage('name', 'Required')->evaluate(
             new Response('{"id": 10, "name": "Vic Cherubini"}')
-        );
-    }
-
-    public function testEvaluationRequiresViolationsPropertyToBeAnArrayOfObjects(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('The "violations" property of the response content must be an array.');
-
-        $responseContent = json_encode([
-            'violations' => 'Required',
-        ]);
-
-        $this->assertIsString($responseContent);
-
-        new ResponseViolationMessage('name', 'Required')->evaluate(
-            new Response($responseContent)
-        );
-    }
-
-    public function testEvaluationRequiresEachViolationToHavePropertyAndMessageKeys(): void
-    {
-        $this->expectException(ExpectationFailedException::class);
-
-        $property = 'name';
-        $message = 'Required';
-
-        $responseContent = json_encode([
-            'violations' => [
-                [
-                    'name' => $property,
-                    'error' => $message,
-                ],
-                [
-                    'property' => $property,
-                    'error' => $message,
-                ],
-                [
-                    'name' => $property,
-                    'message' => $message,
-                ],
-            ],
-        ]);
-
-        $this->assertIsString($responseContent);
-
-        new ResponseViolationMessage($property, $message)->evaluate(
-            new Response($responseContent)
         );
     }
 
@@ -108,6 +44,9 @@ final class ResponseViolationMessageTest extends TestCase
         $this->expectException(ExpectationFailedException::class);
 
         $responseContent = json_encode([
+            'status' => 400,
+            'title' => 'Bad Request',
+            'detail' => 'The data provided is not valid.',
             'violations' => [
                 [
                     'property' => 'name',
@@ -133,6 +72,9 @@ final class ResponseViolationMessageTest extends TestCase
         $message = 'Invalid';
 
         $responseContent = json_encode([
+            'status' => 400,
+            'title' => 'Bad Request',
+            'detail' => 'The data provided is not valid.',
             'violations' => [
                 [
                     'property' => $property,

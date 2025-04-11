@@ -2,6 +2,7 @@
 
 namespace OneToMany\RichBundle\Test\Constraint;
 
+use OneToMany\RichBundle\Serializer\Contract\ExceptionSchema;
 use OneToMany\RichBundle\Test\Constraint\Exception\InvalidArgumentException;
 use OneToMany\RichBundle\Test\Constraint\Exception\UnexpectedTypeException;
 use PHPUnit\Framework\Constraint\Constraint;
@@ -15,12 +16,13 @@ use function sprintf;
 
 use const JSON_ERROR_NONE;
 
-final class ResponseViolationMessage extends Constraint
+final class ResponseViolationMessage extends ResponseMatchesSchema
 {
     public function __construct(
         private readonly string $property,
         private readonly string $message,
     ) {
+        parent::__construct(ExceptionSchema::schema());
     }
 
     public function toString(): string
@@ -33,54 +35,31 @@ final class ResponseViolationMessage extends Constraint
      */
     protected function matches(mixed $response): bool
     {
-        if (!$response instanceof Response) {
-            throw new UnexpectedTypeException($response, Response::class);
+        $this->assertIsResponse($response);
+
+        if (!$jsonObject = $this->validateAgainstSchema($response->getContent())) {
+            throw new InvalidArgumentException(\sprintf('The response content does not match the JSON schema defined in "%s".', ExceptionSchema::class));
         }
 
-        $content = $response->getContent();
-
-        if (empty($content)) {
-            return false;
-        }
-
-        $json = json_decode($content);
-
-        if (!is_object($json) || JSON_ERROR_NONE !== json_last_error()) {
-            throw new InvalidArgumentException('The response content is not a valid JSON document.');
-        }
-
-        if (!isset($json->violations)) {
-            throw new InvalidArgumentException('The response content does not have a "violations" property.');
-        }
-
-        if (!is_array($json->violations)) {
-            throw new InvalidArgumentException('The "violations" property of the response content must be an array.');
-        }
+        \assert(\is_array($jsonObject->violations ?? null));
 
         $hasPropertyAndMessage = false;
 
-        foreach ($json->violations as $v) {
-            if (!is_object($v)) {
+        foreach ($jsonObject->violations as $v) {
+            if (!\is_object($v)) {
                 continue;
             }
 
-            if (isset($v->property, $v->message)) {
-                if ($this->property === $v->property) {
-                    if ($this->message === $v->message) {
+            \assert(\property_exists($v, 'property'));
+            \assert(\property_exists($v, 'message'));
+            // && isset($v->property, $v->message));
+            // && isset($v->property, $v->message));
+
+if ($this->message === $v->message) {
                         $hasPropertyAndMessage = true;
                     }
-                }
-            }
         }
 
         return $hasPropertyAndMessage;
-    }
-
-    /**
-     * @param Response $response
-     */
-    protected function failureDescription($response): string
-    {
-        return $this->toString();
     }
 }

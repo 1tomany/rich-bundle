@@ -17,28 +17,30 @@ use function json_last_error;
 
 use const JSON_ERROR_NONE;
 
-final class ResponseMatchesSchema extends Constraint
+class ResponseMatchesSchema extends Constraint
 {
-    private readonly object $schema;
+    private readonly Validator $jsonSchemaValidator;
+    private readonly object $jsonSchema;
 
     /**
-     * @param string|array<string, mixed>|object $schema
+     * @param string|array<string, mixed>|object $jsonSchema
      */
-    public function __construct(string|array|object $schema)
+    public function __construct(string|array|object $jsonSchema)
     {
-        if ($schema && is_array($schema)) {
-            $schema = json_encode($schema);
+        if ($jsonSchema && is_array($jsonSchema)) {
+            $jsonSchema = json_encode($jsonSchema);
         }
 
-        if ($schema && is_string($schema)) {
-            $schema = json_decode($schema);
+        if ($jsonSchema && is_string($jsonSchema)) {
+            $jsonSchema = json_decode($jsonSchema);
         }
 
-        if (!is_object($schema)) {
+        if (!is_object($jsonSchema)) {
             throw new InvalidArgumentException('The schema is not a valid JSON document.');
         }
 
-        $this->schema = $schema;
+        $this->jsonSchema = $jsonSchema;
+        $this->jsonSchemaValidator = new Validator();
     }
 
     public function toString(): string
@@ -51,13 +53,30 @@ final class ResponseMatchesSchema extends Constraint
      */
     protected function matches(mixed $response): bool
     {
+        $this->assertIsResponse($response);
+
+        return false !== $this->validateAgainstSchema($response->getContent());
+    }
+
+    /**
+     * @param Response $response
+     */
+    protected function failureDescription($response): string
+    {
+        return $this->toString();
+    }
+
+    protected function assertIsResponse(mixed $response): bool
+    {
         if (!$response instanceof Response) {
             throw new UnexpectedTypeException($response, Response::class);
         }
 
-        // Decode Response Content
-        $content = $response->getContent();
+        return true;
+    }
 
+    protected function validateAgainstSchema(false|string $content): false|object
+    {
         if (empty($content)) {
             return false;
         }
@@ -68,21 +87,12 @@ final class ResponseMatchesSchema extends Constraint
             throw new InvalidArgumentException('The response content is not a valid JSON document.');
         }
 
-        // Validate Against JSON Schema
-        $jsonValidator = new Validator();
-
-        $jsonValidator->validate(
-            $json, $this->schema
+        $this->jsonSchemaValidator->validate(
+            $json, $this->jsonSchema
         );
 
-        return $jsonValidator->isValid();
-    }
+        $isValid = $this->jsonSchemaValidator->isValid();
 
-    /**
-     * @param Response $response
-     */
-    protected function failureDescription($response): string
-    {
-        return $this->toString();
+        return ((is_object($json) && $isValid) ? $json : false);
     }
 }
