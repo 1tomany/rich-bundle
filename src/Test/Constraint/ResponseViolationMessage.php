@@ -2,6 +2,7 @@
 
 namespace OneToMany\RichBundle\Test\Constraint;
 
+use OneToMany\RichBundle\Test\Constraint\Exception\InvalidArgumentException;
 use OneToMany\RichBundle\Test\Constraint\Exception\UnexpectedTypeException;
 use PHPUnit\Framework\Constraint\Constraint;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,7 +21,7 @@ final class ResponseViolationMessage extends Constraint
 
     public function toString(): string
     {
-        return sprintf('the property "%s" has a violation "%s"', $this->property, $this->message);
+        return sprintf('the property "%s" has a violation message "%s"', $this->property, $this->message);
     }
 
     /**
@@ -34,32 +35,35 @@ final class ResponseViolationMessage extends Constraint
 
         $content = $response->getContent();
 
-        if (!$content) {
+        if (empty($content)) {
             return false;
         }
 
-        $json = json_decode($content, true);
+        $json = json_decode($content);
 
-        if (!is_array($json)) {
-            return false;
+        if (!\is_object($json) || \JSON_ERROR_NONE !== \json_last_error()) {
+            throw new InvalidArgumentException('The response content is not a valid JSON document.');
         }
 
-        $violations = $json['violations'] ?? null;
-
-        if (!is_array($violations)) {
+        if (
+            !isset($json->violations) ||
+            !\is_array($json->violations)
+        ) {
             return false;
         }
 
         $hasPropertyAndMessage = false;
 
-        foreach ($violations as $v) {
-            if (!is_array($v)) {
+        foreach ($json->violations as $v) {
+            if (!\is_object($v)) {
                 continue;
             }
 
-            if ($this->property === $v['property']) {
-                if ($this->message === $v['message']) {
-                    $hasPropertyAndMessage = true;
+            if (isset($v->property, $v->message)) {
+                if ($this->property === $v->property) {
+                    if ($this->message === $v->message) {
+                        $hasPropertyAndMessage = true;
+                    }
                 }
             }
         }

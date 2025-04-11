@@ -61,7 +61,7 @@ final class ResponseMatchesSchema extends Constraint
 
         $json = json_decode($content);
 
-        if (!is_object($json)) {
+        if (!\is_object($json) || \JSON_ERROR_NONE !== \json_last_error()) {
             throw new InvalidArgumentException('The response content is not a valid JSON document.');
         }
 

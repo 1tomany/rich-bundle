@@ -38,14 +38,24 @@ final class ResponseMatchesSchemaTest extends TestCase
         new ResponseMatchesSchema(['id' => 1])->evaluate(['id' => 100]);
     }
 
-    public function testMatchingRequiresNonEmptyResponseContent(): void
+    public function testEvaluationRequiresNonEmptyResponseContent(): void
     {
         $this->expectException(ExpectationFailedException::class);
 
         new ResponseMatchesSchema(['id' => 1])->evaluate(new Response(''));
     }
 
-    public function testResponseContentDoesNotMatchSchema(): void
+    public function testEvaluationRequiresResponseContentToBeValidJson(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The response content is not a valid JSON document.');
+
+        new ResponseMatchesSchema(['id' => 1])->evaluate(
+            new Response('{"id: "Vic" {, "age": 40}')
+        );
+    }
+
+    public function testEvaluationRequiresResponseContentToMatchSchema(): void
     {
         $this->expectException(ExpectationFailedException::class);
 
@@ -64,18 +74,18 @@ final class ResponseMatchesSchemaTest extends TestCase
             'additionalProperties' => false,
         ];
 
-        $encodedJson = json_encode([
+        $responseContent = json_encode([
             'name' => 'Vic Cherubini',
         ]);
 
-        $this->assertIsString($encodedJson);
+        $this->assertIsString($responseContent);
 
         new ResponseMatchesSchema($schema)->evaluate(
-            new Response($encodedJson),
+            new Response($responseContent),
         );
     }
 
-    public function testResponseContentDoesMatchesSchema(): void
+    public function testEvaluationSucceedsWhenResponseContentMatchesSchema(): void
     {
         $schema = [
             'title' => 'Test Schema',
@@ -101,16 +111,16 @@ final class ResponseMatchesSchemaTest extends TestCase
             'additionalProperties' => false,
         ];
 
-        $encodedJson = json_encode([
+        $responseContent = json_encode([
             'id' => random_int(1, 100),
             'name' => 'Vic Cherubini',
             'age' => random_int(1, 100),
         ]);
 
-        $this->assertIsString($encodedJson);
+        $this->assertIsString($responseContent);
 
         new ResponseMatchesSchema($schema)->evaluate(
-            new Response($encodedJson),
+            new Response($responseContent),
         );
     }
 }
