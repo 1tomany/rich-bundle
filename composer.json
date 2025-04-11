@@ -8,6 +8,7 @@
     "require": {
         "php": ">=8.4",
         "1tomany/data-uri": "^3.0",
+        "opis/json-schema": "^2.4",
         "symfony/dependency-injection": "^7.2",
         "symfony/event-dispatcher": "^7.2",
         "symfony/http-foundation": "^7.2",
@@ -19,7 +20,6 @@
     "require-dev": {
         "fakerphp/faker": "^1.24",
         "friendsofphp/php-cs-fixer": "^3.75",
-        "opis/json-schema": "^2.4",
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^11.5"
     },
