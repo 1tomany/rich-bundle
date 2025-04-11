@@ -45,7 +45,37 @@ final class ResponseMatchesSchemaTest extends TestCase
         new ResponseMatchesSchema(['id' => 1])->evaluate(new Response(''));
     }
 
-    public function testMatchingSchema(): void
+    public function testResponseContentDoesNotMatchSchema(): void
+    {
+        $this->expectException(ExpectationFailedException::class);
+
+        $schema = [
+            'title' => 'Test Schema',
+            'type' => 'object',
+            'properties' => [
+                'id' => [
+                    'type' => 'integer',
+                    'minimum' => 0,
+                ],
+            ],
+            'required' => [
+                'id',
+            ],
+            'additionalProperties' => false,
+        ];
+
+        $encodedJson = json_encode([
+            'name' => 'Vic Cherubini',
+        ]);
+
+        $this->assertIsString($encodedJson);
+
+        new ResponseMatchesSchema($schema)->evaluate(
+            new Response($encodedJson),
+        );
+    }
+
+    public function testResponseContentDoesMatchesSchema(): void
     {
         $schema = [
             'title' => 'Test Schema',
@@ -63,6 +93,12 @@ final class ResponseMatchesSchemaTest extends TestCase
                     'minimum' => 0,
                 ],
             ],
+            'required' => [
+                'id',
+                'name',
+                'age',
+            ],
+            'additionalProperties' => false,
         ];
 
         $encodedJson = json_encode([
