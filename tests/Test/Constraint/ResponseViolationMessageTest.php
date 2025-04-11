@@ -29,10 +29,18 @@ final class ResponseViolationMessageTest extends TestCase
         new ResponseViolationMessage('name', 'Required')->evaluate('Vic Cherubini');
     }
 
+    public function testEvaluationRequiresNonEmptyResponseContent(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The response content is empty.');
+
+        new ResponseViolationMessage('name', 'Required')->evaluate(new Response(''));
+    }
+
     public function testEvaluationRequiresResponseContentToMatchJsonSchema(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('The response content does not match the JSON schema defined in "OneToMany\RichBundle\Serializer\Contract\ExceptionSchema".');
+        $this->expectExceptionMessage('The response content does not match the JSON schema defined in "OneToMany\RichBundle\Exception\Contract\WrappedExceptionSchema".');
 
         new ResponseViolationMessage('name', 'Required')->evaluate(
             new Response('{"id": 10, "name": "Vic Cherubini"}')

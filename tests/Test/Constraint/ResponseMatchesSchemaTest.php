@@ -40,7 +40,8 @@ final class ResponseMatchesSchemaTest extends TestCase
 
     public function testEvaluationRequiresNonEmptyResponseContent(): void
     {
-        $this->expectException(ExpectationFailedException::class);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The response content is empty.');
 
         new ResponseMatchesSchema(['id' => 1])->evaluate(new Response(''));
     }

@@ -2,14 +2,11 @@
 
 namespace OneToMany\RichBundle\Test\Constraint;
 
-use OneToMany\RichBundle\Serializer\Contract\ExceptionSchema;
+use OneToMany\RichBundle\Exception\Contract\WrappedExceptionSchema;
 use OneToMany\RichBundle\Test\Constraint\Exception\InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Response;
 
-use function assert;
-use function is_array;
 use function is_object;
-use function property_exists;
 use function sprintf;
 
 final class ResponseViolationMessage extends ResponseMatchesSchema
@@ -18,7 +15,7 @@ final class ResponseViolationMessage extends ResponseMatchesSchema
         private readonly string $property,
         private readonly string $message,
     ) {
-        parent::__construct(ExceptionSchema::schema());
+        parent::__construct(new WrappedExceptionSchema());
     }
 
     public function toString(): string
@@ -31,31 +28,33 @@ final class ResponseViolationMessage extends ResponseMatchesSchema
      */
     protected function matches(mixed $response): bool
     {
-        $this->assertIsResponse($response);
+        $json = $this->validateResponse(...[
+            'response' => $response,
+        ]);
 
-        if (!$jsonObject = $this->validateAgainstSchema($response->getContent())) {
-            throw new InvalidArgumentException(sprintf('The response content does not match the JSON schema defined in "%s".', ExceptionSchema::class));
+        if (!$this->validateSchema($json)) {
+            throw new InvalidArgumentException(sprintf('The response content does not match the JSON schema defined in "%s".', WrappedExceptionSchema::class));
         }
-
-        assert(is_array($jsonObject->violations ?? null));
 
         $hasPropertyAndMessage = false;
 
-        foreach ($jsonObject->violations as $v) {
+        // @phpstan-ignore-next-line
+        foreach ($json->violations as $v) {
             if (!is_object($v)) {
                 continue;
             }
 
-            assert(property_exists($v, 'property'));
-            assert(property_exists($v, 'message'));
-            // && isset($v->property, $v->message));
-            // && isset($v->property, $v->message));
+            // @phpstan-ignore-next-line
+            if ($this->property === $v->property) {
 
-            if ($this->message === $v->message) {
-                $hasPropertyAndMessage = true;
+                // @phpstan-ignore-next-line
+                if ($this->message === $v->message) {
+                    $hasPropertyAndMessage = true;
+                }
             }
         }
 
         return $hasPropertyAndMessage;
     }
+
 }

@@ -2,10 +2,9 @@
 
 namespace OneToMany\RichBundle\Test\Constraint;
 
-use JsonSchema\Validator;
+use OneToMany\RichBundle\Contract\JsonSchemaInterface;
 use OneToMany\RichBundle\Test\Constraint\Exception\InvalidArgumentException;
-use OneToMany\RichBundle\Test\Constraint\Exception\UnexpectedTypeException;
-use PHPUnit\Framework\Constraint\Constraint;
+use Opis\JsonSchema\Validator;
 use Symfony\Component\HttpFoundation\Response;
 
 use function is_array;
@@ -13,34 +12,33 @@ use function is_object;
 use function is_string;
 use function json_decode;
 use function json_encode;
-use function json_last_error;
 
-use const JSON_ERROR_NONE;
-
-class ResponseMatchesSchema extends Constraint
+class ResponseMatchesSchema extends AbstractResponseConstraint
 {
-    private readonly Validator $jsonSchemaValidator;
-    private readonly object $jsonSchema;
+    private readonly object $schema;
 
     /**
-     * @param string|array<string, mixed>|object $jsonSchema
+     * @param string|array<string, mixed>|object $schema
      */
-    public function __construct(string|array|object $jsonSchema)
+    public function __construct(string|array|object $schema)
     {
-        if ($jsonSchema && is_array($jsonSchema)) {
-            $jsonSchema = json_encode($jsonSchema);
+        if ($schema instanceof JsonSchemaInterface) {
+            $schema = $schema->__toString();
         }
 
-        if ($jsonSchema && is_string($jsonSchema)) {
-            $jsonSchema = json_decode($jsonSchema);
+        if ($schema && is_array($schema)) {
+            $schema = json_encode($schema);
         }
 
-        if (!is_object($jsonSchema)) {
+        if ($schema && is_string($schema)) {
+            $schema = json_decode($schema);
+        }
+
+        if (!is_object($schema)) {
             throw new InvalidArgumentException('The schema is not a valid JSON document.');
         }
 
-        $this->jsonSchema = $jsonSchema;
-        $this->jsonSchemaValidator = new Validator();
+        $this->schema = $schema;
     }
 
     public function toString(): string
@@ -48,14 +46,13 @@ class ResponseMatchesSchema extends Constraint
         return 'the response content matches the JSON schema';
     }
 
-    /**
-     * @param Response $response
-     */
     protected function matches(mixed $response): bool
     {
-        $this->assertIsResponse($response);
+        $json = $this->validateResponse(...[
+            'response' => $response,
+        ]);
 
-        return false !== $this->validateAgainstSchema($response->getContent());
+        return $this->validateSchema($json);
     }
 
     /**
@@ -66,33 +63,12 @@ class ResponseMatchesSchema extends Constraint
         return $this->toString();
     }
 
-    protected function assertIsResponse(mixed $response): bool
+    protected function validateSchema(object $json): bool
     {
-        if (!$response instanceof Response) {
-            throw new UnexpectedTypeException($response, Response::class);
-        }
-
-        return true;
-    }
-
-    protected function validateAgainstSchema(false|string $content): false|object
-    {
-        if (empty($content)) {
-            return false;
-        }
-
-        $json = json_decode($content);
-
-        if (!is_object($json) || JSON_ERROR_NONE !== json_last_error()) {
-            throw new InvalidArgumentException('The response content is not a valid JSON document.');
-        }
-
-        $this->jsonSchemaValidator->validate(
-            $json, $this->jsonSchema
+        $result = new Validator()->validate(
+            $json, $this->schema, null, null
         );
 
-        $isValid = $this->jsonSchemaValidator->isValid();
-
-        return (is_object($json) && $isValid) ? $json : false;
+        return $result->isValid();
     }
 }

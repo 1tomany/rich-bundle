@@ -1,10 +1,10 @@
 <?php
 
-namespace OneToMany\RichBundle\Serializer\Contract;
+namespace OneToMany\RichBundle\Exception\Contract;
 
-use OneToMany\RichBundle\Contract\SchemaInterface;
+use OneToMany\RichBundle\Contract\AbstractJsonSchema;
 
-final readonly class ExceptionSchema implements SchemaInterface
+final readonly class WrappedExceptionSchema extends AbstractJsonSchema
 {
     public static function schema(): array
     {

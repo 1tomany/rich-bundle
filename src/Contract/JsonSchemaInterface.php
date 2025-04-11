@@ -2,8 +2,10 @@
 
 namespace OneToMany\RichBundle\Contract;
 
-interface SchemaInterface
+interface JsonSchemaInterface
 {
+    public function __toString(): string;
+
     /**
      * @return array{
      *   title: non-empty-string,
