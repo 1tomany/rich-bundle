@@ -15,6 +15,7 @@ use function json_encode;
 
 class ResponseMatchesSchema extends AbstractResponseConstraint
 {
+    private readonly Validator $validator;
     private readonly object $schema;
 
     /**
@@ -39,6 +40,10 @@ class ResponseMatchesSchema extends AbstractResponseConstraint
         }
 
         $this->schema = $schema;
+
+        $this->validator = new Validator(...[
+            'stop_at_first_error' => true,
+        ]);
     }
 
     public function toString(): string
@@ -65,7 +70,7 @@ class ResponseMatchesSchema extends AbstractResponseConstraint
 
     protected function validateSchema(object $json): bool
     {
-        $result = new Validator()->validate(
+        $result = $this->validator->validate(
             $json, $this->schema, null, null
         );
 
