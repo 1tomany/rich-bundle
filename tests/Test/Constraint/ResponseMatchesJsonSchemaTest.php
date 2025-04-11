@@ -4,7 +4,7 @@ namespace OneToMany\RichBundle\Tests\Test\Constraint;
 
 use OneToMany\RichBundle\Test\Constraint\Exception\InvalidArgumentException;
 use OneToMany\RichBundle\Test\Constraint\Exception\UnexpectedTypeException;
-use OneToMany\RichBundle\Test\Constraint\ResponseMatchesSchema;
+use OneToMany\RichBundle\Test\Constraint\ResponseMatchesJsonSchema;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
@@ -16,26 +16,26 @@ use function random_int;
 #[Group('UnitTests')]
 #[Group('TestTests')]
 #[Group('ConstraintTests')]
-final class ResponseMatchesSchemaTest extends TestCase
+final class ResponseMatchesJsonSchemaTest extends TestCase
 {
     public function testConstructorRequiresValidJsonDocument(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The schema is not a valid JSON document.');
 
-        new ResponseMatchesSchema('{"invalid: " schema}');
+        new ResponseMatchesJsonSchema('{"invalid: " schema}');
     }
 
     public function testToString(): void
     {
-        $this->assertEquals('the response content matches the JSON schema', new ResponseMatchesSchema(['id' => 1])->toString());
+        $this->assertEquals('the response content matches the JSON schema', new ResponseMatchesJsonSchema(['id' => 1])->toString());
     }
 
     public function testEvaluationRequiresResponseObject(): void
     {
         $this->expectException(UnexpectedTypeException::class);
 
-        new ResponseMatchesSchema(['id' => 1])->evaluate(['id' => 100]);
+        new ResponseMatchesJsonSchema(['id' => 1])->evaluate(['id' => 100]);
     }
 
     public function testEvaluationRequiresNonEmptyResponseContent(): void
@@ -43,7 +43,7 @@ final class ResponseMatchesSchemaTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The response content is empty.');
 
-        new ResponseMatchesSchema(['id' => 1])->evaluate(new Response(''));
+        new ResponseMatchesJsonSchema(['id' => 1])->evaluate(new Response(''));
     }
 
     public function testEvaluationRequiresResponseContentToBeValidJson(): void
@@ -51,7 +51,7 @@ final class ResponseMatchesSchemaTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The response content is not a valid JSON document.');
 
-        new ResponseMatchesSchema(['id' => 1])->evaluate(
+        new ResponseMatchesJsonSchema(['id' => 1])->evaluate(
             new Response('{"id: "Vic" {, "age": 40}')
         );
     }
@@ -81,7 +81,7 @@ final class ResponseMatchesSchemaTest extends TestCase
 
         $this->assertIsString($responseContent);
 
-        new ResponseMatchesSchema($schema)->evaluate(
+        new ResponseMatchesJsonSchema($schema)->evaluate(
             new Response($responseContent),
         );
     }
@@ -120,7 +120,7 @@ final class ResponseMatchesSchemaTest extends TestCase
 
         $this->assertIsString($responseContent);
 
-        new ResponseMatchesSchema($schema)->evaluate(
+        new ResponseMatchesJsonSchema($schema)->evaluate(
             new Response($responseContent),
         );
     }

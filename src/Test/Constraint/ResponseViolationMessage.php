@@ -4,12 +4,11 @@ namespace OneToMany\RichBundle\Test\Constraint;
 
 use OneToMany\RichBundle\Exception\Contract\WrappedExceptionSchema;
 use OneToMany\RichBundle\Test\Constraint\Exception\InvalidArgumentException;
-use Symfony\Component\HttpFoundation\Response;
 
 use function is_object;
 use function sprintf;
 
-final class ResponseViolationMessage extends ResponseMatchesSchema
+final class ResponseViolationMessage extends ResponseMatchesJsonSchema
 {
     public function __construct(
         private readonly string $property,
@@ -23,9 +22,6 @@ final class ResponseViolationMessage extends ResponseMatchesSchema
         return sprintf('the property "%s" has a violation message "%s"', $this->property, $this->message);
     }
 
-    /**
-     * @param Response $response
-     */
     protected function matches(mixed $response): bool
     {
         $json = $this->validateResponse(...[

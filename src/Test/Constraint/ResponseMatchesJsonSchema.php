@@ -5,7 +5,6 @@ namespace OneToMany\RichBundle\Test\Constraint;
 use OneToMany\RichBundle\Contract\JsonSchemaInterface;
 use OneToMany\RichBundle\Test\Constraint\Exception\InvalidArgumentException;
 use Opis\JsonSchema\Validator;
-use Symfony\Component\HttpFoundation\Response;
 
 use function is_array;
 use function is_object;
@@ -13,7 +12,7 @@ use function is_string;
 use function json_decode;
 use function json_encode;
 
-class ResponseMatchesSchema extends AbstractResponseConstraint
+class ResponseMatchesJsonSchema extends AbstractResponseConstraint
 {
     private readonly Validator $validator;
     private readonly object $schema;
@@ -58,14 +57,6 @@ class ResponseMatchesSchema extends AbstractResponseConstraint
         ]);
 
         return $this->validateSchema($json);
-    }
-
-    /**
-     * @param Response $response
-     */
-    protected function failureDescription($response): string
-    {
-        return $this->toString();
     }
 
     protected function validateSchema(object $json): bool
