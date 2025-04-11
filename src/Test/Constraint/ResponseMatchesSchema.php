@@ -93,6 +93,6 @@ class ResponseMatchesSchema extends Constraint
 
         $isValid = $this->jsonSchemaValidator->isValid();
 
-        return ((is_object($json) && $isValid) ? $json : false);
+        return (is_object($json) && $isValid) ? $json : false;
     }
 }
