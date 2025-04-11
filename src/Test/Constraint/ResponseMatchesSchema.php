@@ -13,6 +13,9 @@ use function is_object;
 use function is_string;
 use function json_decode;
 use function json_encode;
+use function json_last_error;
+
+use const JSON_ERROR_NONE;
 
 final class ResponseMatchesSchema extends Constraint
 {
@@ -61,7 +64,7 @@ final class ResponseMatchesSchema extends Constraint
 
         $json = json_decode($content);
 
-        if (!\is_object($json) || \JSON_ERROR_NONE !== \json_last_error()) {
+        if (!is_object($json) || JSON_ERROR_NONE !== json_last_error()) {
             throw new InvalidArgumentException('The response content is not a valid JSON document.');
         }
 

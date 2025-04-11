@@ -48,7 +48,8 @@ final class ResponseViolationMessageTest extends TestCase
 
     public function testEvaluationRequiresResponseContentToHaveViolationsProperty(): void
     {
-        $this->expectException(ExpectationFailedException::class);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The response content does not have a "violations" property.');
 
         new ResponseViolationMessage('name', 'Required')->evaluate(
             new Response('{"id": 10, "name": "Vic Cherubini"}')
@@ -57,10 +58,11 @@ final class ResponseViolationMessageTest extends TestCase
 
     public function testEvaluationRequiresViolationsPropertyToBeAnArrayOfObjects(): void
     {
-        $this->expectException(ExpectationFailedException::class);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The "violations" property of the response content must be an array.');
 
         $responseContent = json_encode([
-            'violations' => 'Value required.',
+            'violations' => 'Required',
         ]);
 
         $this->assertIsString($responseContent);

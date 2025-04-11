@@ -8,8 +8,12 @@ use PHPUnit\Framework\Constraint\Constraint;
 use Symfony\Component\HttpFoundation\Response;
 
 use function is_array;
+use function is_object;
 use function json_decode;
+use function json_last_error;
 use function sprintf;
+
+use const JSON_ERROR_NONE;
 
 final class ResponseViolationMessage extends Constraint
 {
@@ -41,21 +45,22 @@ final class ResponseViolationMessage extends Constraint
 
         $json = json_decode($content);
 
-        if (!\is_object($json) || \JSON_ERROR_NONE !== \json_last_error()) {
+        if (!is_object($json) || JSON_ERROR_NONE !== json_last_error()) {
             throw new InvalidArgumentException('The response content is not a valid JSON document.');
         }
 
-        if (
-            !isset($json->violations) ||
-            !\is_array($json->violations)
-        ) {
-            return false;
+        if (!isset($json->violations)) {
+            throw new InvalidArgumentException('The response content does not have a "violations" property.');
+        }
+
+        if (!is_array($json->violations)) {
+            throw new InvalidArgumentException('The "violations" property of the response content must be an array.');
         }
 
         $hasPropertyAndMessage = false;
 
         foreach ($json->violations as $v) {
-            if (!\is_object($v)) {
+            if (!is_object($v)) {
                 continue;
             }
 
