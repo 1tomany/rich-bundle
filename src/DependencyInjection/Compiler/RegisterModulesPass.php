@@ -57,6 +57,7 @@ class RegisterModulesPass implements CompilerPassInterface
             return false;
         }
 
+        /** @disregard P1009 Undefined type */
         if (interface_exists(MessageBusInterface::class)) {
             return is_subclass_of($class, HandlerInterface::class);
         }
