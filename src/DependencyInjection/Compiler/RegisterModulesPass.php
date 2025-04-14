@@ -17,7 +17,7 @@ use function str_replace;
 
 class RegisterModulesPass implements CompilerPassInterface
 {
-    public function process(ContainerBuilder $container)
+    public function process(ContainerBuilder $container): void
     {
         foreach ($container->getDefinitions() as $id => $definition) {
             $class = $definition->getClass();
