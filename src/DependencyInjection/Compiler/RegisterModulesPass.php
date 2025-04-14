@@ -10,6 +10,11 @@ use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\Messenger\MessageBusInterface;
 
+use function class_exists;
+use function interface_exists;
+use function is_subclass_of;
+use function str_replace;
+
 class RegisterModulesPass implements CompilerPassInterface
 {
     public function process(ContainerBuilder $container)
@@ -48,12 +53,12 @@ class RegisterModulesPass implements CompilerPassInterface
 
     private function shouldRegisterAsMessageHandler(string $class): bool
     {
-        if (!\class_exists($class)) {
+        if (!class_exists($class)) {
             return false;
         }
 
-        if (\interface_exists(MessageBusInterface::class)) {
-            return \is_subclass_of($class, HandlerInterface::class);
+        if (interface_exists(MessageBusInterface::class)) {
+            return is_subclass_of($class, HandlerInterface::class);
         }
 
         return false;
@@ -70,15 +75,15 @@ class RegisterModulesPass implements CompilerPassInterface
      */
     private function getHandlerCommandClass(string $class): ?string
     {
-        // This is a quick-and-dirty way to "put" the command class
-        // in the proper namespace and name it with the correct suffix
-        $command = \str_replace('Handler', 'Command', $class);
+        // This is a quick-and-dirty way to generate the FQCN
+        // for the command given the FQCN of the handler class
+        $command = str_replace('Handler', 'Command', $class);
 
-        if (!\class_exists($command)) {
+        if (!class_exists($command)) {
             return null;
         }
 
-        if (!\is_subclass_of($command, CommandInterface::class)) {
+        if (!is_subclass_of($command, CommandInterface::class)) {
             return null;
         }
 
@@ -87,14 +92,14 @@ class RegisterModulesPass implements CompilerPassInterface
 
     private function isNonHandlerRichModuleClass(string $class): bool
     {
-        if (!\class_exists($class)) {
+        if (!class_exists($class)) {
             return false;
         }
 
-        return (
-            \is_subclass_of($class, CommandInterface::class) ||
-            \is_subclass_of($class, InputInterface::class) ||
-            \is_subclass_of($class, ResultInterface::class)
-        );
+        return
+            is_subclass_of($class, CommandInterface::class)
+            || is_subclass_of($class, InputInterface::class)
+            || is_subclass_of($class, ResultInterface::class)
+        ;
     }
 }
