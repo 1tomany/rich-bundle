@@ -40,7 +40,7 @@ class RegisterModulesPass implements CompilerPassInterface
 
             // Remove input, command, and result classes from the
             // container because they'll be instantiated elsewhere
-            if ($this->isNonServiceClass($class)) {
+            if ($this->isNonHandlerRichModuleClass($class)) {
                 $container->removeDefinition($id);
             }
         }
@@ -60,15 +60,19 @@ class RegisterModulesPass implements CompilerPassInterface
     }
 
     /**
+     * This attempts to generate the command class name based off
+     * the handler class name. It takes the FQCN of the handler and
+     * replaces the string Handler with Command. If the resulting
+     * class exists and implements the CommandInterface interface,
+     * it assumes that class is the command class for that handler.
+     *
      * @return ?class-string<CommandInterface>
      */
     private function getHandlerCommandClass(string $class): ?string
     {
-        // Put the command class in the right namespace
-        $command = \str_replace('\\Handler\\', '\\Command\\', $class);
-
-        // Name the command class with the correct suffix
-        $command = \str_replace('Handler', 'Command', $command);
+        // This is a quick-and-dirty way to "put" the command class
+        // in the proper namespace and name it with the correct suffix
+        $command = \str_replace('Handler', 'Command', $class);
 
         if (!\class_exists($command)) {
             return null;
@@ -81,7 +85,7 @@ class RegisterModulesPass implements CompilerPassInterface
         return $command;
     }
 
-    private function isNonServiceClass(string $class): bool
+    private function isNonHandlerRichModuleClass(string $class): bool
     {
         if (!\class_exists($class)) {
             return false;
