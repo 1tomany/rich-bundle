@@ -13,6 +13,9 @@ class RichBundle extends AbstractBundle
     {
         parent::build($container);
 
+        // Add the messenger.message_handler tag to all classes
+        // that implement the HandlerInterface interface, and
+        // ensure their handles() method uses the correct command
         $container->addCompilerPass(new RegisterModulesPass());
     }
 
