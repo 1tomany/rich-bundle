@@ -17,7 +17,6 @@ use OneToMany\RichBundle\ValueResolver\InputValueResolver;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
-use ReflectionProperty;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBag;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
@@ -36,7 +35,6 @@ use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validation;
-use Symfony\Component\Validator\Validator\RecursiveValidator;
 
 use function random_int;
 
@@ -441,7 +439,7 @@ final class InputValueResolverTest extends TestCase
         );
 
         // Assert: $tokenStorage Property Is Null
-        $refProperty = new ReflectionProperty(
+        $refProperty = new \ReflectionProperty(
             $valueResolver, 'tokenStorage'
         );
 
