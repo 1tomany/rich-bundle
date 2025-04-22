@@ -19,6 +19,7 @@ use OneToMany\RichBundle\ValueResolver\Exception\ContentTypeHeaderMissingExcepti
 use OneToMany\RichBundle\ValueResolver\Exception\InvalidMappingException;
 use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
 use OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException;
+use OneToMany\RichBundle\ValueResolver\Exception\SourceSecurityMappingFailedTokenStorageIsNullException;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
@@ -292,7 +293,11 @@ final class InputValueResolver implements ValueResolverInterface
 
     private function extractFromSecurityToken(\ReflectionProperty $property, PropertySource $source): void
     {
-        $token = $this->tokenStorage?->getToken();
+        if (null === $this->tokenStorage) {
+            throw new SourceSecurityMappingFailedTokenStorageIsNullException($property->getName());
+        }
+
+        $token = $this->tokenStorage->getToken();
 
         if (null !== $userId = $token?->getUserIdentifier()) {
             $this->appendPropertyValue($property, $source, $userId);

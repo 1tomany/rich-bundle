@@ -6,15 +6,18 @@ use OneToMany\RichBundle\Attribute\PropertyIgnored;
 use OneToMany\RichBundle\Attribute\SourceHeader;
 use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
+use OneToMany\RichBundle\Attribute\SourceSecurity;
 use OneToMany\RichBundle\Contract\CommandInterface;
 use OneToMany\RichBundle\Contract\InputInterface;
 use OneToMany\RichBundle\ValueResolver\Exception\ContentTypeHeaderMissingException;
 use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
 use OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException;
+use OneToMany\RichBundle\ValueResolver\Exception\SourceSecurityMappingFailedTokenStorageIsNullException;
 use OneToMany\RichBundle\ValueResolver\InputValueResolver;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
+use ReflectionProperty;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBag;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
@@ -33,6 +36,7 @@ use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validation;
+use Symfony\Component\Validator\Validator\RecursiveValidator;
 
 use function random_int;
 
@@ -404,6 +408,49 @@ final class InputValueResolverTest extends TestCase
         $this->assertEquals($acceptType, $inputs[0]->accept);
         $this->assertEquals($contentType, $inputs[0]->contentType);
         $this->assertEquals($customId, $inputs[0]->customId);
+    }
+
+    public function testResolvingSourceSecurityRequiresSymfonySecurityBundle(): void
+    {
+        $this->expectException(SourceSecurityMappingFailedTokenStorageIsNullException::class);
+        $this->expectExceptionMessage('The property "username" could not be extracted from the security token because the Symfony Security Bundle is not installed. Try running "composer require symfony/security-bundle".');
+
+        // Arrange: Create Input Class
+        $input = new class implements InputInterface {
+            #[SourceSecurity]
+            private(set) public string $username;
+
+            public function __construct()
+            {
+            }
+
+            public function toCommand(): CommandInterface
+            {
+                return new class implements CommandInterface {};
+            }
+        };
+
+        // Arrange: Create Value Resolver
+        $container = new Container(null);
+
+        $valueResolver = new InputValueResolver(
+            new ContainerBag($container),
+            new Serializer([], [], []),
+            Validation::createValidator(),
+            null
+        );
+
+        // Assert: $tokenStorage Property Is Null
+        $refProperty = new ReflectionProperty(
+            $valueResolver, 'tokenStorage'
+        );
+
+        $refProperty->setAccessible(true);
+
+        $this->assertNull($refProperty->getValue($valueResolver));
+
+        // Assert: Resolving SourceSecurity Property Requires TokenStorage
+        $valueResolver->resolve(new Request(), $this->createArgument($input::class));
     }
 
     public function testResolvingPropertiesFromMultipartFormDataRequest(): void
