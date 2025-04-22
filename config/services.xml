@@ -12,7 +12,7 @@
       <tag>serializer.normalizer</tag>
       <argument key="$debug">%kernel.debug%</argument>
     </service>
-    <service id="OneToMany\RichBundle\Serializer\Normalizer\LocalFileDenormalizer">
+    <service id="OneToMany\RichBundle\Serializer\Normalizer\SmartFileDenormalizer">
       <tag>serializer.denormalizer</tag>
     </service>
     <service id="OneToMany\RichBundle\ValueResolver\InputValueResolver">
