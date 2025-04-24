@@ -6,7 +6,7 @@
     "minimum-stability": "stable",
     "require": {
         "php": ">=8.4",
-        "1tomany/data-uri": "^4.0",
+        "1tomany/data-uri": "^4.1",
         "opis/json-schema": "^2.4",
         "symfony/dependency-injection": "^7.2",
         "symfony/event-dispatcher": "^7.2",
