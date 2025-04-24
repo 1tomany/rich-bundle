@@ -2,12 +2,12 @@
 
 $finder = new PhpCsFixer\Finder()
     ->exclude([
-        'config',
-        'var',
+        './config/',
+        './var/',
     ])
     ->in([
-        './src',
-        './tests',
+        './src/',
+        './tests/',
     ]);
 
 return new PhpCsFixer\Config()
