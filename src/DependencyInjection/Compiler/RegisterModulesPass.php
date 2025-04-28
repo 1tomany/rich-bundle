@@ -53,12 +53,13 @@ class RegisterModulesPass implements CompilerPassInterface
 
     private function shouldRegisterAsMessageHandler(string $class): bool
     {
-        if (!class_exists($class)) {
+        // @see https://github.com/1tomany/rich-bundle/issues/11
+        if (!class_exists($class, false)) {
             return false;
         }
 
         /** @disregard P1009 Undefined type */
-        if (interface_exists(MessageBusInterface::class)) {
+        if (interface_exists(MessageBusInterface::class, false)) {
             return is_subclass_of($class, HandlerInterface::class);
         }
 
@@ -80,7 +81,8 @@ class RegisterModulesPass implements CompilerPassInterface
         // for the command given the FQCN of the handler class
         $command = str_replace('Handler', 'Command', $class);
 
-        if (!class_exists($command)) {
+        // @see https://github.com/1tomany/rich-bundle/issues/11
+        if (!class_exists($command, false)) {
             return null;
         }
 
@@ -93,14 +95,14 @@ class RegisterModulesPass implements CompilerPassInterface
 
     private function isNonHandlerRichModuleClass(string $class): bool
     {
-        if (!class_exists($class)) {
+        // @see https://github.com/1tomany/rich-bundle/issues/11
+        if (!class_exists($class, false)) {
             return false;
         }
 
         return
             is_subclass_of($class, CommandInterface::class)
             || is_subclass_of($class, InputInterface::class)
-            || is_subclass_of($class, ResultInterface::class)
-        ;
+            || is_subclass_of($class, ResultInterface::class);
     }
 }
