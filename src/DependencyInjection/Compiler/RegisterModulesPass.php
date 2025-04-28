@@ -103,7 +103,6 @@ class RegisterModulesPass implements CompilerPassInterface
         return
             is_subclass_of($class, CommandInterface::class)
             || is_subclass_of($class, InputInterface::class)
-            || is_subclass_of($class, ResultInterface::class)
-        ;
+            || is_subclass_of($class, ResultInterface::class);
     }
 }
