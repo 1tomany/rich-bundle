@@ -14,14 +14,17 @@ use function json_encode;
 
 class ResponseMatchesJsonSchema extends AbstractResponseConstraint
 {
-    private readonly Validator $validator;
+    private readonly ?string $class;
     private readonly object $schema;
+    private readonly Validator $validator;
 
     /**
      * @param string|array<string, mixed>|object $schema
      */
     public function __construct(string|array|object $schema)
     {
+        $this->class = is_object($schema) ? $schema::class : null;
+
         if ($schema instanceof JsonSchemaInterface) {
             $schema = $schema->__toString();
         }
@@ -52,19 +55,38 @@ class ResponseMatchesJsonSchema extends AbstractResponseConstraint
 
     protected function matches(mixed $response): bool
     {
+        return null !== $this->validateSchema($response);
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    protected function validateSchema(mixed $response, bool $throwOnInvalid = false): ?object
+    {
         $json = $this->validateResponse(...[
             'response' => $response,
         ]);
 
-        return $this->validateSchema($json);
-    }
-
-    protected function validateSchema(object $json): bool
-    {
         $result = $this->validator->validate(
             $json, $this->schema, null, null
         );
 
-        return $result->isValid();
+        if ($result->isValid()) {
+            return $json;
+        }
+
+        if ($throwOnInvalid) {
+            if (null !== $this->class) {
+                throw new InvalidArgumentException(sprintf('The response content does not match the JSON schema defined in "%s".', $this->class));
+            }
+
+            if (is_string($this->schema->title ?? null)) {
+                throw new InvalidArgumentException(sprintf('The response content does not match the "%s" JSON schema.', $this->schema->title));
+            }
+
+            throw new InvalidArgumentException('The response content does not match the JSON schema.');
+        }
+
+        return null;
     }
 }

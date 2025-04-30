@@ -22,15 +22,12 @@ final class ResponseViolationMessage extends ResponseMatchesJsonSchema
         return sprintf('the property "%s" has a violation message "%s"', $this->property, $this->message);
     }
 
+    /**
+     * @throws InvalidArgumentException
+     */
     protected function matches(mixed $response): bool
     {
-        $json = $this->validateResponse(...[
-            'response' => $response,
-        ]);
-
-        if (!$this->validateSchema($json)) {
-            throw new InvalidArgumentException(sprintf('The response content does not match the JSON schema defined in "%s".', WrappedExceptionSchema::class));
-        }
+        $json = $this->validateSchema($response, true);
 
         $hasPropertyAndMessage = false;
 
