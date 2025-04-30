@@ -8,9 +8,9 @@ use OneToMany\RichBundle\Test\Constraint\ResponseMatchesJsonSchema;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 
-use function json_encode;
 use function random_int;
 
 #[Group('UnitTests')]
@@ -75,19 +75,17 @@ final class ResponseMatchesJsonSchemaTest extends TestCase
             'additionalProperties' => false,
         ];
 
-        $responseContent = json_encode([
+        $response = new JsonResponse([
             'name' => 'Vic Cherubini',
         ]);
 
-        $this->assertIsString($responseContent);
-
-        new ResponseMatchesJsonSchema($schema)->evaluate(
-            new Response($responseContent),
-        );
+        new ResponseMatchesJsonSchema($schema)->evaluate($response);
     }
 
     public function testEvaluationSucceedsWhenResponseContentMatchesSchema(): void
     {
+        $this->expectNotToPerformAssertions();
+
         $schema = [
             'title' => 'Test Schema',
             'type' => 'object',
@@ -112,16 +110,12 @@ final class ResponseMatchesJsonSchemaTest extends TestCase
             'additionalProperties' => false,
         ];
 
-        $responseContent = json_encode([
+        $response = new JsonResponse([
             'id' => random_int(1, 100),
             'name' => 'Vic Cherubini',
             'age' => random_int(1, 100),
         ]);
 
-        $this->assertIsString($responseContent);
-
-        new ResponseMatchesJsonSchema($schema)->evaluate(
-            new Response($responseContent),
-        );
+        new ResponseMatchesJsonSchema($schema)->evaluate($response);
     }
 }
