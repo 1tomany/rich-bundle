@@ -8,6 +8,7 @@ use OneToMany\RichBundle\Test\Constraint\ResponseViolationMessage;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 use function json_encode;
@@ -42,16 +43,14 @@ final class ResponseViolationMessageTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The response content does not match the JSON schema defined in "OneToMany\RichBundle\Exception\Contract\WrappedExceptionSchema".');
 
-        new ResponseViolationMessage('name', 'Required')->evaluate(
-            new Response('{"id": 10, "name": "Vic Cherubini"}')
-        );
+        new ResponseViolationMessage('name', 'Required')->evaluate(new JsonResponse(['id' => 10]));
     }
 
     public function testEvaluationRequiresAtLeastOneViolationToMatchPropertyAndMessage(): void
     {
         $this->expectException(ExpectationFailedException::class);
 
-        $responseContent = json_encode([
+        $response = new JsonResponse([
             'status' => 400,
             'title' => 'Bad Request',
             'detail' => 'The data provided is not valid.',
@@ -67,30 +66,25 @@ final class ResponseViolationMessageTest extends TestCase
             ],
         ]);
 
-        $this->assertIsString($responseContent);
-
-        new ResponseViolationMessage('name', 'Error')->evaluate(
-            new Response($responseContent)
-        );
+        new ResponseViolationMessage('name', 'Error')->evaluate($response);
     }
 
     public function testEvaluationSucceedsWhenAtLeastOneViolationMatchesPropertyAndMessage(): void
     {
-        $property = 'email';
-        $message = 'Invalid';
+        $this->expectNotToPerformAssertions();
 
-        $responseContent = json_encode([
+        $response = new JsonResponse([
             'status' => 400,
             'title' => 'Bad Request',
-            'detail' => 'The data provided is not valid.',
+            'detail' => 'Invalid data.',
             'violations' => [
                 [
-                    'property' => $property,
+                    'property' => 'email',
                     'message' => 'Required',
                 ],
                 [
-                    'property' => $property,
-                    'message' => $message,
+                    'property' => 'email',
+                    'message' => 'Invalid',
                 ],
                 [
                     'property' => 'age',
@@ -99,10 +93,6 @@ final class ResponseViolationMessageTest extends TestCase
             ],
         ]);
 
-        $this->assertIsString($responseContent);
-
-        new ResponseViolationMessage($property, $message)->evaluate(
-            new Response($responseContent)
-        );
+        new ResponseViolationMessage('email', 'Invalid')->evaluate($response);
     }
 }

@@ -8,9 +8,8 @@ use OneToMany\RichBundle\Test\Constraint\ResponseErrorDetail;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
-
-use function json_encode;
 
 #[Group('UnitTests')]
 #[Group('TestTests')]
@@ -42,44 +41,34 @@ final class ResponseErrorDetailTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The response content does not match the JSON schema defined in "OneToMany\RichBundle\Exception\Contract\WrappedExceptionSchema".');
 
-        new ResponseErrorDetail('Error!')->evaluate(
-            new Response('{"detail": "Error!"}')
-        );
+        new ResponseErrorDetail('Error!')->evaluate(new JsonResponse(['detail' => 'Error!']));
     }
 
     public function testEvaluationRequiresErrorDetailToMatchMessage(): void
     {
         $this->expectException(ExpectationFailedException::class);
 
-        $responseContent = json_encode([
+        $response = new JsonResponse([
             'status' => 404,
             'title' => 'Not Found',
             'detail' => 'User not found.',
             'violations' => [],
         ]);
 
-        $this->assertIsString($responseContent);
-
-        new ResponseErrorDetail('Error!')->evaluate(
-            new Response($responseContent)
-        );
+        new ResponseErrorDetail('Error!')->evaluate($response);
     }
 
     public function testEvaluationSucceedsWhenErrorDetailMatchesMessage(): void
     {
-        $detail = 'User not found.';
+        $this->expectNotToPerformAssertions();
 
-        $responseContent = json_encode([
+        $response = new JsonResponse([
             'status' => 404,
             'title' => 'Not Found',
-            'detail' => $detail,
+            'detail' => 'User not found.',
             'violations' => [],
         ]);
 
-        $this->assertIsString($responseContent);
-
-        new ResponseErrorDetail($detail)->evaluate(
-            new Response($responseContent)
-        );
+        new ResponseErrorDetail('User not found.')->evaluate($response);
     }
 }
