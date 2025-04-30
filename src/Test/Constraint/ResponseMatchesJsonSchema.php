@@ -14,38 +14,38 @@ use function json_encode;
 
 class ResponseMatchesJsonSchema extends AbstractResponseConstraint
 {
-    private readonly Validator $validator;
-    private readonly object $jsonSchema;
-    private(set) public ?string $schemaTitle = null;
-    private(set) public ?string $schemaClass = null;
+    private Validator $validator;
+    private object $schema;
+    private ?string $class = null;
+    private ?string $title = null;
 
     /**
-     * @param string|array<string, mixed>|object $jsonSchema
+     * @param string|array<string, mixed>|object $schema
      */
-    public function __construct(string|array|object $jsonSchema)
+    public function __construct(string|array|object $schema)
     {
-        if ($jsonSchema instanceof JsonSchemaInterface) {
-            $this->schemaClass = $jsonSchema::class;
-            $jsonSchema = $jsonSchema->__toString();
+        if ($schema instanceof JsonSchemaInterface) {
+            $this->class = $schema::class;
+            $schema = $schema->__toString();
         }
 
-        if ($jsonSchema && is_array($jsonSchema)) {
-            $jsonSchema = json_encode($jsonSchema);
+        if ($schema && is_array($schema)) {
+            $schema = json_encode($schema);
         }
 
-        if ($jsonSchema && is_string($jsonSchema)) {
-            $jsonSchema = json_decode($jsonSchema);
+        if ($schema && is_string($schema)) {
+            $schema = json_decode($schema);
         }
 
-        if (!is_object($jsonSchema)) {
+        if (!is_object($schema)) {
             throw new InvalidArgumentException('The schema is not a valid JSON document.');
         }
 
-        if (is_string($jsonSchema->title ?? null)) {
-            $this->schemaTitle = $jsonSchema->title;
-        }
+        $this->schema = $schema;
 
-        $this->jsonSchema = $jsonSchema;
+        if (is_string($schema->title ?? null)) {
+            $this->title = $schema->title;
+        }
 
         $this->validator = new Validator(...[
             'stop_at_first_error' => true,
@@ -72,7 +72,7 @@ class ResponseMatchesJsonSchema extends AbstractResponseConstraint
         ]);
 
         $result = $this->validator->validate(
-            $json, $this->jsonSchema, null, null
+            $json, $this->schema, null, null
         );
 
         if ($result->isValid()) {
@@ -80,15 +80,15 @@ class ResponseMatchesJsonSchema extends AbstractResponseConstraint
         }
 
         if ($throwOnInvalid) {
-            if (!$this->schemaClass && !$this->schemaTitle) {
+            if (!$this->class && !$this->title) {
                 throw new InvalidArgumentException('The response content does not match the JSON schema.');
             }
 
-            if (null !== $this->schemaClass) {
-                throw new InvalidArgumentException(sprintf('The response content does not match the JSON schema defined in "%s".', $this->schemaClass));
+            if (null !== $this->class) {
+                throw new InvalidArgumentException(sprintf('The response content does not match the JSON schema defined in "%s".', $this->class));
             }
 
-            throw new InvalidArgumentException(sprintf('The response content does not match the "%s" JSON schema.', $this->schemaTitle));
+            throw new InvalidArgumentException(sprintf('The response content does not match the "%s" JSON schema.', $this->title));
         }
 
         return null;
