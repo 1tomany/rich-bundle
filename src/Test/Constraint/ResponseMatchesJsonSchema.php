@@ -14,9 +14,9 @@ use function json_encode;
 
 class ResponseMatchesJsonSchema extends AbstractResponseConstraint
 {
-    private readonly Validator $validator;
-    private readonly object $schema;
     private readonly ?string $class;
+    private readonly object $schema;
+    private readonly Validator $validator;
 
     /**
      * @param string|array<string, mixed>|object $schema
