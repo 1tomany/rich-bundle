@@ -11,8 +11,6 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 
-use function json_encode;
-
 #[Group('UnitTests')]
 #[Group('TestTests')]
 #[Group('ConstraintTests')]
