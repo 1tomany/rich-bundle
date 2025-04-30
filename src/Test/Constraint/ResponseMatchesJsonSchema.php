@@ -14,18 +14,18 @@ use function json_encode;
 
 class ResponseMatchesJsonSchema extends AbstractResponseConstraint
 {
-    private Validator $validator;
-    private object $schema;
-    private ?string $class = null;
-    private ?string $title = null;
+    private readonly Validator $validator;
+    private readonly object $schema;
+    private readonly ?string $class;
 
     /**
      * @param string|array<string, mixed>|object $schema
      */
     public function __construct(string|array|object $schema)
     {
+        $this->class = is_object($schema) ? $schema::class : null;
+
         if ($schema instanceof JsonSchemaInterface) {
-            $this->class = $schema::class;
             $schema = $schema->__toString();
         }
 
@@ -42,10 +42,6 @@ class ResponseMatchesJsonSchema extends AbstractResponseConstraint
         }
 
         $this->schema = $schema;
-
-        if (is_string($schema->title ?? null)) {
-            $this->title = $schema->title;
-        }
 
         $this->validator = new Validator(...[
             'stop_at_first_error' => true,
@@ -80,15 +76,15 @@ class ResponseMatchesJsonSchema extends AbstractResponseConstraint
         }
 
         if ($throwOnInvalid) {
-            if (!$this->class && !$this->title) {
-                throw new InvalidArgumentException('The response content does not match the JSON schema.');
-            }
-
             if (null !== $this->class) {
                 throw new InvalidArgumentException(sprintf('The response content does not match the JSON schema defined in "%s".', $this->class));
             }
 
-            throw new InvalidArgumentException(sprintf('The response content does not match the "%s" JSON schema.', $this->title));
+            if (is_string($this->schema->title ?? null)) {
+                throw new InvalidArgumentException(sprintf('The response content does not match the "%s" JSON schema.', $this->schema->title));
+            }
+
+            throw new InvalidArgumentException('The response content does not match the JSON schema.');
         }
 
         return null;
