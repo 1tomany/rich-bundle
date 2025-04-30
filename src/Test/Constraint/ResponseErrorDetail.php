@@ -27,6 +27,6 @@ final class ResponseErrorDetail extends ResponseMatchesJsonSchema
         /** @var object{detail: non-empty-string} */
         $json = $this->validateSchema($response, true);
 
-        return ($json->detail === $this->message);
+        return $json->detail === $this->message;
     }
 }
