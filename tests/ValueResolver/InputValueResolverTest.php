@@ -432,15 +432,11 @@ final class InputValueResolverTest extends TestCase
         $valueResolver = new InputValueResolver(
             new ContainerBag($container),
             new Serializer([], [], []),
-            Validation::createValidator(),
-            null
+            Validation::createValidator()
         );
 
         // Assert: $tokenStorage Property Is Null
-        $refProperty = new \ReflectionProperty(
-            $valueResolver, 'tokenStorage'
-        );
-
+        $refProperty = new \ReflectionProperty($valueResolver, 'tokenStorage');
         $refProperty->setAccessible(true);
 
         $this->assertNull($refProperty->getValue($valueResolver));
@@ -476,6 +472,8 @@ final class InputValueResolverTest extends TestCase
 
     public function testResolvingPropertiesFromMultipartFormDataRequest(): void
     {
+        $faker = \Faker\Factory::create();
+
         $input = new class implements InputInterface {
             #[SourceRequest]
             public string $name;
@@ -491,8 +489,8 @@ final class InputValueResolverTest extends TestCase
 
         $request = new Request(...[
             'request' => [
-                'name' => 'Vic Cherubini',
-                'email' => 'vcherubini@gmail.com',
+                'name' => $faker->name(),
+                'email' => $faker->email(),
             ],
             'server' => [
                 'CONTENT_TYPE' => 'multipart/form-data',
@@ -504,8 +502,10 @@ final class InputValueResolverTest extends TestCase
         );
 
         $this->assertInstanceOf($input::class, $inputs[0]);
-        $this->assertEquals($request->request->get('name'), $inputs[0]->name);
-        $this->assertEquals($request->request->get('email'), $inputs[0]->email);
+
+        $request = $request->request->all();
+        $this->assertEquals($request['name'], $inputs[0]->name);
+        $this->assertEquals($request['email'], $inputs[0]->email);
     }
 
     private function createArgument(?string $type = null): ArgumentMetadata
