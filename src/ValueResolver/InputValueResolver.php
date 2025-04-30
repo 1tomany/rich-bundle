@@ -199,19 +199,23 @@ final class InputValueResolver implements ValueResolverInterface
             return;
         }
 
+        $content = trim($request->getContent());
+
         if (!$format) {
-            if (!empty($request->getContent())) {
+            if (!empty($content)) {
                 throw new ContentTypeHeaderMissingException();
             }
 
             return;
         }
 
+        if (!$content) {
+            return;
+        }
+
         try {
             // Attempt to decode all other formats
-            $decodedContent = $this->serializer->decode(
-                $request->getContent(), $format
-            );
+            $decodedContent = $this->serializer->decode($content, $format);
 
             if (!is_array($decodedContent)) {
                 throw new MalformedRequestContentException($format);

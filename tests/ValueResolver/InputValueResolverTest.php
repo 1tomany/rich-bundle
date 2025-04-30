@@ -375,7 +375,7 @@ final class InputValueResolverTest extends TestCase
             public ?string $accept;
 
             #[SourceHeader(name: 'content-type')]
-            public ?string $contentType;
+            public ?string $type;
 
             #[SourceHeader(name: 'X-Custom-Id')]
             public ?string $customId;
@@ -386,15 +386,11 @@ final class InputValueResolverTest extends TestCase
             }
         };
 
-        $acceptType = $faker->mimeType();
-        $contentType = $faker->mimeType();
-        $customId = $faker->sha256();
-
         $request = new Request(...[
             'server' => [
-                'HTTP_ACCEPT' => $acceptType,
-                'HTTP_CONTENT_TYPE' => $contentType,
-                'HTTP_X_CUSTOM_ID' => $customId,
+                'HTTP_ACCEPT' => $faker->mimeType(),
+                'HTTP_CONTENT_TYPE' => $faker->mimeType(),
+                'HTTP_X_CUSTOM_ID' => $faker->sha256(),
             ],
         ]);
 
@@ -403,9 +399,11 @@ final class InputValueResolverTest extends TestCase
         );
 
         $this->assertInstanceOf($input::class, $inputs[0]);
-        $this->assertEquals($acceptType, $inputs[0]->accept);
-        $this->assertEquals($contentType, $inputs[0]->contentType);
-        $this->assertEquals($customId, $inputs[0]->customId);
+
+        $headers = $request->headers->all();
+        $this->assertEquals($headers['accept'][0], $inputs[0]->accept);
+        $this->assertEquals($headers['content-type'][0], $inputs[0]->type);
+        $this->assertEquals($headers['x-custom-id'][0], $inputs[0]->customId);
     }
 
     public function testResolvingSourceSecurityRequiresSymfonySecurityBundle(): void
@@ -416,7 +414,7 @@ final class InputValueResolverTest extends TestCase
         // Arrange: Create Input Class
         $input = new class implements InputInterface {
             #[SourceSecurity]
-            private(set) public string $username;
+            public string $username;
 
             public function __construct()
             {
@@ -434,15 +432,11 @@ final class InputValueResolverTest extends TestCase
         $valueResolver = new InputValueResolver(
             new ContainerBag($container),
             new Serializer([], [], []),
-            Validation::createValidator(),
-            null
+            Validation::createValidator()
         );
 
         // Assert: $tokenStorage Property Is Null
-        $refProperty = new \ReflectionProperty(
-            $valueResolver, 'tokenStorage'
-        );
-
+        $refProperty = new \ReflectionProperty($valueResolver, 'tokenStorage');
         $refProperty->setAccessible(true);
 
         $this->assertNull($refProperty->getValue($valueResolver));
@@ -451,20 +445,41 @@ final class InputValueResolverTest extends TestCase
         $valueResolver->resolve(new Request(), $this->createArgument($input::class));
     }
 
+    public function testResolverDoesNotAttemptToDeserializeEmptyRequestContent(): void
+    {
+        $input = new class implements InputInterface {
+            public function toCommand(): CommandInterface
+            {
+                return new class implements CommandInterface {};
+            }
+        };
+
+        $request = new Request(...[
+            'server' => [
+                'HTTP_CONTENT_TYPE' => 'text/javascript',
+            ],
+        ]);
+
+        $this->assertEmpty($request->getContent());
+        $this->assertNotNull($request->getContentTypeFormat());
+
+        $inputs = $this->createValueResolver()->resolve(
+            $request, $this->createArgument($input::class)
+        );
+
+        $this->assertInstanceOf($input::class, $inputs[0]);
+    }
+
     public function testResolvingPropertiesFromMultipartFormDataRequest(): void
     {
-        $input = new class(0, '', '') implements InputInterface {
-            public function __construct(
-                #[SourceRequest]
-                private(set) public int $id,
+        $faker = \Faker\Factory::create();
 
-                #[SourceRequest]
-                private(set) public string $name,
+        $input = new class implements InputInterface {
+            #[SourceRequest]
+            public string $name;
 
-                #[SourceRequest]
-                private(set) public string $email,
-            ) {
-            }
+            #[SourceRequest]
+            public string $email;
 
             public function toCommand(): CommandInterface
             {
@@ -472,15 +487,10 @@ final class InputValueResolverTest extends TestCase
             }
         };
 
-        $id = random_int(1, 100);
-        $name = 'Vic Cherubini';
-        $email = 'vcherubini@gmail.com';
-
         $request = new Request(...[
             'request' => [
-                'id' => $id,
-                'name' => $name,
-                'email' => $email,
+                'name' => $faker->name(),
+                'email' => $faker->email(),
             ],
             'server' => [
                 'CONTENT_TYPE' => 'multipart/form-data',
@@ -492,9 +502,10 @@ final class InputValueResolverTest extends TestCase
         );
 
         $this->assertInstanceOf($input::class, $inputs[0]);
-        $this->assertEquals($id, $inputs[0]->id);
-        $this->assertEquals($name, $inputs[0]->name);
-        $this->assertEquals($email, $inputs[0]->email);
+
+        $request = $request->request->all();
+        $this->assertEquals($request['name'], $inputs[0]->name);
+        $this->assertEquals($request['email'], $inputs[0]->email);
     }
 
     private function createArgument(?string $type = null): ArgumentMetadata
