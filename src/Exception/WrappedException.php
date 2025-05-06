@@ -10,7 +10,11 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\Validator\ConstraintViolationInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
-use function count;
+use function array_shift;
+use function intval;
+use function max;
+use function min;
+use function trim;
 
 final class WrappedException implements WrappedExceptionInterface
 {
@@ -104,13 +108,13 @@ final class WrappedException implements WrappedExceptionInterface
             $statusCode ??= $withHttpStatus->statusCode;
         }
 
-        $statusCode ??= \intval($this->exception->getCode());
+        $statusCode ??= intval($this->exception->getCode());
 
         if (!isset(Response::$statusTexts[$statusCode])) {
             $statusCode = Response::HTTP_INTERNAL_SERVER_ERROR;
         }
 
-        return \max(100, \min($statusCode, 599));
+        return max(100, min($statusCode, 599));
     }
 
     /**
@@ -134,15 +138,12 @@ final class WrappedException implements WrappedExceptionInterface
             $message = 'The data provided is not valid.';
         }
 
-        if (
-            $this->exception instanceof HttpExceptionInterface ||
-            $this->hasAttribute(HasUserMessage::class) ||
-            $this->hasAttribute(WithHttpStatus::class)
-        ) {
-            $message ??= $this->exception->getMessage();
+        // HTTP Exceptions, or Exceptions With HasUserMessage or WithHttpStatus Attributes
+        if ($this->exception instanceof HttpExceptionInterface || $this->hasAttribute(HasUserMessage::class) || $this->hasAttribute(WithHttpStatus::class)) {
+            $message = $this->exception->getMessage();
         }
 
-        return \trim($message ?? '') ?: 'An unexpected error occurred.';
+        return trim($message ?? '') ?: 'An unexpected error occurred.';
     }
 
     private function resolveHeaders(): void
@@ -195,7 +196,7 @@ final class WrappedException implements WrappedExceptionInterface
             $attributeClass, \ReflectionAttribute::IS_INSTANCEOF
         );
 
-        if ($attribute = \array_shift($attributes)) {
+        if ($attribute = array_shift($attributes)) {
             return $attribute->newInstance();
         }
 
