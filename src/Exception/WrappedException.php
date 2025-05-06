@@ -9,7 +9,6 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 use function array_push;
-use function array_shift;
 use function intval;
 use function is_string;
 use function max;
@@ -221,13 +220,13 @@ final readonly class WrappedException implements WrappedExceptionInterface
      */
     private function getAttribute(string $attributeClass): ?object
     {
-        $attributes = new \ReflectionClass($this->exception)->getAttributes(
-            $attributeClass, \ReflectionAttribute::IS_INSTANCEOF
-        );
+        $class = new \ReflectionClass($this->exception);
 
-        if ($attribute = array_shift($attributes)) {
-            return $attribute->newInstance();
-        }
+        do {
+            if ($attributes = $class->getAttributes($attributeClass, \ReflectionAttribute::IS_INSTANCEOF)) {
+                return $attributes[0]->newInstance();
+            }
+        } while ($class = $class->getParentClass());
 
         return null;
     }
