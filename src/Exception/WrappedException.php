@@ -100,7 +100,7 @@ final class WrappedException implements WrappedExceptionInterface
             $statusCode ??= $this->exception->getStatusCode();
         }
 
-        if ($withHttpStatus = $this->getWithHttpStatus()) {
+        if ($withHttpStatus = $this->getAttribute(WithHttpStatus::class)) {
             $statusCode ??= $withHttpStatus->statusCode;
         }
 
@@ -134,16 +134,11 @@ final class WrappedException implements WrappedExceptionInterface
             $message = 'The data provided is not valid.';
         }
 
-        // Check HasUserMessage Attribute
-        $attributes = new \ReflectionClass($this->exception)->getAttributes(
-            HasUserMessage::class, \ReflectionAttribute::IS_INSTANCEOF
-        );
-
-        if ($attribute = \array_shift($attributes)) {
-            $message = $this->exception->getMessage();
-        }
-
-        if ($this->exception instanceof HttpExceptionInterface) {
+        if (
+            $this->exception instanceof HttpExceptionInterface ||
+            $this->hasAttribute(HasUserMessage::class) ||
+            $this->hasAttribute(WithHttpStatus::class)
+        ) {
             $message ??= $this->exception->getMessage();
         }
 
@@ -187,10 +182,17 @@ final class WrappedException implements WrappedExceptionInterface
         }
     }
 
-    private function getWithHttpStatus(): ?WithHttpStatus
+    /**
+     * @template T of object
+     *
+     * @param class-string<T> $attributeClass
+     *
+     * @return ?T
+     */
+    private function getAttribute(string $attributeClass): ?object
     {
         $attributes = new \ReflectionClass($this->exception)->getAttributes(
-            WithHttpStatus::class, \ReflectionAttribute::IS_INSTANCEOF
+            $attributeClass, \ReflectionAttribute::IS_INSTANCEOF
         );
 
         if ($attribute = \array_shift($attributes)) {
@@ -198,5 +200,13 @@ final class WrappedException implements WrappedExceptionInterface
         }
 
         return null;
+    }
+
+    /**
+     * @param class-string $attributeClass
+     */
+    private function hasAttribute(string $attributeClass): bool
+    {
+        return null !== $this->getAttribute($attributeClass);
     }
 }
