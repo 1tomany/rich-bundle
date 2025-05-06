@@ -4,40 +4,91 @@ namespace OneToMany\RichBundle\Exception;
 
 use OneToMany\RichBundle\Exception\Attribute\HasUserMessage;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\HttpException;
-use Symfony\Component\Validator\ConstraintViolationInterface;
+use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
-use function count;
+use function array_push;
+use function array_shift;
+use function intval;
+use function is_string;
+use function max;
+use function min;
+use function trim;
 
-final class WrappedException implements WrappedExceptionInterface
+final readonly class WrappedException implements WrappedExceptionInterface
 {
-    private int $status = 500;
-    private string $title = '';
-    private string $message = '';
+    public \Throwable $exception;
 
     /**
-     * @var array<string, int|float|string>
+     * @var int<100, 599>
      */
-    private array $headers = [];
+    private int $status;
+
+    /**
+     * @var non-empty-string
+     */
+    private string $title;
+
+    /**
+     * @var non-empty-string
+     */
+    private string $message;
+
+    /**
+     * @var array<string, string>
+     */
+    private array $headers;
 
     /**
      * @var list<array<string, int|string>>
      */
-    private array $stack = [];
+    private array $stack;
 
     /**
      * @var list<array<string, string>>
      */
-    private array $violations = [];
+    private array $violations;
 
-    public function __construct(private readonly \Throwable $exception)
+    public function __construct(\Throwable $exception)
     {
-        $this->resolveStatus();
-        $this->resolveMessage();
-        $this->resolveHeaders();
-        $this->normalizeStack();
-        $this->expandViolations();
+        $this->exception = $exception;
+
+        // Expand and Normalize Exception Values
+        $this->status = $this->resolveStatus();
+        $this->title = $this->resolveTitle();
+        $this->message = $this->resolveMessage();
+        $this->headers = $this->resolveHeaders();
+
+        // Expand Stack Trace
+        $exceptionStackTrace = [];
+
+        while (null !== $exception) {
+            array_push($exceptionStackTrace, [
+                'class' => $exception::class,
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+            ]);
+
+            $exception = $exception->getPrevious();
+        }
+
+        $this->stack = $exceptionStackTrace;
+
+        // Expand Constraint Violations
+        $constraintViolations = [];
+
+        if ($this->exception instanceof ValidationFailedException) {
+            foreach ($this->exception->getViolations() as $violation) {
+                array_push($constraintViolations, [
+                    'property' => $violation->getPropertyPath(),
+                    'message' => $violation->getMessage(),
+                ]);
+            }
+        }
+
+        $this->violations = $constraintViolations;
     }
 
     public function getStatus(): int
@@ -70,84 +121,122 @@ final class WrappedException implements WrappedExceptionInterface
         return $this->violations;
     }
 
-    private function resolveStatus(): void
+    /**
+     * @return int<100, 599>
+     */
+    private function resolveStatus(): int
     {
-        $this->status = $this->exception->getCode();
-
-        if ($this->exception instanceof HttpException) {
-            $this->status = $this->exception->getStatusCode();
-        }
+        $statusCode = null;
 
         if ($this->exception instanceof ValidationFailedException) {
-            $this->status = Response::HTTP_BAD_REQUEST;
+            $statusCode = Response::HTTP_BAD_REQUEST;
         }
 
-        if (!isset(Response::$statusTexts[$this->status])) {
-            $this->status = Response::HTTP_INTERNAL_SERVER_ERROR;
+        if ($this->exception instanceof HttpExceptionInterface) {
+            $statusCode ??= $this->exception->getStatusCode();
         }
 
-        $this->resolveTitle();
+        if ($withHttpStatus = $this->getAttribute(WithHttpStatus::class)) {
+            $statusCode ??= $withHttpStatus->statusCode;
+        }
+
+        $statusCode ??= intval($this->exception->getCode());
+
+        if (!isset(Response::$statusTexts[$statusCode])) {
+            $statusCode = Response::HTTP_INTERNAL_SERVER_ERROR;
+        }
+
+        return max(100, min($statusCode, 599));
     }
 
-    private function resolveTitle(): void
+    /**
+     * @return non-empty-string
+     */
+    private function resolveTitle(): string
     {
         // @phpstan-ignore-next-line
-        $this->title = Response::$statusTexts[$this->status] ?? 'Unknown';
+        return (Response::$statusTexts[$this->status] ?? null) ?: 'Error';
     }
 
-    private function resolveMessage(): void
+    /**
+     * @return non-empty-string
+     */
+    private function resolveMessage(): string
     {
-        $this->message = 'An unexpected error occurred.';
+        $message = null;
 
-        if ($this->exception instanceof HttpException) {
-            $this->message = $this->exception->getMessage();
-        }
-
-        $refClass = new \ReflectionClass($this->exception);
-
-        if (count($refClass->getAttributes(HasUserMessage::class))) {
-            $this->message = $this->exception->getMessage();
-        }
-
+        // Default Validation Failed Message
         if ($this->exception instanceof ValidationFailedException) {
-            $this->message = 'The data provided is not valid.';
+            $message = 'The data provided is not valid.';
         }
+
+        // HTTP Exceptions, or Exceptions With HasUserMessage or WithHttpStatus Attributes
+        if ($this->exception instanceof HttpExceptionInterface || $this->hasAttribute(WithHttpStatus::class) || $this->hasAttribute(HasUserMessage::class)) {
+            $message = $this->exception->getMessage();
+        }
+
+        return trim($message ?? '') ?: 'An unexpected error occurred.';
     }
 
-    private function resolveHeaders(): void
+    /**
+     * @return array<string, string>
+     */
+    private function resolveHeaders(): array
     {
-        if ($this->exception instanceof HttpException) {
-            // @phpstan-ignore-next-line
-            $this->headers = $this->exception->getHeaders();
+        if ($this->exception instanceof HttpExceptionInterface) {
+            return $this->cleanHeaders($this->exception->getHeaders());
         }
+
+        if ($withHttpStatus = $this->getAttribute(WithHttpStatus::class)) {
+            return $this->cleanHeaders($withHttpStatus->headers);
+        }
+
+        return [];
     }
 
-    private function normalizeStack(): void
+    /**
+     * @param array<mixed> $headers
+     *
+     * @return array<string, string>
+     */
+    private function cleanHeaders(array $headers): array
     {
-        $exception = $this->exception;
+        $headersClean = [];
 
-        while (null !== $exception) {
-            $this->stack[] = [
-                'class' => $exception::class,
-                'message' => $exception->getMessage(),
-                'file' => $exception->getFile(),
-                'line' => $exception->getLine(),
-            ];
-
-            $exception = $exception->getPrevious();
-        }
-    }
-
-    private function expandViolations(): void
-    {
-        if ($this->exception instanceof ValidationFailedException) {
-            /** @var ConstraintViolationInterface $violation */
-            foreach ($this->exception->getViolations() as $violation) {
-                $this->violations[] = [
-                    'property' => $violation->getPropertyPath(),
-                    'message' => $violation->getMessage(),
-                ];
+        foreach ($headers as $header => $value) {
+            if (is_string($header) && is_string($value)) {
+                $headersClean[$header] = trim($value);
             }
         }
+
+        return $headersClean;
+    }
+
+    /**
+     * @template T of object
+     *
+     * @param class-string<T> $attributeClass
+     *
+     * @return ?T
+     */
+    private function getAttribute(string $attributeClass): ?object
+    {
+        $attributes = new \ReflectionClass($this->exception)->getAttributes(
+            $attributeClass, \ReflectionAttribute::IS_INSTANCEOF
+        );
+
+        if ($attribute = array_shift($attributes)) {
+            return $attribute->newInstance();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param class-string $attributeClass
+     */
+    private function hasAttribute(string $attributeClass): bool
+    {
+        return null !== $this->getAttribute($attributeClass);
     }
 }

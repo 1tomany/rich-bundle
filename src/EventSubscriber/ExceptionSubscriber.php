@@ -43,10 +43,8 @@ final readonly class ExceptionSubscriber implements EventSubscriberInterface
             return;
         }
 
-        // Prevent Data Leakages
-        $e = new WrappedException(
-            $event->getThrowable()
-        );
+        // Wrap the Exception to Prevent Data Leakage
+        $e = new WrappedException($event->getThrowable());
 
         // Create the Response
         $errorResponse = new Response(...[
