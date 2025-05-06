@@ -5,13 +5,13 @@ namespace OneToMany\RichBundle\Exception;
 use OneToMany\RichBundle\Exception\Attribute\HasUserMessage;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\Validator\ConstraintViolationInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 use function array_shift;
 use function intval;
+use function is_string;
 use function max;
 use function min;
 use function trim;
@@ -34,14 +34,14 @@ final class WrappedException implements WrappedExceptionInterface
     private readonly string $message;
 
     /**
-     * @var array<string, int|float|string>
+     * @var array<string, string>
      */
-    private array $headers = [];
+    private readonly array $headers;
 
     /**
      * @var list<array<string, int|string>>
      */
-    private array $stack = [];
+    private readonly array $stack;
 
     /**
      * @var list<array<string, string>>
@@ -53,9 +53,26 @@ final class WrappedException implements WrappedExceptionInterface
         $this->status = $this->resolveStatus();
         $this->title = $this->resolveTitle();
         $this->message = $this->resolveMessage();
+        $this->headers = $this->resolveHeaders();
 
-        $this->resolveHeaders();
-        $this->normalizeStack();
+        // Expand Stack Trace
+        $exceptionStackTrace = [];
+
+        while (null !== $exception) {
+            \array_push($exceptionStackTrace, [
+                'class' => $exception::class,
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+            ]);
+
+            $exception = $exception->getPrevious();
+        }
+
+        $this->stack = $exceptionStackTrace;
+
+        // Expand Validation Failures
+
         $this->expandViolations();
     }
 
@@ -139,35 +156,45 @@ final class WrappedException implements WrappedExceptionInterface
         }
 
         // HTTP Exceptions, or Exceptions With HasUserMessage or WithHttpStatus Attributes
-        if ($this->exception instanceof HttpExceptionInterface || $this->hasAttribute(HasUserMessage::class) || $this->hasAttribute(WithHttpStatus::class)) {
+        if ($this->exception instanceof HttpExceptionInterface || $this->hasAttribute(WithHttpStatus::class) || $this->hasAttribute(HasUserMessage::class)) {
             $message = $this->exception->getMessage();
         }
 
         return trim($message ?? '') ?: 'An unexpected error occurred.';
     }
 
-    private function resolveHeaders(): void
+    /**
+     * @return array<string, string>
+     */
+    private function resolveHeaders(): array
     {
-        if ($this->exception instanceof HttpException) {
-            // @phpstan-ignore-next-line
-            $this->headers = $this->exception->getHeaders();
+        if ($this->exception instanceof HttpExceptionInterface) {
+            return $this->cleanHeaders($this->exception->getHeaders());
         }
+
+        if ($withHttpStatus = $this->getAttribute(WithHttpStatus::class)) {
+            return $this->cleanHeaders($withHttpStatus->headers);
+        }
+
+        return [];
     }
 
-    private function normalizeStack(): void
+    /**
+     * @param array<mixed> $headers
+     *
+     * @return array<string, string>
+     */
+    private function cleanHeaders(array $headers): array
     {
-        $exception = $this->exception;
+        $headersClean = [];
 
-        while (null !== $exception) {
-            $this->stack[] = [
-                'class' => $exception::class,
-                'message' => $exception->getMessage(),
-                'file' => $exception->getFile(),
-                'line' => $exception->getLine(),
-            ];
-
-            $exception = $exception->getPrevious();
+        foreach ($headers as $header => $value) {
+            if (is_string($header) && is_string($value)) {
+                $headersClean[$header] = trim($value);
+            }
         }
+
+        return $headersClean;
     }
 
     private function expandViolations(): void

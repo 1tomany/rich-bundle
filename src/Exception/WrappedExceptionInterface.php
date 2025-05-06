@@ -20,7 +20,7 @@ interface WrappedExceptionInterface
     public function getMessage(): string;
 
     /**
-     * @return array<string, int|float|string>
+     * @return array<string, string>
      */
     public function getHeaders(): array;
 

@@ -8,11 +8,13 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\GoneHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\LengthRequiredHttpException;
 use Symfony\Component\HttpKernel\Exception\LockedHttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
@@ -39,14 +41,16 @@ use function random_int;
 final class WrappedExceptionTest extends TestCase
 {
     #[DataProvider('providerHttpExceptionAndStatusCode')]
-    public function testConstructorResolvesStatusFromHttpException(HttpException $exception, int $statusCode): void
-    {
+    public function testConstructorResolvesStatusWhenExceptionImplementsHttpExceptionInterface(
+        HttpExceptionInterface $exception,
+        int $statusCode,
+    ): void {
         $wrapped = new WrappedException($exception);
         $this->assertEquals($statusCode, $wrapped->getStatus());
     }
 
     /**
-     * @return list<list<int|HttpException>>
+     * @return list<list<int|HttpExceptionInterface>>
      */
     public static function providerHttpExceptionAndStatusCode(): array
     {
@@ -72,24 +76,7 @@ final class WrappedExceptionTest extends TestCase
         return $provider;
     }
 
-    public function testConstructorMaintainsMessageWithHttpException(): void
-    {
-        $message = 'A customer with ID 1 was not found.';
-
-        $exception = new NotFoundHttpException($message);
-        $this->assertInstanceOf(HttpException::class, $exception);
-
-        $wrapped = new WrappedException($exception);
-        $this->assertEquals($message, $wrapped->getMessage());
-    }
-
-    public function testConstructorMaintainsMessageWithHasUserMessageAttribute(): void
-    {
-        $exception = new #[HasUserMessage] class('An error occurred!') extends \RuntimeException {};
-        $this->assertEquals($exception->getMessage(), (new WrappedException($exception))->getMessage());
-    }
-
-    public function testConstructorGeneralizesMessageWithValidationFailedException(): void
+    public function testConstructorGeneralizesMessageWhenExceptionIsValidationFailedException(): void
     {
         $message = 'The data provided is not valid.';
 
@@ -104,6 +91,31 @@ final class WrappedExceptionTest extends TestCase
         $this->assertEquals($message, $wrapped->getMessage());
     }
 
+    public function testConstructorMaintainsMessageWhenExceptionImplementsHttpExceptionInterface(): void
+    {
+        $message = 'A customer with ID 1 was not found.';
+
+        $exception = new NotFoundHttpException($message);
+        $this->assertInstanceOf(HttpExceptionInterface::class, $exception);
+
+        $wrapped = new WrappedException($exception);
+        $this->assertEquals($message, $wrapped->getMessage());
+    }
+
+    public function testConstructorMaintainsMessageWhenWithHttpStatusAttributeIsPresent(): void
+    {
+        $exception = new #[WithHttpStatus(500)] class('Error!') extends \Exception {};
+
+        $this->assertEquals($exception->getMessage(), new WrappedException($exception)->getMessage());
+    }
+
+    public function testConstructorMaintainsMessageWhenHasUserMessageAttributeIsPresent(): void
+    {
+        $exception = new #[HasUserMessage] class('Error!') extends \Exception {};
+
+        $this->assertEquals($exception->getMessage(), (new WrappedException($exception))->getMessage());
+    }
+
     public function testConstructorGeneralizesMessageWithAllOtherExceptions(): void
     {
         $message = 'An unexpected error occurred.';
@@ -115,22 +127,27 @@ final class WrappedExceptionTest extends TestCase
         $this->assertEquals($message, $wrapped->getMessage());
     }
 
-    public function testConstructorResolvesHeadersFromHttpException(): void
+    public function testConstructorResolvesHeadersWhenExceptionImplementsHttpExceptionInterface(): void
     {
         $headers = [
-            'X-Token' => 'abc123',
-            'X-UserId' => '98133',
+            'X-Token' => 'token',
+            'X-Title' => 'Title',
         ];
 
-        $exception = new HttpException(...[
-            'statusCode' => 500,
-            'headers' => $headers,
-        ]);
+        $exception = new NotFoundHttpException(headers: $headers);
+        $this->assertInstanceOf(HttpExceptionInterface::class, $exception);
 
         $wrapped = new WrappedException($exception);
 
         $this->assertSame($headers, $wrapped->getHeaders());
         $this->assertSame($headers, $exception->getHeaders());
+    }
+
+    public function testConstructorResolvesHeadersWhenWithHttpStatusAttributeIsPresent(): void
+    {
+        $exception = new #[WithHttpStatus(500, ['X-Token' => 'token'])] class('Error!') extends \Exception {};
+
+        $this->assertSame(['X-Token' => 'token'], new WrappedException($exception)->getHeaders());
     }
 
     public function testConstructorExpandsViolations(): void
@@ -222,7 +239,7 @@ final class WrappedExceptionTest extends TestCase
 
     public function testGettingTitleFromValidHttpStatus(): void
     {
-        /** @var int<400, 599> $httpStatus */
+        /** @var int<100, 599> $httpStatus */
         $httpStatus = array_rand(Response::$statusTexts);
         $this->assertArrayHasKey($httpStatus, Response::$statusTexts);
 
