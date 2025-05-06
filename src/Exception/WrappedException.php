@@ -4,7 +4,9 @@ namespace OneToMany\RichBundle\Exception;
 
 use OneToMany\RichBundle\Exception\Attribute\HasUserMessage;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\Validator\ConstraintViolationInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
@@ -12,9 +14,16 @@ use function count;
 
 final class WrappedException implements WrappedExceptionInterface
 {
-    private int $status = 500;
-    private string $title = '';
-    private string $message = '';
+    /**
+     * @var int<100, 599>
+     */
+    private readonly int $status;
+
+    /**
+     * @var non-empty-string
+     */
+    private readonly string $title;
+    private string $message = 'An unexpected error occurred.';
 
     /**
      * @var array<string, int|float|string>
@@ -33,7 +42,9 @@ final class WrappedException implements WrappedExceptionInterface
 
     public function __construct(private readonly \Throwable $exception)
     {
-        $this->resolveStatus();
+        $this->status = $this->resolveStatus();
+        $this->title = $this->resolveTitle();
+
         $this->resolveMessage();
         $this->resolveHeaders();
         $this->normalizeStack();
@@ -70,48 +81,62 @@ final class WrappedException implements WrappedExceptionInterface
         return $this->violations;
     }
 
-    private function resolveStatus(): void
+    /**
+     * @return int<100, 599>
+     */
+    private function resolveStatus(): int
     {
-        $this->status = $this->exception->getCode();
-
-        if ($this->exception instanceof HttpException) {
-            $this->status = $this->exception->getStatusCode();
-        }
+        $statusCode = null;
 
         if ($this->exception instanceof ValidationFailedException) {
-            $this->status = Response::HTTP_BAD_REQUEST;
+            $statusCode = Response::HTTP_BAD_REQUEST;
         }
 
-        if (!isset(Response::$statusTexts[$this->status])) {
-            $this->status = Response::HTTP_INTERNAL_SERVER_ERROR;
+        if ($this->exception instanceof HttpExceptionInterface) {
+            $statusCode ??= $this->exception->getStatusCode();
         }
 
-        $this->resolveTitle();
+        if ($withHttpStatus = $this->getWithHttpStatus()) {
+            $statusCode ??= $withHttpStatus->statusCode;
+        }
+
+        $statusCode ??= \intval($this->exception->getCode());
+
+        if (!isset(Response::$statusTexts[$statusCode])) {
+            $statusCode = Response::HTTP_INTERNAL_SERVER_ERROR;
+        }
+
+        return \max(100, \min($statusCode, 599));
     }
 
-    private function resolveTitle(): void
+    /**
+     * @return non-empty-string
+     */
+    private function resolveTitle(): string
     {
         // @phpstan-ignore-next-line
-        $this->title = Response::$statusTexts[$this->status] ?? 'Unknown';
+        return (Response::$statusTexts[$this->status] ?? null) ?: 'Error';
     }
 
     private function resolveMessage(): void
     {
-        $this->message = 'An unexpected error occurred.';
+        $message = null;
 
         if ($this->exception instanceof HttpException) {
-            $this->message = $this->exception->getMessage();
+            $message = $this->exception->getMessage();
         }
 
         $refClass = new \ReflectionClass($this->exception);
 
         if (count($refClass->getAttributes(HasUserMessage::class))) {
-            $this->message = $this->exception->getMessage();
+            $message = $this->exception->getMessage();
         }
 
         if ($this->exception instanceof ValidationFailedException) {
-            $this->message = 'The data provided is not valid.';
+            $message = 'The data provided is not valid.';
         }
+
+        $this->message = $message ?? $this->message;
     }
 
     private function resolveHeaders(): void
@@ -149,5 +174,18 @@ final class WrappedException implements WrappedExceptionInterface
                 ];
             }
         }
+    }
+
+    private function getWithHttpStatus(): ?WithHttpStatus
+    {
+        $attributes = new \ReflectionClass($this->exception)->getAttributes(
+            WithHttpStatus::class, \ReflectionAttribute::IS_INSTANCEOF
+        );
+
+        if ($attribute = \array_shift($attributes)) {
+            return $attribute->newInstance();
+        }
+
+        return null;
     }
 }

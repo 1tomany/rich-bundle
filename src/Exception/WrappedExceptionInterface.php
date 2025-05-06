@@ -4,8 +4,14 @@ namespace OneToMany\RichBundle\Exception;
 
 interface WrappedExceptionInterface
 {
+    /**
+     * @return int<100, 599>
+     */
     public function getStatus(): int;
 
+    /**
+     * @return non-empty-string
+     */
     public function getTitle(): string;
 
     public function getMessage(): string;

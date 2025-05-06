@@ -222,7 +222,7 @@ final class WrappedExceptionTest extends TestCase
 
     public function testGettingTitleFromValidHttpStatus(): void
     {
-        /** @var positive-int $httpStatus */
+        /** @var int<400, 599> $httpStatus */
         $httpStatus = array_rand(Response::$statusTexts);
         $this->assertArrayHasKey($httpStatus, Response::$statusTexts);
 
