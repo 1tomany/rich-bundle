@@ -14,6 +14,9 @@ interface WrappedExceptionInterface
      */
     public function getTitle(): string;
 
+    /**
+     * @return non-empty-string
+     */
     public function getMessage(): string;
 
     /**

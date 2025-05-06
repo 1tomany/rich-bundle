@@ -23,7 +23,11 @@ final class WrappedException implements WrappedExceptionInterface
      * @var non-empty-string
      */
     private readonly string $title;
-    private string $message = 'An unexpected error occurred.';
+
+    /**
+     * @var non-empty-string
+     */
+    private readonly string $message;
 
     /**
      * @var array<string, int|float|string>
@@ -44,8 +48,8 @@ final class WrappedException implements WrappedExceptionInterface
     {
         $this->status = $this->resolveStatus();
         $this->title = $this->resolveTitle();
+        $this->message = $this->resolveMessage();
 
-        $this->resolveMessage();
         $this->resolveHeaders();
         $this->normalizeStack();
         $this->expandViolations();
@@ -118,25 +122,32 @@ final class WrappedException implements WrappedExceptionInterface
         return (Response::$statusTexts[$this->status] ?? null) ?: 'Error';
     }
 
-    private function resolveMessage(): void
+    /**
+     * @return non-empty-string
+     */
+    private function resolveMessage(): string
     {
         $message = null;
 
-        if ($this->exception instanceof HttpException) {
-            $message = $this->exception->getMessage();
-        }
-
-        $refClass = new \ReflectionClass($this->exception);
-
-        if (count($refClass->getAttributes(HasUserMessage::class))) {
-            $message = $this->exception->getMessage();
-        }
-
+        // Default Validation Failed Message
         if ($this->exception instanceof ValidationFailedException) {
             $message = 'The data provided is not valid.';
         }
 
-        $this->message = $message ?? $this->message;
+        // Check HasUserMessage Attribute
+        $attributes = new \ReflectionClass($this->exception)->getAttributes(
+            HasUserMessage::class, \ReflectionAttribute::IS_INSTANCEOF
+        );
+
+        if ($attribute = \array_shift($attributes)) {
+            $message = $this->exception->getMessage();
+        }
+
+        if ($this->exception instanceof HttpExceptionInterface) {
+            $message ??= $this->exception->getMessage();
+        }
+
+        return \trim($message ?? '') ?: 'An unexpected error occurred.';
     }
 
     private function resolveHeaders(): void
