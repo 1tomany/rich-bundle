@@ -221,6 +221,19 @@ final readonly class WrappedException implements WrappedExceptionInterface
      */
     private function getAttribute(string $attributeClass): ?object
     {
+        $class = new \ReflectionClass($this->exception);
+
+        do {
+            $attributes = $class->getAttributes($attributeClass, \ReflectionAttribute::IS_INSTANCEOF);
+
+            if ($attribute = array_shift($attributes)) {
+                return $attribute->newInstance();
+            }
+        } while ($class = $class->getParentClass());
+
+        return null;
+
+        /*
         $attributes = new \ReflectionClass($this->exception)->getAttributes(
             $attributeClass, \ReflectionAttribute::IS_INSTANCEOF
         );
@@ -230,6 +243,7 @@ final readonly class WrappedException implements WrappedExceptionInterface
         }
 
         return null;
+        */
     }
 
     /**
