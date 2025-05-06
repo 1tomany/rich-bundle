@@ -6,9 +6,9 @@ use OneToMany\RichBundle\Exception\Attribute\HasUserMessage;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
-use Symfony\Component\Validator\ConstraintViolationInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
+use function array_push;
 use function array_shift;
 use function intval;
 use function is_string;
@@ -16,40 +16,45 @@ use function max;
 use function min;
 use function trim;
 
-final class WrappedException implements WrappedExceptionInterface
+final readonly class WrappedException implements WrappedExceptionInterface
 {
+    public \Throwable $exception;
+
     /**
      * @var int<100, 599>
      */
-    private readonly int $status;
+    private int $status;
 
     /**
      * @var non-empty-string
      */
-    private readonly string $title;
+    private string $title;
 
     /**
      * @var non-empty-string
      */
-    private readonly string $message;
+    private string $message;
 
     /**
      * @var array<string, string>
      */
-    private readonly array $headers;
+    private array $headers;
 
     /**
      * @var list<array<string, int|string>>
      */
-    private readonly array $stack;
+    private array $stack;
 
     /**
      * @var list<array<string, string>>
      */
-    private array $violations = [];
+    private array $violations;
 
-    public function __construct(private readonly \Throwable $exception)
+    public function __construct(\Throwable $exception)
     {
+        $this->exception = $exception;
+
+        // Expand and Normalize Exception Values
         $this->status = $this->resolveStatus();
         $this->title = $this->resolveTitle();
         $this->message = $this->resolveMessage();
@@ -59,7 +64,7 @@ final class WrappedException implements WrappedExceptionInterface
         $exceptionStackTrace = [];
 
         while (null !== $exception) {
-            \array_push($exceptionStackTrace, [
+            array_push($exceptionStackTrace, [
                 'class' => $exception::class,
                 'message' => $exception->getMessage(),
                 'file' => $exception->getFile(),
@@ -71,9 +76,19 @@ final class WrappedException implements WrappedExceptionInterface
 
         $this->stack = $exceptionStackTrace;
 
-        // Expand Validation Failures
+        // Expand Constraint Violations
+        $constraintViolations = [];
 
-        $this->expandViolations();
+        if ($this->exception instanceof ValidationFailedException) {
+            foreach ($this->exception->getViolations() as $violation) {
+                array_push($constraintViolations, [
+                    'property' => $violation->getPropertyPath(),
+                    'message' => $violation->getMessage(),
+                ]);
+            }
+        }
+
+        $this->violations = $constraintViolations;
     }
 
     public function getStatus(): int
@@ -195,19 +210,6 @@ final class WrappedException implements WrappedExceptionInterface
         }
 
         return $headersClean;
-    }
-
-    private function expandViolations(): void
-    {
-        if ($this->exception instanceof ValidationFailedException) {
-            /** @var ConstraintViolationInterface $violation */
-            foreach ($this->exception->getViolations() as $violation) {
-                $this->violations[] = [
-                    'property' => $violation->getPropertyPath(),
-                    'message' => $violation->getMessage(),
-                ];
-            }
-        }
     }
 
     /**
