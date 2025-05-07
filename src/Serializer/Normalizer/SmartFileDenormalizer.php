@@ -4,6 +4,7 @@ namespace OneToMany\RichBundle\Serializer\Normalizer;
 
 use OneToMany\DataUri\SmartFile;
 use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
 use function class_exists;
@@ -13,12 +14,16 @@ use function is_string;
 final readonly class SmartFileDenormalizer implements DenormalizerInterface
 {
     /**
-     * @param string|File|null $data
+     * @param string|File $data
      * @param array<string, mixed> $context
      */
     public function denormalize(mixed $data, string $type, ?string $format = null, array $context = []): SmartFile // @phpstan-ignore-line
     {
-        return \OneToMany\DataUri\parse_data($data); // @phpstan-ignore-line
+        if ($data instanceof UploadedFile) {
+            $name = $data->getClientOriginalName();
+        }
+
+        return \OneToMany\DataUri\parse_data($data, clientName: $name ?? null); // @phpstan-ignore-line
     }
 
     /**
