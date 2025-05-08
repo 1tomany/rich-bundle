@@ -9,6 +9,7 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 use function array_push;
+use function implode;
 use function intval;
 use function is_string;
 use function max;
@@ -98,6 +99,11 @@ final readonly class WrappedException implements WrappedExceptionInterface
     public function getTitle(): string
     {
         return $this->title;
+    }
+
+    public function getDescription(): string
+    {
+        return implode(' ', [$this->status, $this->title]);
     }
 
     public function getMessage(): string

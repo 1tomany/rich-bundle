@@ -13,6 +13,7 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\GoneHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\LengthRequiredHttpException;
 use Symfony\Component\HttpKernel\Exception\LockedHttpException;
@@ -241,6 +242,23 @@ final class WrappedExceptionTest extends TestCase
         $this->assertSame($stackTrace, new WrappedException($exception3)->getStack());
     }
 
+    public function testGettingDescription(): void
+    {
+        /** @var int<100, 599> $status */
+        $status = array_rand(Response::$statusTexts);
+        $this->assertArrayHasKey($status, Response::$statusTexts);
+
+        /** @var non-empty-string $title */
+        $title = Response::$statusTexts[$status];
+
+        // Arrange: Manually Create Description
+        $description = "{$status} {$title}";
+
+        // Assert: Descriptions Match
+        $wrapped = new WrappedException(new HttpException($status));
+        $this->assertEquals($description, $wrapped->getDescription());
+    }
+
     public function testGettingTitleFromInvalidHttpStatus(): void
     {
         /** @var non-empty-string $title */
@@ -260,15 +278,15 @@ final class WrappedExceptionTest extends TestCase
 
     public function testGettingTitleFromValidHttpStatus(): void
     {
-        /** @var int<100, 599> $httpStatus */
-        $httpStatus = array_rand(Response::$statusTexts);
-        $this->assertArrayHasKey($httpStatus, Response::$statusTexts);
+        /** @var int<100, 599> $status */
+        $status = array_rand(Response::$statusTexts);
+        $this->assertArrayHasKey($status, Response::$statusTexts);
 
         /** @var non-empty-string $title */
-        $title = Response::$statusTexts[$httpStatus];
+        $title = Response::$statusTexts[$status];
 
-        $exception = new \RuntimeException($title, $httpStatus);
-        $this->assertEquals($httpStatus, $exception->getCode());
+        $exception = new \RuntimeException($title, $status);
+        $this->assertEquals($status, $exception->getCode());
 
         $wrapped = new WrappedException($exception);
         $this->assertEquals($title, $wrapped->getTitle());
