@@ -9,7 +9,7 @@ final readonly class TestSchema extends AbstractJsonSchema
     public static function schema(): array
     {
         $schema = [
-            '$schema' => 'http://json-schema.org/draft-07/schema#',
+            '$schema' => 'https://json-schema.org/draft/2020-12/schema',
             'title' => 'Test',
             'type' => 'object',
             'properties' => [
