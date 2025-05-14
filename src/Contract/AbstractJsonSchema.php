@@ -3,6 +3,7 @@
 namespace OneToMany\RichBundle\Contract;
 
 use function json_encode;
+use function strval;
 
 abstract readonly class AbstractJsonSchema implements JsonSchemaInterface
 {
@@ -12,6 +13,12 @@ abstract readonly class AbstractJsonSchema implements JsonSchemaInterface
 
     public function __toString(): string
     {
-        return (string) json_encode(static::schema());
+        return strval(json_encode(static::schema()));
+    }
+
+    public function getName(): string
+    {
+        /** @var non-empty-string */
+        return new \ReflectionClass($this)->getShortName();
     }
 }

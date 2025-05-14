@@ -2,18 +2,17 @@
 
 namespace OneToMany\RichBundle\Contract;
 
-interface JsonSchemaInterface
+interface JsonSchemaInterface extends \Stringable
 {
     public function __toString(): string;
 
     /**
-     * @return array{
-     *   title: non-empty-string,
-     *   type: non-empty-string,
-     *   properties: array<string, mixed>,
-     *   required: list<non-empty-string>,
-     *   additionalProperties: bool,
-     * }
+     * @return array<string, mixed>
      */
     public static function schema(): array;
+
+    /**
+     * @return non-empty-string
+     */
+    public function getName(): string;
 }
