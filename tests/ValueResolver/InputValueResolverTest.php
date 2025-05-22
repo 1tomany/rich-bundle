@@ -3,6 +3,7 @@
 namespace OneToMany\RichBundle\Tests\ValueResolver;
 
 use OneToMany\RichBundle\Attribute\PropertyIgnored;
+use OneToMany\RichBundle\Attribute\SourceContent;
 use OneToMany\RichBundle\Attribute\SourceHeader;
 use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
@@ -36,6 +37,7 @@ use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validation;
 
+use function json_encode;
 use function random_int;
 
 #[Group('UnitTests')]
@@ -364,6 +366,38 @@ final class InputValueResolverTest extends TestCase
         $this->assertNull($inputs[0]->age);
         $this->assertNull($inputs[0]->name);
         $this->assertNull($inputs[0]->color);
+    }
+
+    public function testResolvingSourceContent(): void
+    {
+        $input = new class implements InputInterface {
+            #[SourceContent]
+            public string $content;
+
+            public function toCommand(): CommandInterface
+            {
+                return new class implements CommandInterface {};
+            }
+        };
+
+        /** @var non-empty-string $content */
+        $content = json_encode([
+            'id' => random_int(1, 10),
+        ]);
+
+        $request = new Request(...[
+            'server' => [
+                'HTTP_CONTENT_TYPE' => 'application/json',
+            ],
+            'content' => $content,
+        ]);
+
+        $inputs = $this->createValueResolver()->resolve(
+            $request, $this->createArgument($input::class)
+        );
+
+        $this->assertInstanceOf($input::class, $inputs[0]);
+        $this->assertEquals($content, $inputs[0]->content);
     }
 
     public function testResolvingSourceHeader(): void
