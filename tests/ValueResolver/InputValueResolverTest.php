@@ -380,7 +380,7 @@ final class InputValueResolverTest extends TestCase
             }
         };
 
-        /** @var string $content */
+        /** @var non-empty-string $content */
         $content = json_encode([
             'id' => random_int(1, 10),
         ]);
