@@ -4,6 +4,7 @@
     "license": "MIT",
     "type": "symfony-bundle",
     "minimum-stability": "stable",
+    "prefer-stable": true,
     "require": {
         "php": ">=8.4",
         "opis/json-schema": "^2.4",
