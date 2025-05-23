@@ -11,6 +11,8 @@ interface JsonSchemaInterface extends \Stringable
      */
     public static function schema(): array;
 
+    public function asObject(): object;
+
     /**
      * @return non-empty-string
      */
