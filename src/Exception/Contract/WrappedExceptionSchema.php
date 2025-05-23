@@ -9,6 +9,7 @@ final readonly class WrappedExceptionSchema extends AbstractJsonSchema
     public static function schema(): array
     {
         return [
+            '$schema' => 'https://json-schema.org/draft/2020-12/schema',
             'title' => 'WrappedException',
             'type' => 'object',
             'properties' => [
