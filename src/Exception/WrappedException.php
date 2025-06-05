@@ -159,7 +159,6 @@ final readonly class WrappedException implements WrappedExceptionInterface
      */
     private function resolveTitle(): string
     {
-        // @phpstan-ignore-next-line
         return (Response::$statusTexts[$this->status] ?? null) ?: 'Error';
     }
 

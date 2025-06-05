@@ -23,7 +23,7 @@ final readonly class SmartFileDenormalizer implements DenormalizerInterface
             $name = $data->getClientOriginalName();
         }
 
-        return \OneToMany\DataUri\parse_data($data, displayName: $name ?? null); // @phpstan-ignore-line
+        return \OneToMany\DataUri\parse_data($data, name: $name ?? null); // @phpstan-ignore-line
     }
 
     /**
