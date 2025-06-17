@@ -6,9 +6,8 @@ namespace OneToMany\RichBundle\Attribute;
 final readonly class SourceContent extends PropertySource
 {
     public function __construct(
-        bool $trim = true,
-        bool $nullify = false,
+        public bool $trim = true,
+        public bool $nullify = false,
     ) {
-        parent::__construct(null, $trim, $nullify);
     }
 }

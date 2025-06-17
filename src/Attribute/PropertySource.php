@@ -2,6 +2,8 @@
 
 namespace OneToMany\RichBundle\Attribute;
 
+use function trim;
+
 abstract readonly class PropertySource
 {
     public function __construct(
@@ -13,6 +15,6 @@ abstract readonly class PropertySource
 
     public function getName(string $property): string
     {
-        return $this->name ?? $property;
+        return trim($this->name ?? '') ?: $property;
     }
 }
