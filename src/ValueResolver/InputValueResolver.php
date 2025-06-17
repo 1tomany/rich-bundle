@@ -15,6 +15,8 @@ use OneToMany\RichBundle\Attribute\SourceRoute;
 use OneToMany\RichBundle\Attribute\SourceSecurity;
 use OneToMany\RichBundle\Contract\CommandInterface;
 use OneToMany\RichBundle\Contract\InputInterface;
+use OneToMany\RichBundle\Security\User\UserId;
+use OneToMany\RichBundle\Serializer\Normalizer\UserIdNormalizer;
 use OneToMany\RichBundle\Validator\UninitializedProperties;
 use OneToMany\RichBundle\ValueResolver\Exception\ContentTypeHeaderMissingException;
 use OneToMany\RichBundle\ValueResolver\Exception\InvalidMappingException;
@@ -47,6 +49,7 @@ final class InputValueResolver implements ValueResolverInterface
 {
     private Request $request;
     private ParameterBag $content;
+    private ParameterBag $context;
     private ParameterBag $data;
 
     public function __construct(
@@ -56,6 +59,7 @@ final class InputValueResolver implements ValueResolverInterface
         private readonly ?TokenStorageInterface $tokenStorage = null,
     ) {
         $this->content = new ParameterBag();
+        $this->context = new ParameterBag();
         $this->data = new ParameterBag();
     }
 
@@ -72,6 +76,10 @@ final class InputValueResolver implements ValueResolverInterface
         if (!$type) {
             return [];
         }
+
+        // Set the default denormalization context
+        $this->context->set(AbstractNormalizer::FILTER_BOOL, true);
+        $this->context->set(AbstractObjectNormalizer::DISABLE_TYPE_ENFORCEMENT, true);
 
         // Parse the HTTP request body
         $this->initializeDataSources(...[
@@ -151,10 +159,7 @@ final class InputValueResolver implements ValueResolverInterface
 
         try {
             /** @var InputInterface<CommandInterface> $input */
-            $input = $this->serializer->denormalize($this->data->all(), $type, null, [
-                AbstractNormalizer::FILTER_BOOL => true,
-                AbstractObjectNormalizer::DISABLE_TYPE_ENFORCEMENT => true,
-            ]);
+            $input = $this->serializer->denormalize($this->data->all(), $type, null, $this->context->all());
         } catch (\Throwable $e) {
             throw new InvalidMappingException($e);
         }
@@ -310,7 +315,7 @@ final class InputValueResolver implements ValueResolverInterface
         $this->appendPropertyValue($property, $source, $this->request->getContent(false));
     }
 
-    private function extractSecurityToken(\ReflectionProperty $property, PropertySource $source): void
+    private function extractSecurityToken(\ReflectionProperty $property, SourceSecurity $source): void
     {
         if (null === $this->tokenStorage) {
             throw new SourceSecurityMappingFailedTokenStorageIsNullException($property->getName());
@@ -318,8 +323,20 @@ final class InputValueResolver implements ValueResolverInterface
 
         $token = $this->tokenStorage->getToken();
 
-        if (null !== $userId = $token?->getUserIdentifier()) {
-            $this->appendPropertyValue($property, $source, $userId);
+        if (null !== $identifier = $token?->getUserIdentifier()) {
+            $this->appendPropertyValue($property, $source, $identifier);
+
+            $type = $property->getType();
+
+            if ($type instanceof \ReflectionNamedType || $type instanceof \ReflectionUnionType) {
+
+            }
+            // if ($property->getType()) {
+                // basic validation?
+            // }
+
+            $this->context->set(UserIdNormalizer::USER_CLASS, $source->userClass);
+            $this->context->set(UserIdNormalizer::ID_PROPERTY, $source->idProperty);
         }
     }
 

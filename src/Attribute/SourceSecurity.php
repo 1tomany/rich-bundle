@@ -9,7 +9,7 @@ final readonly class SourceSecurity extends PropertySource
         public bool $trim = true,
         public bool $nullify = false,
         public ?string $userClass = null,
-        public ?string $pkeyProperty = null,
+        public ?string $idProperty = null,
     ) {
     }
 }
