@@ -58,9 +58,8 @@ class WrappedException implements WrappedExceptionInterface
      */
     private array $trace = [];
 
-    public function __construct(
-        private \Throwable $exception,
-    ) {
+    public function __construct(private \Throwable $exception)
+    {
         $this->resolveStatus();
         $this->resolveTitle();
         $this->resolveHeaders();
