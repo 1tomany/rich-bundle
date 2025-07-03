@@ -19,13 +19,17 @@ abstract readonly class AbstractJsonSchema implements JsonSchemaInterface
 
     public function asObject(): object
     {
-        /** @var object */
+        /**
+         * @var object
+         */
         return json_decode($this, false);
     }
 
     public function getName(): string
     {
-        /** @var non-empty-string */
+        /**
+         * @var non-empty-string
+         */
         return new \ReflectionClass($this)->getShortName();
     }
 }
