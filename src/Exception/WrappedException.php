@@ -19,6 +19,7 @@ use function trim;
 /**
  * @phpstan-import-type Stack from WrappedExceptionInterface
  * @phpstan-import-type Trace from WrappedExceptionInterface
+ * @phpstan-import-type Violation from WrappedExceptionInterface
  */
 class WrappedException implements WrappedExceptionInterface
 {
@@ -43,7 +44,7 @@ class WrappedException implements WrappedExceptionInterface
     private string $message = 'An unexpected error occurred.';
 
     /**
-     * @var list<array<string, string>>
+     * @var list<Violation>
      */
     private array $violations = [];
 
@@ -64,26 +65,9 @@ class WrappedException implements WrappedExceptionInterface
         $this->resolveTitle();
         $this->resolveHeaders();
         $this->resolveMessage();
-
+        $this->expandViolations();
         $this->flattenStack();
         $this->flattenTrace();
-
-        /*
-
-        // Expand validation errors
-        $constraintViolations = [];
-
-        if ($this->exception instanceof ValidationFailedException) {
-            foreach ($this->exception->getViolations() as $violation) {
-                array_push($constraintViolations, [
-                    'property' => $violation->getPropertyPath(),
-                    'message' => $violation->getMessage(),
-                ]);
-            }
-        }
-
-        $this->violations = $constraintViolations;
-        */
     }
 
     public function getStatus(): int
@@ -111,6 +95,11 @@ class WrappedException implements WrappedExceptionInterface
         return $this->headers;
     }
 
+    public function getViolations(): array
+    {
+        return $this->violations;
+    }
+
     public function getStack(): array
     {
         return $this->stack;
@@ -119,11 +108,6 @@ class WrappedException implements WrappedExceptionInterface
     public function getTrace(): array
     {
         return $this->trace;
-    }
-
-    public function getViolations(): array
-    {
-        return $this->violations;
     }
 
     private function resolveStatus(): void
@@ -189,6 +173,24 @@ class WrappedException implements WrappedExceptionInterface
         }
 
         $this->message = trim($message ?? '') ?: $this->message;
+    }
+
+    private function expandViolations(): void
+    {
+        $exception = $this->exception;
+
+        while (null !== $exception) {
+            if ($exception instanceof ValidationFailedException) {
+                foreach ($exception->getViolations() as $violation) {
+                    $this->violations[] = [
+                        'property' => $violation->getPropertyPath(),
+                        'message' => $violation->getMessage(),
+                    ];
+                }
+            }
+
+            $exception = $exception->getPrevious();
+        }
     }
 
     private function flattenStack(): void

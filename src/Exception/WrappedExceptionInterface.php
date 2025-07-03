@@ -5,6 +5,7 @@ namespace OneToMany\RichBundle\Exception;
 /**
  * @phpstan-type Stack array{class: string, message: string, file: string, line: int}
  * @phpstan-type Trace array{class: ?string, function: ?string, file: ?string, line: ?int}
+ * @phpstan-type Violation array{property: string, message: string}
  */
 interface WrappedExceptionInterface
 {
@@ -34,6 +35,11 @@ interface WrappedExceptionInterface
     public function getHeaders(): array;
 
     /**
+     * @return list<Violation>
+     */
+    public function getViolations(): array;
+
+    /**
      * @return list<Stack>
      */
     public function getStack(): array;
@@ -42,9 +48,4 @@ interface WrappedExceptionInterface
      * @return list<Trace>
      */
     public function getTrace(): array;
-
-    /**
-     * @return list<array<string, string>>
-     */
-    public function getViolations(): array;
 }
