@@ -2,26 +2,38 @@
 
 namespace OneToMany\RichBundle\Serializer\Normalizer;
 
+use OneToMany\RichBundle\Exception\WrappedException;
 use OneToMany\RichBundle\Exception\WrappedExceptionInterface;
+use OneToMany\RichBundle\Serializer\Normalizer\Exception\InvalidArgumentException;
+use Symfony\Component\ErrorHandler\Exception\FlattenException;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
-final readonly class ExceptionNormalizer implements NormalizerInterface
+readonly class ExceptionNormalizer implements NormalizerInterface
 {
     public function __construct(private bool $debug = false)
     {
     }
 
     /**
-     * @param WrappedExceptionInterface $object
+     * @param WrappedExceptionInterface|FlattenException $object
      * @param array<string, mixed> $context
      *
      * @return array<string, mixed>
      */
     public function normalize(mixed $object, ?string $format = null, array $context = []): array
     {
+        if (!$object instanceof WrappedExceptionInterface) {
+            if (!isset($context['exception']) || !$context['exception'] instanceof \Throwable) {
+                throw new InvalidArgumentException(\sprintf('The context requires a key named "exception" that implements "%s".', \Throwable::class));
+            }
+
+            $object = new WrappedException($context['exception']);
+        }
+
         $record = [
-            'status' => $object->getStatus(),
+            'type' => 'about:blank',
             'title' => $object->getTitle(),
+            'status' => $object->getStatus(),
             'detail' => $object->getMessage(),
             'violations' => $object->getViolations(),
             'stack' => $object->getStack(),
@@ -39,12 +51,13 @@ final readonly class ExceptionNormalizer implements NormalizerInterface
      */
     public function supportsNormalization(mixed $data, ?string $format = null, array $context = []): bool
     {
-        return $data instanceof WrappedExceptionInterface;
+        return $data instanceof WrappedExceptionInterface || $data instanceof FlattenException;
     }
 
     public function getSupportedTypes(?string $format): array
     {
         return [
+            FlattenException::class => true,
             WrappedExceptionInterface::class => true,
         ];
     }
