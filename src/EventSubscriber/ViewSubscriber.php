@@ -4,14 +4,16 @@ namespace OneToMany\RichBundle\EventSubscriber;
 
 use OneToMany\RichBundle\Controller\ControllerResponse;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ViewEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
-use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
+use Symfony\Component\Serializer\SerializerInterface;
 
 final readonly class ViewSubscriber implements EventSubscriberInterface
 {
-    public function __construct(private NormalizerInterface $normalizer)
+    use RequestInspectorTrait;
+
+    public function __construct(private SerializerInterface $serializer)
     {
     }
 
@@ -29,14 +31,16 @@ final readonly class ViewSubscriber implements EventSubscriberInterface
         $result = $event->getControllerResult();
 
         if ($result instanceof ControllerResponse) {
-            $normalizedData = $this->normalizer->normalize(
-                $result->data, null, $result->context
+            $format = $this->getResponseFormat(...[
+                'request' => $event->getRequest(),
+            ]);
+
+            $content = $this->serializer->serialize(
+                $result->data, $format, $result->context
             );
 
-            $response = new JsonResponse(...[
-                'data' => $normalizedData,
-                'status' => $result->status,
-                'headers' => $result->headers,
+            $response = new Response($content, $result->status, $result->headers + [
+                'Content-Type' => $event->getRequest()->getMimeType($format),
             ]);
 
             $event->setResponse($response);
