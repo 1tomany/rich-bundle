@@ -25,12 +25,12 @@ trait RequestInspectorTrait
      * attempt the Content-Type header is used to get a good idea
      * of the type of content the client would like in response.
      */
-    private function getResponseFormat(Request $request): ?string
+    private function getResponseFormat(Request $request, ?string $default = null): ?string
     {
         $format = $request->getPreferredFormat(
             $request->getContentTypeFormat()
         );
 
-        return in_array($format, ['xml', 'json']) ? $format : null;
+        return in_array($format, ['xml', 'json']) ? $format : $default;
     }
 }
