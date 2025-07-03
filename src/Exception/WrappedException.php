@@ -10,13 +10,16 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 use function array_key_exists;
-use function array_push;
 use function is_string;
 use function max;
 use function min;
 use function sprintf;
 use function trim;
 
+/**
+ * @phpstan-import-type Stack from WrappedExceptionInterface
+ * @phpstan-import-type Trace from WrappedExceptionInterface
+ */
 class WrappedException implements WrappedExceptionInterface
 {
     /**
@@ -45,12 +48,12 @@ class WrappedException implements WrappedExceptionInterface
     private array $violations = [];
 
     /**
-     * @var list<array<string, int|string>>
+     * @var list<Stack>
      */
     private array $stack = [];
 
     /**
-     * @var list<array<string, int|string|null>>
+     * @var list<Trace>
      */
     private array $trace = [];
 
@@ -61,6 +64,7 @@ class WrappedException implements WrappedExceptionInterface
         $this->resolveTitle();
         $this->resolveHeaders();
         $this->resolveMessage();
+
         $this->flattenStack();
         $this->flattenTrace();
 
@@ -206,14 +210,11 @@ class WrappedException implements WrappedExceptionInterface
     private function flattenTrace(): void
     {
         foreach ($this->exception->getTrace() as $trace) {
-            // $class = null;
-
-            if (is_string($class = $trace['class'] ?? null)) {
-                $class = trim($trace['class']);
-            }
-
             $this->trace[] = [
-                'class' => $class,
+                'class' => $trace['class'] ?? null,
+                'function' => $trace['function'] ?? null,
+                'file' => $trace['file'] ?? null,
+                'line' => $trace['line'] ?? null,
             ];
         }
     }
