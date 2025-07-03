@@ -8,6 +8,8 @@ use OneToMany\RichBundle\Serializer\Normalizer\Exception\InvalidArgumentExceptio
 use Symfony\Component\ErrorHandler\Exception\FlattenException;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
+use function sprintf;
+
 readonly class ExceptionNormalizer implements NormalizerInterface
 {
     public function __construct(private bool $debug = false)
@@ -24,7 +26,7 @@ readonly class ExceptionNormalizer implements NormalizerInterface
     {
         if (!$object instanceof WrappedExceptionInterface) {
             if (!isset($context['exception']) || !$context['exception'] instanceof \Throwable) {
-                throw new InvalidArgumentException(\sprintf('The context requires a key named "exception" that implements "%s".', \Throwable::class));
+                throw new InvalidArgumentException(sprintf('Normalizing an object of type "%s" requires the context to have a key named "exception" that implements "%s".', FlattenException::class, \Throwable::class));
             }
 
             $object = new WrappedException($context['exception']);

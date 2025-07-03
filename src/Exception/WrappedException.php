@@ -5,9 +5,11 @@ namespace OneToMany\RichBundle\Exception;
 use OneToMany\RichBundle\Exception\Attribute\HasUserMessage;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
+use function array_key_exists;
 use function implode;
 use function is_string;
 use function max;
@@ -54,10 +56,10 @@ final readonly class WrappedException implements WrappedExceptionInterface
         $this->headers = $this->resolveHeaders();
 
         // Flatten stack trace
-        $exceptionStackTrace = [];
+        $exceptionStack = [];
 
         while (null !== $exception) {
-            $exceptionStackTrace[] = [
+            $exceptionStack[] = [
                 'class' => $exception::class,
                 'message' => $exception->getMessage(),
                 'file' => $exception->getFile(),
@@ -67,13 +69,26 @@ final readonly class WrappedException implements WrappedExceptionInterface
             $exception = $exception->getPrevious();
         }
 
-        $this->stack = $exceptionStackTrace;
+        $this->stack = $exceptionStack;
 
         // Flatten validation errors
         $constraintViolations = [];
 
-        if ($this->exception instanceof ValidationFailedException) {
-            foreach ($this->exception->getViolations() as $violation) {
+        if (
+            $this->exception instanceof ValidationFailedException
+            || $this->exception instanceof BadRequestHttpException
+        ) {
+            $violations = [];
+
+            if ($this->exception instanceof ValidationFailedException) {
+                $violations = $this->exception->getViolations();
+            } else {
+                if ($this->exception->getPrevious() instanceof ValidationFailedException) {
+                    $violations = $this->exception->getPrevious()->getViolations();
+                }
+            }
+
+            foreach ($violations as $violation) {
                 $constraintViolations[] = [
                     'property' => $violation->getPropertyPath(),
                     'message' => $violation->getMessage(),
@@ -140,7 +155,7 @@ final readonly class WrappedException implements WrappedExceptionInterface
 
         $statusCode ??= (int) $this->exception->getCode();
 
-        if (!\array_key_exists($statusCode, Response::$statusTexts)) {
+        if (!array_key_exists($statusCode, Response::$statusTexts)) {
             $statusCode = Response::HTTP_INTERNAL_SERVER_ERROR;
         }
 
@@ -162,16 +177,19 @@ final readonly class WrappedException implements WrappedExceptionInterface
     {
         $message = null;
 
-        if ($this->exception instanceof ValidationFailedException) {
-            $message = 'The data provided is not valid.';
-        }
-
         if (
-            $this->exception instanceof HttpExceptionInterface
-            || $this->hasAttribute(WithHttpStatus::class)
-            || $this->hasAttribute(HasUserMessage::class)
+            $this->exception instanceof ValidationFailedException
+            || $this->exception instanceof BadRequestHttpException
         ) {
-            $message = $this->exception->getMessage();
+            $message = 'The data provided is not valid.';
+        } else {
+            if (
+                $this->exception instanceof HttpExceptionInterface
+                || $this->hasAttribute(WithHttpStatus::class)
+                || $this->hasAttribute(HasUserMessage::class)
+            ) {
+                $message = $this->exception->getMessage();
+            }
         }
 
         return trim($message ?? '') ?: 'An unexpected error occurred.';
