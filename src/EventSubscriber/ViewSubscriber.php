@@ -7,11 +7,11 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Event\ViewEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
-use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
+use Symfony\Component\Serializer\SerializerInterface;
 
 final readonly class ViewSubscriber implements EventSubscriberInterface
 {
-    public function __construct(private NormalizerInterface $normalizer)
+    public function __construct(private SerializerInterface $serializer)
     {
     }
 
@@ -29,15 +29,17 @@ final readonly class ViewSubscriber implements EventSubscriberInterface
         $result = $event->getControllerResult();
 
         if ($result instanceof ControllerResponse) {
-            $normalizedData = $this->normalizer->normalize(
-                $result->data, null, $result->context
+            $format = $event->getRequest()->getPreferredFormat(
+                $event->getRequest()->getContentTypeFormat()
             );
 
-            $response = new JsonResponse(...[
-                'data' => $normalizedData,
-                'status' => $result->status,
-                'headers' => $result->headers,
-            ]);
+            $json = $this->serializer->serialize(
+                $result->data, $format ?? 'json', $result->context
+            );
+
+            $response = JsonResponse::fromJsonString(
+                $json, $result->status, $result->headers,
+            );
 
             $event->setResponse($response);
         }
