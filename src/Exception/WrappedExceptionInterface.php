@@ -17,6 +17,11 @@ interface WrappedExceptionInterface
     /**
      * @return non-empty-string
      */
+    public function getDescription(): string;
+
+    /**
+     * @return non-empty-string
+     */
     public function getMessage(): string;
 
     /**
@@ -28,6 +33,11 @@ interface WrappedExceptionInterface
      * @return list<array<string, int|string>>
      */
     public function getStack(): array;
+
+    /**
+     * @return list<array<string, int|string|null>>
+     */
+    public function getTrace(): array;
 
     /**
      * @return list<array<string, string>>
