@@ -19,11 +19,9 @@ readonly class ExceptionSubscriber implements EventSubscriberInterface
 
     public static function getSubscribedEvents(): array
     {
-        return [ ];
-
         return [
             KernelEvents::EXCEPTION => [
-                ['onKernelException', 0],
+                ['onKernelException', -1],
             ],
         ];
     }

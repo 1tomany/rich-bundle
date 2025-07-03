@@ -28,14 +28,8 @@ final readonly class ViewSubscriber implements EventSubscriberInterface
 
     public function onKernelView(ViewEvent $event): void
     {
-        $result = $event->getControllerResult();
-
-        if ($result instanceof ControllerResponse) {
-            $format = $this->getResponseFormat(...[
-                'request' => $event->getRequest(),
-            ]);
-
-            $format ??= 'json';
+        if (($result = $event->getControllerResult()) instanceof ControllerResponse) {
+            $format = $this->getResponseFormat($event->getRequest()) ?? 'json';
 
             $content = $this->serializer->serialize(
                 $result->data, $format, $result->context
