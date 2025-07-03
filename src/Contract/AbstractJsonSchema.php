@@ -2,9 +2,14 @@
 
 namespace OneToMany\RichBundle\Contract;
 
+use OneToMany\RichBundle\Contract\Exception\RuntimeException;
+
+use function is_object;
 use function json_decode;
 use function json_encode;
-use function strval;
+use function json_last_error_msg;
+use function rtrim;
+use function sprintf;
 
 abstract readonly class AbstractJsonSchema implements JsonSchemaInterface
 {
@@ -14,22 +19,22 @@ abstract readonly class AbstractJsonSchema implements JsonSchemaInterface
 
     public function __toString(): string
     {
-        return strval(json_encode(static::schema()));
+        return (string) json_encode(static::schema());
     }
 
     public function asObject(): object
     {
-        /**
-         * @var object
-         */
-        return json_decode($this, false);
+        $json = json_decode($this, false);
+
+        if (!is_object($json)) {
+            throw new RuntimeException(sprintf('Encoding failed: %s.', rtrim(json_last_error_msg(), '.')));
+        }
+
+        return $json;
     }
 
     public function getName(): string
     {
-        /**
-         * @var non-empty-string
-         */
-        return new \ReflectionClass($this)->getShortName();
+        return new \ReflectionClass($this)->getShortName() ?: throw new RuntimeException('JSON schema name cannot be empty.');
     }
 }
