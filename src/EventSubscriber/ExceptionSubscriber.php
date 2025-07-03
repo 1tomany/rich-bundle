@@ -9,7 +9,7 @@ use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Serializer\SerializerInterface;
 
-final readonly class ExceptionSubscriber implements EventSubscriberInterface
+readonly class ExceptionSubscriber implements EventSubscriberInterface
 {
     use RequestInspectorTrait;
 
@@ -19,9 +19,11 @@ final readonly class ExceptionSubscriber implements EventSubscriberInterface
 
     public static function getSubscribedEvents(): array
     {
+        return [ ];
+
         return [
             KernelEvents::EXCEPTION => [
-                ['onKernelException', 64],
+                ['onKernelException', 0],
             ],
         ];
     }
@@ -31,6 +33,10 @@ final readonly class ExceptionSubscriber implements EventSubscriberInterface
         $format = $this->getResponseFormat(...[
             'request' => $event->getRequest(),
         ]);
+
+        if (!$format) {
+            return;
+        }
 
         $wrapped = new WrappedException(...[
             'exception' => $event->getThrowable(),

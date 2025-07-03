@@ -35,6 +35,8 @@ final readonly class ViewSubscriber implements EventSubscriberInterface
                 'request' => $event->getRequest(),
             ]);
 
+            $format ??= 'json';
+
             $content = $this->serializer->serialize(
                 $result->data, $format, $result->context
             );
