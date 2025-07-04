@@ -25,10 +25,12 @@ final readonly class ExceptionNormalizer implements NormalizerInterface
             'detail' => $object->getMessage(),
             'violations' => $object->getViolations(),
             'stack' => $object->getStack(),
+            'trace' => $object->getTrace(),
         ];
 
         if (false === $this->debug) {
             unset($record['stack']);
+            unset($record['trace']);
         }
 
         return $record;
