@@ -1,6 +1,6 @@
 <?php
 
-namespace OneToMany\RichBundle\Exception\Contract;
+namespace OneToMany\RichBundle\Exception\Contract\Schema;
 
 use OneToMany\RichBundle\Contract\AbstractJsonSchema;
 
@@ -65,6 +65,34 @@ final readonly class WrappedExceptionSchema extends AbstractJsonSchema
                         'required' => [
                             'class',
                             'message',
+                            'file',
+                            'line',
+                        ],
+                        'additionalProperties' => false,
+                    ],
+                ],
+                'trace' => [
+                    'type' => 'array',
+                    'items' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'class' => [
+                                'type' => ['null', 'string'],
+                            ],
+                            'function' => [
+                                'type' => ['null', 'string'],
+                            ],
+                            'file' => [
+                                'type' => ['null', 'string'],
+                            ],
+                            'line' => [
+                                'type' => ['null', 'integer'],
+                                'minimum' => 0,
+                            ],
+                        ],
+                        'required' => [
+                            'class',
+                            'function',
                             'file',
                             'line',
                         ],

@@ -39,7 +39,7 @@ final class ResponseErrorDetailTest extends TestCase
     public function testEvaluationRequiresResponseContentToMatchJsonSchema(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('The response content does not match the JSON schema defined in "OneToMany\RichBundle\Exception\Contract\WrappedExceptionSchema".');
+        $this->expectExceptionMessage('The response content does not match the JSON schema defined in "OneToMany\RichBundle\Exception\Contract\Schema\WrappedExceptionSchema".');
 
         new ResponseErrorDetail('Error!')->evaluate(new JsonResponse(['detail' => 'Error!']));
     }
