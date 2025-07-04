@@ -16,7 +16,7 @@ final readonly class ControllerResponse
      */
     public function __construct(
         public mixed $data,
-        public int $status,
+        public int $status = 200,
         public array $context = [],
         public array $headers = [],
     ) {
@@ -53,15 +53,13 @@ final readonly class ControllerResponse
      * @param array<string, mixed> $context
      */
     public static function error(
-        \Throwable|WrappedExceptionInterface $exception,
+        \Throwable $exception,
         array $context = [],
     ): self {
-        if (!$exception instanceof WrappedExceptionInterface) {
-            $exception = new WrappedException(...[
-                'exception' => $exception,
-            ]);
-        }
+        $wrapped = new WrappedException(...[
+            'exception' => $exception,
+        ]);
 
-        return new self($exception, $exception->getStatus(), $context + ['exception' => $exception], $exception->getHeaders());
+        return new self($wrapped, $wrapped->getStatus(), $context + ['exception' => $exception], $wrapped->getHeaders());
     }
 }
