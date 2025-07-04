@@ -32,7 +32,7 @@ trait ValidateRequestTypesTrait
                 $request->getMimeType($type), $this->flattenMimeTypes($acceptTypes),
             ]);
 
-            throw new NotAcceptableHttpException($message, headers: ['Vary' => 'Accept']);
+            throw new NotAcceptableHttpException($message);
         }
 
         $type = $request->getContentTypeFormat();
