@@ -2,7 +2,7 @@
 
 namespace OneToMany\RichBundle\Test\Constraint;
 
-use OneToMany\RichBundle\Exception\Contract\WrappedExceptionSchema;
+use OneToMany\RichBundle\Exception\Contract\Schema\WrappedExceptionSchema;
 use OneToMany\RichBundle\Test\Constraint\Exception\InvalidArgumentException;
 
 use function is_object;
