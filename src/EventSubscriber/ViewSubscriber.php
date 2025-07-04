@@ -10,31 +10,16 @@ use Symfony\Component\HttpKernel\KernelEvents;
 
 final readonly class ViewSubscriber implements EventSubscriberInterface
 {
-    use RequestInspectorTrait;
-
-    public function __construct(private ResponseRenderer $responseRenderer)
+    public function __construct()
     {
     }
 
     public static function getSubscribedEvents(): array
     {
         return [
-            KernelEvents::VIEW => [
-                ['onKernelView', 0],
-            ],
+            // KernelEvents::VIEW => [
+            //     ['onKernelView', 0],
+            // ],
         ];
-    }
-
-    public function onKernelView(ViewEvent $event): void
-    {
-        $result = $event->getControllerResult();
-
-        if ($result instanceof ControllerResponse) {
-            $format = $this->getResponseFormat(
-                $event->getRequest(), 'json'
-            );
-
-            $event->setResponse($this->responseRenderer->render($result, $format));
-        }
     }
 }

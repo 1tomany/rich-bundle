@@ -14,17 +14,17 @@ use function stripos;
 use function vsprintf;
 
 // @phpstan-ignore trait.unused
-trait ValidateRequestTrait
+trait ValidateJsonRequestTrait
 {
     /**
      * @param list<non-empty-string> $acceptTypes
      * @param list<non-empty-string> $contentTypes
      */
-    private function validateRequest(
+    private function validateJsonRequest(
         Request $request,
-        string $uriPrefix,
-        array $acceptTypes,
-        array $contentTypes,
+        string $uriPrefix = '/api',
+        array $acceptTypes = ['json'],
+        array $contentTypes = ['form', 'json'],
     ): void {
         if ($this->shouldValidateRequest($request, $uriPrefix)) {
             $contentType = $request->getContentTypeFormat();
@@ -48,11 +48,6 @@ trait ValidateRequestTrait
                 throw new NotAcceptableHttpException($message, headers: ['Vary' => 'Accept']);
             }
         }
-    }
-
-    private function validateApiRequest(Request $request): void
-    {
-        $this->validateRequest($request, '/api', ['json'], ['form', 'json']);
     }
 
     private function shouldValidateRequest(Request $request, string $uriPrefix): bool

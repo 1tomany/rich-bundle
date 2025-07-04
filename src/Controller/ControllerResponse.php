@@ -3,6 +3,7 @@
 namespace OneToMany\RichBundle\Controller;
 
 use OneToMany\RichBundle\Controller\Exception\InvalidHttpStatusException;
+use OneToMany\RichBundle\Exception\WrappedException;
 use Symfony\Component\HttpFoundation\Response;
 
 final readonly class ControllerResponse
@@ -45,5 +46,20 @@ final readonly class ControllerResponse
         array $headers = [],
     ): self {
         return new self($data, 201, $context, $headers);
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    public static function error(
+        \Throwable $exception,
+        array $context = [],
+    ): self
+    {
+        $wrapped = new WrappedException(...[
+            'exception' => $exception,
+        ]);
+
+        return new self($wrapped, $wrapped->getStatus(), $context + ['exception' => $exception], $wrapped->getHeaders());
     }
 }
