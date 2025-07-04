@@ -10,7 +10,6 @@ use function array_filter;
 use function array_map;
 use function implode;
 use function in_array;
-use function stripos;
 use function vsprintf;
 
 // @phpstan-ignore trait.unused
@@ -22,37 +21,29 @@ trait ValidateRequestTypesTrait
      */
     private function validateRequestTypes(
         Request $request,
-        string $uriPrefix = '/api',
         array $acceptTypes = ['json'],
         array $contentTypes = ['form', 'json'],
     ): void {
-        if ($this->shouldValidateRequest($request, $uriPrefix)) {
-            $contentType = $request->getContentTypeFormat();
+        /** @var non-empty-string $type */
+        $type = $request->getPreferredFormat('json');
 
-            if (null !== $contentType && !in_array($contentType, $contentTypes, true)) {
-                $message = vsprintf('The type "%s" is not supported. Supported content types are: "%s".', [
-                    $request->getMimeType($contentType), $this->flattenMimeTypes($contentTypes),
-                ]);
+        if (!in_array($type, $acceptTypes, true)) {
+            $message = vsprintf('The type "%s" is not supported. Acceptable types are: "%s".', [
+                $request->getMimeType($type), $this->flattenMimeTypes($acceptTypes),
+            ]);
 
-                throw new UnsupportedMediaTypeHttpException($message);
-            }
-
-            /** @var non-empty-string $accept */
-            $accept = $request->getPreferredFormat('json');
-
-            if (!in_array($accept, $acceptTypes, true)) {
-                $message = vsprintf('The type "%s" is not supported. Acceptable types are: "%s".', [
-                    $request->getMimeType($accept), $this->flattenMimeTypes($acceptTypes),
-                ]);
-
-                throw new NotAcceptableHttpException($message, headers: ['Vary' => 'Accept']);
-            }
+            throw new NotAcceptableHttpException($message, headers: ['Vary' => 'Accept']);
         }
-    }
 
-    private function shouldValidateRequest(Request $request, string $uriPrefix): bool
-    {
-        return 0 === stripos($request->getRequestUri(), $uriPrefix);
+        $type = $request->getContentTypeFormat();
+
+        if (null !== $type && !in_array($type, $contentTypes, true)) {
+            $message = vsprintf('The type "%s" is not supported. Supported content types are: "%s".', [
+                $request->getMimeType($type), $this->flattenMimeTypes($contentTypes),
+            ]);
+
+            throw new UnsupportedMediaTypeHttpException($message);
+        }
     }
 
     /**
