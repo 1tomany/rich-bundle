@@ -5,11 +5,12 @@ namespace OneToMany\RichBundle\EventSubscriber;
 use OneToMany\RichBundle\Controller\ControllerResponse;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\Event\ViewEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Serializer\SerializerInterface;
 
-final readonly class ViewSubscriber implements EventSubscriberInterface
+final readonly class EventSubscriber implements EventSubscriberInterface
 {
     public function __construct(private SerializerInterface $serializer)
     {
@@ -20,6 +21,9 @@ final readonly class ViewSubscriber implements EventSubscriberInterface
         return [
             KernelEvents::VIEW => [
                 ['onKernelView', 0],
+            ],
+            KernelEvents::RESPONSE => [
+                ['onKernelResponse', 0],
             ],
         ];
     }
@@ -40,6 +44,13 @@ final readonly class ViewSubscriber implements EventSubscriberInterface
 
         if (null !== ($response ?? null)) {
             $event->setResponse($response);
+        }
+    }
+
+    public function onKernelResponse(ResponseEvent $event): void
+    {
+        if (false === $event->getResponse()->hasVary()) {
+            $event->getResponse()->setVary('Accept');
         }
     }
 }
