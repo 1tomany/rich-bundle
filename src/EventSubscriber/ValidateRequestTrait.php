@@ -25,8 +25,7 @@ trait ValidateRequestTrait
         string $uriPrefix,
         array $acceptTypes,
         array $contentTypes,
-    ): void
-    {
+    ): void {
         if ($this->shouldValidateRequest($request, $uriPrefix)) {
             $contentType = $request->getContentTypeFormat();
 

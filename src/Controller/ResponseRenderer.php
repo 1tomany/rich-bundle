@@ -24,7 +24,6 @@ final readonly class ResponseRenderer
                 'Content-Type' => Request::getMimeTypes($format)[0] ?? $format,
             ]);
         } catch (NotEncodableValueException) {
-
         }
 
         return $response;
