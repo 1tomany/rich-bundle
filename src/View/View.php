@@ -14,7 +14,7 @@ readonly class View implements ViewInterface
      * @param array<string, mixed> $context
      * @param array<string, string> $headers
      */
-    public function __construct(
+    public final function __construct(
         protected mixed $data,
         protected int $status = 200,
         protected array $context = [],
@@ -34,7 +34,7 @@ readonly class View implements ViewInterface
         array $context = [],
         array $headers = [],
     ): self {
-        return new self($data, 200, $context, $headers);
+        return new static($data, 200, $context, $headers);
     }
 
     /**
@@ -46,7 +46,7 @@ readonly class View implements ViewInterface
         array $context = [],
         array $headers = [],
     ): self {
-        return new self($data, 201, $context, $headers);
+        return new static($data, 201, $context, $headers);
     }
 
     public function getData(): mixed
