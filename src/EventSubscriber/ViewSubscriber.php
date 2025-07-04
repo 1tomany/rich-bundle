@@ -3,6 +3,7 @@
 namespace OneToMany\RichBundle\EventSubscriber;
 
 use OneToMany\RichBundle\Controller\ControllerResponse;
+use OneToMany\RichBundle\Controller\ResponseRenderer;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ViewEvent;
@@ -13,7 +14,7 @@ final readonly class ViewSubscriber implements EventSubscriberInterface
 {
     use RequestInspectorTrait;
 
-    public function __construct(private SerializerInterface $serializer)
+    public function __construct(private ResponseRenderer $responseRenderer)
     {
     }
 
@@ -35,15 +36,7 @@ final readonly class ViewSubscriber implements EventSubscriberInterface
                 $event->getRequest(), 'json'
             );
 
-            $content = $this->serializer->serialize(
-                $result->data, $format, $result->context
-            );
-
-            $response = new Response($content, $result->status, $result->headers + [
-                'Content-Type' => $event->getRequest()->getMimeType($format),
-            ]);
-
-            $event->setResponse($response);
+            $event->setResponse($this->responseRenderer->render($result, $format));
         }
     }
 }
