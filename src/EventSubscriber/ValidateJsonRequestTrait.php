@@ -30,7 +30,7 @@ trait ValidateJsonRequestTrait
             $contentType = $request->getContentTypeFormat();
 
             if (null !== $contentType && !in_array($contentType, $contentTypes, true)) {
-                $message = vsprintf('The content type "%s" is not supported. Supported content types are: "%s".', [
+                $message = vsprintf('The type "%s" is not supported. Supported content types are: "%s".', [
                     $request->getMimeType($contentType), $this->flattenMimeTypes($contentTypes),
                 ]);
 
@@ -41,7 +41,7 @@ trait ValidateJsonRequestTrait
             $accept = $request->getPreferredFormat('json');
 
             if (!in_array($accept, $acceptTypes, true)) {
-                $message = vsprintf('The accept type "%s" is not supported. Acceptable types are: "%s".', [
+                $message = vsprintf('The type "%s" is not supported. Acceptable types are: "%s".', [
                     $request->getMimeType($accept), $this->flattenMimeTypes($acceptTypes),
                 ]);
 

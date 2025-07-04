@@ -71,6 +71,34 @@ final readonly class WrappedExceptionSchema extends AbstractJsonSchema
                         'additionalProperties' => false,
                     ],
                 ],
+                'trace' => [
+                    'type' => 'array',
+                    'items' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'class' => [
+                                'type' => ['null', 'string'],
+                            ],
+                            'function' => [
+                                'type' => ['null', 'string'],
+                            ],
+                            'file' => [
+                                'type' => ['null', 'string'],
+                            ],
+                            'line' => [
+                                'type' => ['null', 'integer'],
+                                'minimum' => 0,
+                            ],
+                        ],
+                        'required' => [
+                            'class',
+                            'function',
+                            'file',
+                            'line',
+                        ],
+                        'additionalProperties' => false,
+                    ],
+                ],
             ],
             'required' => [
                 'status',

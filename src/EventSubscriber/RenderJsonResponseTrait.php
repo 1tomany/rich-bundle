@@ -23,7 +23,9 @@ trait RenderJsonResponseTrait
             $response->data, 'json', $response->context
         );
 
-        return JsonResponse::fromJsonString($data, $response->status, $response->headers);
+        return JsonResponse::fromJsonString($data, $response->status, $response->headers + [
+            'Vary' => 'Accept',
+        ]);
     }
 
     private function renderErrorResponse(\Throwable $exception): Response
