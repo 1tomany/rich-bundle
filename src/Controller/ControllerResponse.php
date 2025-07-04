@@ -54,8 +54,7 @@ final readonly class ControllerResponse
     public static function error(
         \Throwable $exception,
         array $context = [],
-    ): self
-    {
+    ): self {
         $wrapped = new WrappedException(...[
             'exception' => $exception,
         ]);
