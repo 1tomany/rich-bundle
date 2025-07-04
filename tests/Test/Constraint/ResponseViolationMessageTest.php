@@ -39,7 +39,7 @@ final class ResponseViolationMessageTest extends TestCase
     public function testEvaluationRequiresResponseContentToMatchJsonSchema(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('The response content does not match the JSON schema defined in "OneToMany\RichBundle\Exception\Contract\WrappedExceptionSchema".');
+        $this->expectExceptionMessage('The response content does not match the JSON schema defined in "OneToMany\RichBundle\Exception\Contract\Schema\WrappedExceptionSchema".');
 
         new ResponseViolationMessage('name', 'Required')->evaluate(new JsonResponse(['id' => 10]));
     }
