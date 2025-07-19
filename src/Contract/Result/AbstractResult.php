@@ -6,8 +6,12 @@ use OneToMany\RichBundle\Contract\ResultInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 
+use function array_is_list;
+use function is_array;
+
 /**
  * @template R
+ *
  * @implements ResultInterface<R>
  */
 abstract class AbstractResult implements ResultInterface
@@ -15,17 +19,17 @@ abstract class AbstractResult implements ResultInterface
     /**
      * @var int<100, 599>
      */
-    private(set) public int $status = 200;
+    public private(set) int $status = 200;
 
     /**
      * @var array<string, mixed>
      */
-    private(set) public array $context = [];
+    public private(set) array $context = [];
 
     /**
      * @var list<array<string, string>>
      */
-    private(set) public array $headers = [];
+    public private(set) array $headers = [];
 
     /**
      * @param R $result
@@ -58,8 +62,8 @@ abstract class AbstractResult implements ResultInterface
         $existingGroups = $this->context['groups'] ?? null;
 
         // Maintain existing groups if the context does not overwrite them
-        if (\is_array($existingGroups) && \array_is_list($existingGroups)) {
-            if (\is_array($context[AbstractNormalizer::GROUPS] ?? null)) {
+        if (is_array($existingGroups) && array_is_list($existingGroups)) {
+            if (is_array($context[AbstractNormalizer::GROUPS] ?? null)) {
                 $context[AbstractNormalizer::GROUPS] = $existingGroups;
             }
         }
