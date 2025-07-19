@@ -18,7 +18,7 @@
     },
     "require-dev": {
         "fakerphp/faker": "^1.24",
-        "friendsofphp/php-cs-fixer": "^3.75",
+        "friendsofphp/php-cs-fixer": "^3.84",
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^11.5"
     },
@@ -35,6 +35,11 @@
         "psr-4": {
             "OneToMany\\RichBundle\\Tests\\": "tests/"
         }
+    },
+    "scripts": {
+        "fix": "./vendor/bin/php-cs-fixer fix",
+        "stan": "./vendor/bin/phpstan",
+        "test": "./vendor/bin/phpunit"
     },
     "authors": [
         {
