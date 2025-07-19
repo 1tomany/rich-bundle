@@ -19,7 +19,7 @@ abstract class AbstractResult implements ResultInterface
     /**
      * @var int<100, 599>
      */
-    public private(set) int $status = 200;
+    public private(set) int $status = Response::HTTP_OK;
 
     /**
      * @var array<string, mixed>

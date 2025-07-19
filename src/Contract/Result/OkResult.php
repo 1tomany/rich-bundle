@@ -2,6 +2,8 @@
 
 namespace OneToMany\RichBundle\Contract\Result;
 
+use Symfony\Component\HttpFoundation\Response;
+
 /**
  * @template R
  *
