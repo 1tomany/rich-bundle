@@ -2,12 +2,13 @@
 
 namespace OneToMany\RichBundle\ValueResolver\Exception;
 
-use OneToMany\RichBundle\Exception\Attribute\HasUserMessage;
+use OneToMany\RichBundle\Attribute\HasUserMessage;
+use OneToMany\RichBundle\Exception\RuntimeException;
 
 use function sprintf;
 
 #[HasUserMessage]
-final class MalformedRequestContentException extends \RuntimeException implements ExceptionInterface
+final class MalformedRequestContentException extends RuntimeException
 {
     public function __construct(string $format, ?\Throwable $previous = null)
     {

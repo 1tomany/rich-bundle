@@ -2,8 +2,8 @@
 
 namespace OneToMany\RichBundle\Tests\Validator;
 
-use OneToMany\RichBundle\Contract\CommandInterface;
-use OneToMany\RichBundle\Contract\InputInterface;
+use OneToMany\RichBundle\Contract\Action\CommandInterface;
+use OneToMany\RichBundle\Contract\Action\InputInterface;
 use OneToMany\RichBundle\Validator\UninitializedProperties;
 use OneToMany\RichBundle\Validator\UninitializedPropertiesValidator;
 use PHPUnit\Framework\Attributes\Group;
@@ -22,7 +22,7 @@ final class UninitializedPropertiesValidatorTest extends ConstraintValidatorTest
     public function testValidationRequiresInputInterfaceValue(): void
     {
         $this->expectException(UnexpectedTypeException::class);
-        $this->expectExceptionMessage('Expected argument of type "OneToMany\RichBundle\Contract\InputInterface", "string" given');
+        $this->expectExceptionMessage('Expected argument of type "OneToMany\RichBundle\Contract\Action\InputInterface", "string" given');
 
         $this->validator->validate('string', new UninitializedProperties());
     }

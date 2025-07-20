@@ -13,10 +13,10 @@ use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceRoute;
 use OneToMany\RichBundle\Attribute\SourceSecurity;
-use OneToMany\RichBundle\Contract\CommandInterface;
-use OneToMany\RichBundle\Contract\InputInterface;
+use OneToMany\RichBundle\Contract\Action\CommandInterface;
+use OneToMany\RichBundle\Contract\Action\InputInterface;
 use OneToMany\RichBundle\Validator\UninitializedProperties;
-use OneToMany\RichBundle\ValueResolver\Exception\ContentTypeHeaderMissingException;
+use OneToMany\RichBundle\ValueResolver\Exception\ContentTypeHeaderNotFoundException;
 use OneToMany\RichBundle\ValueResolver\Exception\InvalidMappingException;
 use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
 use OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException;
@@ -213,7 +213,7 @@ final class InputValueResolver implements ValueResolverInterface
 
         if (!$format) {
             if (!empty($content)) {
-                throw new ContentTypeHeaderMissingException();
+                throw new ContentTypeHeaderNotFoundException();
             }
 
             return;

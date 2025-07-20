@@ -8,9 +8,9 @@ use OneToMany\RichBundle\Attribute\SourceHeader;
 use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceSecurity;
-use OneToMany\RichBundle\Contract\CommandInterface;
-use OneToMany\RichBundle\Contract\InputInterface;
-use OneToMany\RichBundle\ValueResolver\Exception\ContentTypeHeaderMissingException;
+use OneToMany\RichBundle\Contract\Action\CommandInterface;
+use OneToMany\RichBundle\Contract\Action\InputInterface;
+use OneToMany\RichBundle\ValueResolver\Exception\ContentTypeHeaderNotFoundException;
 use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
 use OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException;
 use OneToMany\RichBundle\ValueResolver\Exception\SourceSecurityMappingFailedTokenStorageIsNullException;
@@ -55,7 +55,7 @@ final class InputValueResolverTest extends TestCase
 
     public function testResolvingValueRequiresContentTypeHeaderWithNonEmptyBody(): void
     {
-        $this->expectException(ContentTypeHeaderMissingException::class);
+        $this->expectException(ContentTypeHeaderNotFoundException::class);
 
         $request = new Request(...[
             'content' => '{"id": 10}',

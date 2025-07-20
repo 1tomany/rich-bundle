@@ -2,7 +2,7 @@
 
 namespace OneToMany\RichBundle\Validator;
 
-use OneToMany\RichBundle\Contract\InputInterface;
+use OneToMany\RichBundle\Contract\Action\InputInterface;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 use Symfony\Component\Validator\Exception\UnexpectedTypeException;
