@@ -417,7 +417,7 @@ use OneToMany\RichBundle\Contract\Action\HandlerInterface;
 use OneToMany\RichBundle\Contract\Action\ResultInterface;
 
 /**
- * @implements HandlerInterface<CreateAccountCommand, Result<Account>>
+ * @implements HandlerInterface<CreateAccountCommand, ResultInterface<Account>>
  */
 final readonly class CreateAccountHandler implements HandlerInterface
 {
@@ -488,12 +488,14 @@ namespace App\Account\Action\Handler\Exception;
 use App\Account\Contract\Exception\ExceptionInterface;
 use OneToMany\RichBundle\Attribute\HasUserMessage;
 
+use function sprintf;
+
 #[HasUserMessage]
 final class UserNotFoundForCreatingAccountException extends \RuntimeException implements ExceptionInterface
 {
     public function __construct(?string $username)
     {
-        parent::__construct(\sprintf('The account could not be created because a user with username "%s" could not be found.', $username), 404);
+        parent::__construct(sprintf('The account could not be created because a user with username "%s" could not be found.', $username), 404);
     }
 }
 ```
@@ -514,6 +516,7 @@ namespace App\Account\Framework\Controller\Api;
 
 use App\Account\Action\Handler\CreateAccountHandler;
 use App\Account\Action\Input\CreateAccountInput;
+use App\Entity\Account;
 use OneToMany\RichBundle\Contract\Action\ResultInterface;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 
@@ -524,6 +527,9 @@ final readonly class CreateAccountController
     {
     }
 
+    /**
+     * @return ResultInterface<Account>
+     */
     public function __invoke(CreateAccountInput $createAccountInput): ResultInterface
     {
         $result = $this->createAccountHandler->handle(
