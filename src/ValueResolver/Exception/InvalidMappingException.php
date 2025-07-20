@@ -2,7 +2,7 @@
 
 namespace OneToMany\RichBundle\ValueResolver\Exception;
 
-use OneToMany\RichBundle\Exception\Attribute\HasUserMessage;
+use OneToMany\RichBundle\Attribute\HasUserMessage;
 
 #[HasUserMessage]
 final class InvalidMappingException extends \RuntimeException implements ExceptionInterface

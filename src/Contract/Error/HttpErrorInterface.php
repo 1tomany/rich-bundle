@@ -1,13 +1,13 @@
 <?php
 
-namespace OneToMany\RichBundle\Exception;
+namespace OneToMany\RichBundle\Contract\Error;
 
 /**
  * @phpstan-type Stack array{class: string, message: string, file: string, line: int}
  * @phpstan-type Trace array{class: ?string, function: ?string, file: ?string, line: ?int}
  * @phpstan-type Violation array{property: string, message: string}
  */
-interface WrappedExceptionInterface
+interface HttpErrorInterface
 {
     /**
      * @return int<100, 599>

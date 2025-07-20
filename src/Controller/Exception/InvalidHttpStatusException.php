@@ -2,7 +2,7 @@
 
 namespace OneToMany\RichBundle\Controller\Exception;
 
-use OneToMany\RichBundle\Exception\Attribute\HasUserMessage;
+use OneToMany\RichBundle\Attribute\HasUserMessage;
 
 use function sprintf;
 

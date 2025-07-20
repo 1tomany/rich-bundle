@@ -1,8 +1,9 @@
 <?php
 
-namespace OneToMany\RichBundle\Exception;
+namespace OneToMany\RichBundle\Error;
 
-use OneToMany\RichBundle\Exception\Attribute\HasUserMessage;
+use OneToMany\RichBundle\Attribute\HasUserMessage;
+use OneToMany\RichBundle\Contract\Error\HttpErrorInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -17,11 +18,11 @@ use function sprintf;
 use function trim;
 
 /**
- * @phpstan-import-type Stack from WrappedExceptionInterface
- * @phpstan-import-type Trace from WrappedExceptionInterface
- * @phpstan-import-type Violation from WrappedExceptionInterface
+ * @phpstan-import-type Stack from HttpErrorInterface
+ * @phpstan-import-type Trace from HttpErrorInterface
+ * @phpstan-import-type Violation from HttpErrorInterface
  */
-class WrappedException implements WrappedExceptionInterface
+class HttpError implements HttpErrorInterface
 {
     /**
      * @var int<100, 599>

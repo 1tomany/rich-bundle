@@ -1,6 +1,6 @@
 <?php
 
-namespace OneToMany\RichBundle\Serializer\Normalizer;
+namespace OneToMany\RichBundle\Serializer;
 
 use OneToMany\DataUri\SmartFile;
 use Symfony\Component\HttpFoundation\File\File;

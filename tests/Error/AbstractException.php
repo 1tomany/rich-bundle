@@ -1,6 +1,6 @@
 <?php
 
-namespace OneToMany\RichBundle\Tests\Exception;
+namespace OneToMany\RichBundle\Tests\Error;
 
 use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
 

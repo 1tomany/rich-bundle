@@ -22,7 +22,7 @@ final class UninitializedPropertiesValidatorTest extends ConstraintValidatorTest
     public function testValidationRequiresInputInterfaceValue(): void
     {
         $this->expectException(UnexpectedTypeException::class);
-        $this->expectExceptionMessage('Expected argument of type "OneToMany\RichBundle\Contract\InputInterface", "string" given');
+        $this->expectExceptionMessage('Expected argument of type "OneToMany\RichBundle\Contract\Action\InputInterface", "string" given');
 
         $this->validator->validate('string', new UninitializedProperties());
     }

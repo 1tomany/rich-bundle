@@ -1,6 +1,6 @@
 <?php
 
-namespace OneToMany\RichBundle\Exception\Attribute;
+namespace OneToMany\RichBundle\Attribute;
 
 #[\Attribute(\Attribute::TARGET_CLASS)]
 final readonly class HasUserMessage

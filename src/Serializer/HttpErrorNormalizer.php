@@ -1,31 +1,31 @@
 <?php
 
-namespace OneToMany\RichBundle\Serializer\Normalizer;
+namespace OneToMany\RichBundle\Serializer;
 
-use OneToMany\RichBundle\Exception\WrappedExceptionInterface;
+use OneToMany\RichBundle\Contract\Error\HttpErrorInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
-final readonly class ExceptionNormalizer implements NormalizerInterface
+final readonly class HttpErrorNormalizer implements NormalizerInterface
 {
     public function __construct(private bool $debug = false)
     {
     }
 
     /**
-     * @param WrappedExceptionInterface $object
+     * @param HttpErrorInterface $data
      * @param array<string, mixed> $context
      *
      * @return array<string, mixed>
      */
-    public function normalize(mixed $object, ?string $format = null, array $context = []): array
+    public function normalize(mixed $data, ?string $format = null, array $context = []): array
     {
         $record = [
-            'status' => $object->getStatus(),
-            'title' => $object->getTitle(),
-            'detail' => $object->getMessage(),
-            'violations' => $object->getViolations(),
-            'stack' => $object->getStack(),
-            'trace' => $object->getTrace(),
+            'status' => $data->getStatus(),
+            'title' => $data->getTitle(),
+            'detail' => $data->getMessage(),
+            'violations' => $data->getViolations(),
+            'stack' => $data->getStack(),
+            'trace' => $data->getTrace(),
         ];
 
         if (false === $this->debug) {
@@ -41,13 +41,13 @@ final readonly class ExceptionNormalizer implements NormalizerInterface
      */
     public function supportsNormalization(mixed $data, ?string $format = null, array $context = []): bool
     {
-        return $data instanceof WrappedExceptionInterface;
+        return $data instanceof HttpErrorInterface;
     }
 
     public function getSupportedTypes(?string $format): array
     {
         return [
-            WrappedExceptionInterface::class => true,
+            HttpErrorInterface::class => true,
         ];
     }
 }
