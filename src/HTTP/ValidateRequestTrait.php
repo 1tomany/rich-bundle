@@ -1,6 +1,6 @@
 <?php
 
-namespace OneToMany\RichBundle\EventSubscriber;
+namespace OneToMany\RichBundle\HTTP;
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\NotAcceptableHttpException;
@@ -12,8 +12,7 @@ use function implode;
 use function in_array;
 use function vsprintf;
 
-// @phpstan-ignore trait.unused
-trait ValidateRequestTypesTrait
+trait ValidateRequestTrait // @phpstan-ignore trait.unused
 {
     /**
      * @param list<non-empty-string> $acceptTypes
