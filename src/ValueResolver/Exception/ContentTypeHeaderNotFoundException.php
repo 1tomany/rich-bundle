@@ -6,7 +6,7 @@ use OneToMany\RichBundle\Attribute\HasUserMessage;
 use OneToMany\RichBundle\Exception\RuntimeException;
 
 #[HasUserMessage]
-final class ContentTypeHeaderMissingException extends RuntimeException
+final class ContentTypeHeaderNotFoundException extends RuntimeException
 {
     public function __construct(?\Throwable $previous = null)
     {
