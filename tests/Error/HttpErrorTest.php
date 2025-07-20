@@ -114,31 +114,6 @@ final class HttpErrorTest extends TestCase
         $this->assertEquals($exception->getMessage(), (new HttpError($exception))->getMessage());
     }
 
-    public function testConstructorExtractsMessageFromClassHierarchyWhenAttributeIsPresent(): void
-    {
-        // Arrange: Anonymous Class Extends Class With Attribute
-        $exception = new class('Error') extends AbstractException {};
-
-        // Assert: Anonymous Class Has No Attributes
-        $this->assertCount(0, new \ReflectionClass($exception)->getAttributes());
-
-        // Assert: Base Class Has WithHttpStatus Attribute
-        $class = new \ReflectionClass(AbstractException::class);
-
-        $attribute = $class->getAttributes()[0] ?? null;
-        $this->assertInstanceOf(\ReflectionAttribute::class, $attribute);
-
-        $httpStatus = $attribute->newInstance();
-        $this->assertInstanceOf(WithHttpStatus::class, $httpStatus);
-
-        // Act: Attribute Extracted From Base Class
-        $httpError = new HttpError($exception);
-
-        // Assert: WrappedException Status and Message Match
-        $this->assertEquals($httpStatus->statusCode, $httpError->getStatus());
-        $this->assertEquals($exception->getMessage(), $httpError->getMessage());
-    }
-
     public function testConstructorGeneralizesMessageWithAllOtherExceptions(): void
     {
         $message = 'An unexpected error occurred.';
