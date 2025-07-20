@@ -17,7 +17,10 @@ interface ResultInterface
      */
     public function getStatus(): int;
 
-    // public function getContext(): array;
+    /**
+     * @return array<string, mixed>
+     */
+    public function getContext(): array;
 
     // public function getHeaders(): array;
 
@@ -25,4 +28,9 @@ interface ResultInterface
      * @param int<100, 599> $status
      */
     public function withStatus(int $status): static;
+
+    /**
+     * @param list<non-empty-string> $groups
+     */
+    public function withGroups(array $groups): static;
 }

@@ -26,13 +26,13 @@ final readonly class ViewSubscriber implements EventSubscriberInterface
 
     public function renderResultResponse(ViewEvent $event): void
     {
-        /*
         $result = $event->getControllerResult();
 
         if (!$result instanceof ResultInterface) {
             return;
         }
 
+        /*
         $data = $this->serializer->serialize(
             $result(), 'json', $result->getContext()
         );

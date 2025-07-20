@@ -23,6 +23,11 @@ class Result implements ResultInterface
     private int $status = Response::HTTP_OK;
 
     /**
+     * @var array<string, mixed>
+     */
+    private array $context = [];
+
+    /**
      * @param R $result
      */
     public function __construct(private mixed $result)
@@ -62,12 +67,12 @@ class Result implements ResultInterface
         return $this->status;
     }
 
-    /*
     public function getContext(): array
     {
         return $this->context;
     }
 
+    /*
     public function getHeaders(): array
     {
         return $this->headers;
@@ -101,6 +106,7 @@ class Result implements ResultInterface
 
         return $this;
     }
+    */
 
     public function withGroups(array $groups): static
     {
@@ -109,6 +115,7 @@ class Result implements ResultInterface
         return $this;
     }
 
+    /*
     public function withHeaders(array $headers): static
     {
         $this->headers = $headers;
