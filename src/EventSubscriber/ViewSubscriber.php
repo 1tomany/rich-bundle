@@ -3,10 +3,8 @@
 namespace OneToMany\RichBundle\EventSubscriber;
 
 use OneToMany\RichBundle\Contract\Action\ResultInterface;
-use OneToMany\RichBundle\Controller\ControllerResponse;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\Event\ViewEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Serializer\SerializerInterface;
