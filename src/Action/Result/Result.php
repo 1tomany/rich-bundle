@@ -1,8 +1,9 @@
 <?php
 
-namespace OneToMany\RichBundle\Contract\Result;
+namespace OneToMany\RichBundle\Action\Result;
 
-use OneToMany\RichBundle\Contract\ResultInterface;
+use OneToMany\RichBundle\Action\Result\Exception\InvalidHttpStatusException;
+use OneToMany\RichBundle\Contract\Action\ResultInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 
@@ -14,28 +15,38 @@ use function is_array;
  *
  * @implements ResultInterface<R>
  */
-abstract class AbstractResult implements ResultInterface
+class Result implements ResultInterface
 {
     /**
      * @var int<100, 599>
      */
-    public private(set) int $status = Response::HTTP_OK;
-
-    /**
-     * @var array<string, mixed>
-     */
-    public private(set) array $context = [];
-
-    /**
-     * @var list<array<string, string>>
-     */
-    public private(set) array $headers = [];
+    private int $status = Response::HTTP_OK;
 
     /**
      * @param R $result
      */
-    public function __construct(public readonly mixed $result)
+    public function __construct(private mixed $result)
     {
+    }
+
+    /**
+     * @param R $result
+     *
+     * @return self<R>
+     */
+    public static function ok(mixed $result): self
+    {
+        return new self($result)->withStatus(Response::HTTP_OK);
+    }
+
+    /**
+     * @param R $result
+     *
+     * @return self<R>
+     */
+    public static function created(mixed $result): self
+    {
+        return new self($result)->withStatus(Response::HTTP_CREATED);
     }
 
     /**
@@ -46,10 +57,27 @@ abstract class AbstractResult implements ResultInterface
         return $this->result;
     }
 
-    public function asStatus(int $status): static
+    public function getStatus(): int
+    {
+        return $this->status;
+    }
+
+    /*
+    public function getContext(): array
+    {
+        return $this->context;
+    }
+
+    public function getHeaders(): array
+    {
+        return $this->headers;
+    }
+    */
+
+    public function withStatus(int $status): static
     {
         if (!isset(Response::$statusTexts[$status])) {
-            // throw new InvalidHttpStatusException($status);
+            throw new InvalidHttpStatusException($status);
         }
 
         $this->status = $status;
@@ -57,6 +85,7 @@ abstract class AbstractResult implements ResultInterface
         return $this;
     }
 
+    /*
     public function withContext(array $context): static
     {
         $existingGroups = $this->context['groups'] ?? null;
@@ -86,4 +115,5 @@ abstract class AbstractResult implements ResultInterface
 
         return $this;
     }
+    */
 }

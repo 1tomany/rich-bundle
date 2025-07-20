@@ -2,10 +2,10 @@
 
 namespace OneToMany\RichBundle\DependencyInjection\Compiler;
 
-use OneToMany\RichBundle\Contract\CommandInterface;
-use OneToMany\RichBundle\Contract\HandlerInterface;
-use OneToMany\RichBundle\Contract\InputInterface;
-use OneToMany\RichBundle\Contract\ResultInterface;
+use OneToMany\RichBundle\Contract\Action\CommandInterface;
+use OneToMany\RichBundle\Contract\Action\HandlerInterface;
+use OneToMany\RichBundle\Contract\Action\InputInterface;
+use OneToMany\RichBundle\Contract\Action\ResultInterface;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\Messenger\MessageBusInterface;

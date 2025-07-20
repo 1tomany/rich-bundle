@@ -2,8 +2,8 @@
 
 namespace OneToMany\RichBundle\Tests\Validator;
 
-use OneToMany\RichBundle\Contract\CommandInterface;
-use OneToMany\RichBundle\Contract\InputInterface;
+use OneToMany\RichBundle\Contract\Action\CommandInterface;
+use OneToMany\RichBundle\Contract\Action\InputInterface;
 use OneToMany\RichBundle\Validator\UninitializedProperties;
 use OneToMany\RichBundle\Validator\UninitializedPropertiesValidator;
 use PHPUnit\Framework\Attributes\Group;
