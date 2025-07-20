@@ -32,17 +32,15 @@ final readonly class ViewSubscriber implements EventSubscriberInterface
             return;
         }
 
-        /*
-        $data = $this->serializer->serialize(
-            $result(), 'json', $result->getContext()
-        );
+        $data = $this->render($result, $event->getRequest()->getPreferredFormat('json'));
 
+        /*
         $event->setResponse(new JsonResponse($data, $result->getStatus(), $result->getHeaders(), true));
         */
     }
 
-    // private function render(ResultInterface $result): string
-    // {
-    //     return $this->serializer->serialize($result(), 'json', $result->getContext());
-    // }
+    private function render(ResultInterface $result, ?string $format): string
+    {
+        return $this->serializer->serialize($result(), $format ?? 'json', $result->getContext());
+    }
 }
