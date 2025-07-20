@@ -1,6 +1,6 @@
 <?php
 
-namespace OneToMany\RichBundle\Contract;
+namespace OneToMany\RichBundle\Contract\Action;
 
 /**
  * @template C of CommandInterface
