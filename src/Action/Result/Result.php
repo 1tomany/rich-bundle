@@ -44,9 +44,11 @@ class Result implements ResultInterface
     }
 
     /**
-     * @param R $result
+     * @template T
      *
-     * @return self<R>
+     * @param T $result
+     *
+     * @return self<T>
      */
     public static function ok(mixed $result): self
     {
@@ -54,9 +56,11 @@ class Result implements ResultInterface
     }
 
     /**
-     * @param R $result
+     * @template T
      *
-     * @return self<R>
+     * @param T $result
+     *
+     * @return self<T>
      */
     public static function created(mixed $result): self
     {

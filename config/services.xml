@@ -2,14 +2,17 @@
 <container xmlns="http://symfony.com/schema/dic/services" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://symfony.com/schema/dic/services https://symfony.com/schema/dic/services/services-1.0.xsd">
   <services>
     <defaults autowire="true" autoconfigure="true"/>
-    <service id="OneToMany\RichBundle\EventSubscriber\EventSubscriber">
+    <service id="OneToMany\RichBundle\EventSubscriber\ResponseSubscriber">
       <tag>kernel.event_subscriber</tag>
     </service>
-    <service id="OneToMany\RichBundle\Serializer\Normalizer\ExceptionNormalizer">
+    <service id="OneToMany\RichBundle\EventSubscriber\ViewSubscriber">
+      <tag>kernel.event_subscriber</tag>
+    </service>
+    <service id="OneToMany\RichBundle\Serializer\HttpErrorNormalizer">
       <tag>serializer.normalizer</tag>
       <argument key="$debug">%kernel.debug%</argument>
     </service>
-    <service id="OneToMany\RichBundle\Serializer\Normalizer\SmartFileDenormalizer">
+    <service id="OneToMany\RichBundle\Serializer\SmartFileDenormalizer">
       <tag>serializer.denormalizer</tag>
     </service>
     <service id="OneToMany\RichBundle\ValueResolver\InputValueResolver">

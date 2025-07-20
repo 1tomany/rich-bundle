@@ -1,6 +1,6 @@
 <?php
 
-namespace OneToMany\RichBundle\DependencyInjection\Compiler;
+namespace OneToMany\RichBundle\Compiler;
 
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\HandlerInterface;
@@ -15,7 +15,7 @@ use function interface_exists;
 use function is_subclass_of;
 use function str_replace;
 
-class RegisterModulesPass implements CompilerPassInterface
+class RegisterHandlersPass implements CompilerPassInterface
 {
     public function process(ContainerBuilder $container): void
     {

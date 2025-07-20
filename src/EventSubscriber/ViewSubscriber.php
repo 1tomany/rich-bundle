@@ -9,10 +9,10 @@ use Symfony\Component\HttpKernel\Event\ViewEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Serializer\SerializerInterface;
 
-use function strtolower;
-
 final readonly class ViewSubscriber implements EventSubscriberInterface
 {
+    private const string FORMAT = 'json';
+
     public function __construct(private SerializerInterface $serializer)
     {
     }
@@ -28,21 +28,16 @@ final readonly class ViewSubscriber implements EventSubscriberInterface
 
     public function renderResultResponse(ViewEvent $event): void
     {
-        if (($result = $event->getControllerResult()) instanceof ResultInterface) {
-            // Determine the response format by inspecting the "Accept" header
-            $format = $event->getRequest()->getPreferredFormat('json') ?? 'json';
+        $result = $event->getControllerResult();
 
+        if ($result instanceof ResultInterface) {
             // Attempt to serialize the result value
             $responseContent = $this->serializer->serialize(
-                $result(), $format, $result->getContext()
+                $result(), self::FORMAT, $result->getContext()
             );
 
-            $contentType = $event->getRequest()->getMimeType(...[
-                'format' => strtolower($format),
-            ]);
-
             $response = new Response($responseContent, $result->getStatus(), $result->getHeaders() + [
-                'Content-Type' => strtolower($contentType ?? 'application/json'),
+                'Content-Type' => $event->getRequest()->getMimeType(self::FORMAT),
             ]);
 
             $event->setResponse($response);
