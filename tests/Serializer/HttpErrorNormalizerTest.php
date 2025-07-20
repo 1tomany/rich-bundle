@@ -9,7 +9,6 @@ use PHPUnit\Framework\TestCase;
 
 #[Group('UnitTests')]
 #[Group('SerializerTests')]
-#[Group('NormalizerTests')]
 final class HttpErrorNormalizerTest extends TestCase
 {
     public function testNormalizingExceptionInDebugEnvironmentIncludesStack(): void

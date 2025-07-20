@@ -37,7 +37,7 @@ use function array_rand;
 use function random_int;
 
 #[Group('UnitTests')]
-#[Group('ExceptionTests')]
+#[Group('ErrorTests')]
 final class HttpErrorTest extends TestCase
 {
     #[DataProvider('providerHttpException')]

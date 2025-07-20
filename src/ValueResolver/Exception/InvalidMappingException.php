@@ -3,9 +3,10 @@
 namespace OneToMany\RichBundle\ValueResolver\Exception;
 
 use OneToMany\RichBundle\Attribute\HasUserMessage;
+use OneToMany\RichBundle\Exception\RuntimeException;
 
 #[HasUserMessage]
-final class InvalidMappingException extends \RuntimeException implements ExceptionInterface
+final class InvalidMappingException extends RuntimeException
 {
     public function __construct(?\Throwable $previous = null)
     {
