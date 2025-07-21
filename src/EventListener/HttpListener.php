@@ -7,15 +7,17 @@ use OneToMany\RichBundle\Error\HttpError;
 use OneToMany\RichBundle\EventListener\Exception\SerializingResponseFailedException;
 use OneToMany\RichBundle\HTTP\ValidateRequestTrait;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
-use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\Event\ViewEvent;
-use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
+use Symfony\Component\Serializer\SerializerInterface;
+
+use function bin2hex;
+use function random_bytes;
 
 class HttpListener
 {
@@ -29,14 +31,16 @@ class HttpListener
     private readonly string $apiUriPrefix;
     private bool $sendVaryAcceptHeader = false;
 
-    public const string REQUEST_ID_KEY = "_id";
-    public const string RESPONSE_FORMAT = "json";
+    public const string REQUEST_ID_KEY = '_id';
+    public const string RESPONSE_FORMAT = 'json';
 
     /**
      * @param non-empty-string $apiUriPrefix
      */
     public function __construct(
         SerializerInterface $serializer,
+
+        #[Autowire('%rich_bundle.api_uri_prefix%')]
         string $apiUriPrefix,
     ) {
         $this->serializer = $serializer;
@@ -49,7 +53,7 @@ class HttpListener
             return;
         }
 
-        $event->getRequest()->attributes->set(self::REQUEST_ID_KEY, \bin2hex(\random_bytes(6)));
+        $event->getRequest()->attributes->set(self::REQUEST_ID_KEY, bin2hex(random_bytes(6)));
     }
 
     public function validateApiRequest(RequestEvent $event): void
@@ -93,7 +97,7 @@ class HttpListener
     public function addVaryAcceptHeader(ResponseEvent $event): void
     {
         if (true === $this->sendVaryAcceptHeader) {
-            $event->getResponse()->setVary("Accept");
+            $event->getResponse()->setVary('Accept');
         }
     }
 

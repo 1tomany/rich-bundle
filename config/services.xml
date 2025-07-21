@@ -5,12 +5,12 @@
   </parameters>
   <services>
     <defaults autowire="true" autoconfigure="true"/>
-    <service id="OneToMany\RichBundle\EventSubscriber\ResponseSubscriber">
+    <!-- <service id="OneToMany\RichBundle\EventSubscriber\ResponseSubscriber">
       <tag>kernel.event_subscriber</tag>
     </service>
     <service id="OneToMany\RichBundle\EventSubscriber\ViewSubscriber">
       <tag>kernel.event_subscriber</tag>
-    </service>
+    </service> -->
     <service id="OneToMany\RichBundle\Serializer\HttpErrorNormalizer">
       <tag>serializer.normalizer</tag>
       <argument key="$debug">%kernel.debug%</argument>
