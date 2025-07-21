@@ -7,6 +7,7 @@ use OneToMany\RichBundle\Error\HttpError;
 use OneToMany\RichBundle\EventListener\Exception\SerializingResponseFailedException;
 use OneToMany\RichBundle\HTTP\ValidateRequestTrait;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
@@ -47,6 +48,7 @@ class HttpListener
         $this->apiUriPrefix = $apiUriPrefix;
     }
 
+    #[AsEventListener(priority: 128)]
     public function createRequestId(RequestEvent $event): void
     {
         if (!$event->isMainRequest()) {
@@ -70,6 +72,7 @@ class HttpListener
         }
     }
 
+    #[AsEventListener(priority: 0)]
     public function renderView(ViewEvent $event): void
     {
         if (($result = $result = $event->getControllerResult()) instanceof ResultInterface) {

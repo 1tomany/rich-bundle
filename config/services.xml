@@ -5,6 +5,7 @@
   </parameters>
   <services>
     <defaults autowire="true" autoconfigure="true"/>
+
     <!-- <service id="OneToMany\RichBundle\EventSubscriber\ResponseSubscriber">
       <tag>kernel.event_subscriber</tag>
     </service>
