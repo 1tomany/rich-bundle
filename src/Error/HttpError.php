@@ -4,6 +4,7 @@ namespace OneToMany\RichBundle\Error;
 
 use OneToMany\RichBundle\Attribute\HasUserMessage;
 use OneToMany\RichBundle\Contract\Error\HttpErrorInterface;
+use Psr\Log\LogLevel;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -108,6 +109,11 @@ class HttpError implements HttpErrorInterface
     public function getTrace(): array
     {
         return $this->trace;
+    }
+
+    public function getLevel(): string
+    {
+        return $this->getStatus() >= 500 ? LogLevel::CRITICAL : LogLevel::ERROR;
     }
 
     private function resolveStatus(): void
