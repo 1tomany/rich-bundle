@@ -48,4 +48,6 @@ interface HttpErrorInterface
      * @return list<Trace>
      */
     public function getTrace(): array;
+
+    public function getLevel(): string;
 }
