@@ -6,7 +6,6 @@ use OneToMany\RichBundle\Contract\Action\ResultInterface;
 use OneToMany\RichBundle\Error\HttpError;
 use OneToMany\RichBundle\EventListener\Exception\SerializingResponseFailedException;
 use OneToMany\RichBundle\HTTP\ValidateRequestTrait;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -28,13 +27,8 @@ readonly class HttpListener
     public const string KEY_SEND_VARY_ACCEPT = '_rich_send_vary_accept';
     public const string RESPONSE_FORMAT = 'json';
 
-    /**
-     * @param non-empty-string $apiUriPrefix
-     */
     public function __construct(
         private SerializerInterface $serializer,
-
-        #[Autowire('%rich_bundle.api_uri_prefix%')]
         private string $apiUriPrefix,
     ) {
     }

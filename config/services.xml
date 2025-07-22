@@ -5,6 +5,10 @@
   </parameters>
   <services>
     <defaults autowire="true" autoconfigure="true"/>
+    <service id="OneToMany\RichBundle\EventListener\HttpListener">
+      <tag>serializer.normalizer</tag>
+      <argument key="$apiUriPrefix">%rich_bundle.api_uri_prefix%</argument>
+    </service>
     <service id="OneToMany\RichBundle\Serializer\HttpErrorNormalizer">
       <tag>serializer.normalizer</tag>
       <argument key="$debug">%kernel.debug%</argument>
