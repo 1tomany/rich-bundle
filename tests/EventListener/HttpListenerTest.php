@@ -36,7 +36,7 @@ final class HttpListenerTest extends TestCase
         // Act: Validate the Request
         $this->createHttpListener()->validateRequest($event);
 
-        // Assert: Request Has Attribute
+        // Assert: Request Has Send Vary Accept Attribute
         $hasSendAccept = $request->attributes->has(...[
             'key' => HttpListener::KEY_SEND_VARY_ACCEPT,
         ]);
@@ -44,7 +44,7 @@ final class HttpListenerTest extends TestCase
         $this->assertTrue($hasSendAccept);
     }
 
-    public function testAddingVaryAcceptHeaderIsIgnoredWhenSendVaryAcceptRequestAttributeIsNotTrue(): void
+    public function testVaryAcceptHeaderIsNotAddedWhenSendVaryAcceptRequestAttributeIsNotTrue(): void
     {
         // Arrange: Create Request
         $request = new Request(server: [
@@ -63,11 +63,41 @@ final class HttpListenerTest extends TestCase
         // Arrange: Create ResponseEvent
         $event = $this->createResponseEvent($request, $response);
 
-        // Act: Add "Vary: Accept" Header
+        // Act: Attempt to Add "Vary: Accept" Response Header
         $this->createHttpListener()->addVaryAcceptHeader($event);
 
         // Assert: Response Has No Vary Header
         $this->assertFalse($response->hasVary());
+    }
+
+    public function testVaryAcceptHeaderIsAddedWhenSendVaryAcceptRequestAttributeIsTrue(): void
+    {
+        // Arrange: Create Request
+        $request = new Request(attributes: [
+            HttpListener::KEY_SEND_VARY_ACCEPT => true,
+        ]);
+
+        // Assert: Request Has Send Vary Accept Attribute
+        $hasSendAccept = $request->attributes->has(...[
+            'key' => HttpListener::KEY_SEND_VARY_ACCEPT,
+        ]);
+
+        $this->assertTrue($hasSendAccept);
+
+        // Arrange: Create Response
+        $response = new Response('', 200, []);
+
+        // Assert: Response Has No Vary Header
+        $this->assertFalse($response->hasVary());
+
+        // Arrange: Create ResponseEvent
+        $event = $this->createResponseEvent($request, $response);
+
+        // Act: Attempt to Add "Vary: Accept" Response Header
+        $this->createHttpListener()->addVaryAcceptHeader($event);
+
+        // Assert: Response Has Vary Header
+        $this->assertTrue($response->hasVary());
     }
 
     private function createRequestEvent(Request $request, int $requestType = HttpKernelInterface::MAIN_REQUEST): RequestEvent
