@@ -20,32 +20,23 @@ use Symfony\Component\Serializer\SerializerInterface;
 use function bin2hex;
 use function random_bytes;
 
-class HttpListener
+readonly class HttpListener
 {
     use ValidateRequestTrait;
 
-    private readonly SerializerInterface $serializer;
-
-    /**
-     * @var non-empty-string
-     */
-    private readonly string $apiUriPrefix;
-    private bool $sendVaryAcceptHeader = false;
-
-    public const string REQUEST_ID_KEY = '_id';
+    public const string KEY_REQUEST_ID = '_rich_request_id';
+    public const string KEY_SEND_VARY_ACCEPT = '_rich_send_vary_accept';
     public const string RESPONSE_FORMAT = 'json';
 
     /**
      * @param non-empty-string $apiUriPrefix
      */
     public function __construct(
-        SerializerInterface $serializer,
+        private SerializerInterface $serializer,
 
         #[Autowire('%rich_bundle.api_uri_prefix%')]
-        string $apiUriPrefix,
+        private string $apiUriPrefix,
     ) {
-        $this->serializer = $serializer;
-        $this->apiUriPrefix = $apiUriPrefix;
     }
 
     #[AsEventListener(priority: 128)]
@@ -55,7 +46,7 @@ class HttpListener
             return;
         }
 
-        $event->getRequest()->attributes->set(self::REQUEST_ID_KEY, bin2hex(random_bytes(6)));
+        $event->getRequest()->attributes->set(self::KEY_REQUEST_ID, bin2hex(random_bytes(6)));
     }
 
     public function validateRequest(RequestEvent $event): void
@@ -64,11 +55,13 @@ class HttpListener
             return;
         }
 
-        $request = $event->getRequest();
+        if ($this->isApiRequestUri($event->getRequest())) {
+            // Send the "Vary: Accept" response header
+            $event->getRequest()->attributes->add([
+                HttpListener::KEY_SEND_VARY_ACCEPT => true,
+            ]);
 
-        if ($this->isApiRequestUri($request)) {
-            $this->sendVaryAcceptHeader = true;
-            $this->validateRequestTypes($request);
+            $this->validateRequestTypes($event->getRequest());
         }
     }
 
@@ -100,9 +93,15 @@ class HttpListener
     #[AsEventListener(priority: 0)]
     public function addVaryAcceptHeader(ResponseEvent $event): void
     {
-        if (true === $this->sendVaryAcceptHeader) {
-            $event->getResponse()->setVary('Accept');
+        $sendHeader = $event->getRequest()->attributes->get(...[
+            'key' => self::KEY_SEND_VARY_ACCEPT,
+        ]);
+
+        if (!$sendHeader) {
+            return;
         }
+
+        $event->getResponse()->setVary('Accept');
     }
 
     private function isApiRequestUri(Request $request): bool
