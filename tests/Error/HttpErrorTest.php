@@ -140,7 +140,7 @@ final class HttpErrorTest extends TestCase
 
     public function testConstructorResolvesHeadersWhenWithHttpStatusAttributeIsPresent(): void
     {
-        $exception = new #[WithHttpStatus(500, ['X-Token' => 'token'])] class('Error!') extends \Exception {};
+        $exception = new #[WithHttpStatus(500, ['X-Token' => 'token'])] class('Error') extends \Exception {};
 
         $this->assertSame(['X-Token' => 'token'], new HttpError($exception)->getHeaders());
     }
