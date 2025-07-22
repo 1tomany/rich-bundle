@@ -10,7 +10,6 @@ use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
-use Throwable;
 
 use function array_key_exists;
 use function is_string;
@@ -72,7 +71,7 @@ class HttpError implements HttpErrorInterface
         $this->flattenTrace();
     }
 
-    public function getThrowable(): Throwable
+    public function getThrowable(): \Throwable
     {
         return $this->throwable;
     }
