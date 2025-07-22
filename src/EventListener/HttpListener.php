@@ -58,9 +58,9 @@ class HttpListener
         $event->getRequest()->attributes->set(self::REQUEST_ID_KEY, bin2hex(random_bytes(6)));
     }
 
-    public function validateApiRequest(RequestEvent $event): void
+    public function validateRequest(RequestEvent $event): void
     {
-        if ($event->isMainRequest()) {
+        if (!$event->isMainRequest()) {
             return;
         }
 
@@ -97,6 +97,7 @@ class HttpListener
         }
     }
 
+    #[AsEventListener(priority: 0)]
     public function addVaryAcceptHeader(ResponseEvent $event): void
     {
         if (true === $this->sendVaryAcceptHeader) {
