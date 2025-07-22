@@ -98,6 +98,8 @@ final class HttpListenerTest extends TestCase
 
         // Assert: Response Has Vary Header
         $this->assertTrue($response->hasVary());
+        $this->assertCount(1, $response->getVary());
+        $this->assertContains('Accept', $response->getVary());
     }
 
     private function createRequestEvent(Request $request, int $requestType = HttpKernelInterface::MAIN_REQUEST): RequestEvent
