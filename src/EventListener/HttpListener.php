@@ -27,10 +27,13 @@ readonly class HttpListener
     public const string KEY_SEND_VARY_ACCEPT = '_rich_send_vary_accept';
     public const string RESPONSE_FORMAT = 'json';
 
-    public function __construct(
-        private SerializerInterface $serializer,
-        private string $apiUriPrefix,
-    ) {
+    public function __construct(private SerializerInterface $serializer)
+    {
+    }
+
+    public static function isRichRequest(Request $request, string $uriPrefix = '/api'): bool
+    {
+        return 0 === stripos($request->getRequestUri(), $uriPrefix);
     }
 
     #[AsEventListener(priority: 128)]
@@ -49,14 +52,12 @@ readonly class HttpListener
             return;
         }
 
-        if ($this->isApiRequestUri($event->getRequest())) {
-            // Send the "Vary: Accept" response header
-            $event->getRequest()->attributes->add([
-                HttpListener::KEY_SEND_VARY_ACCEPT => true,
-            ]);
+        // Send the "Vary: Accept" response header
+        $event->getRequest()->attributes->add([
+            HttpListener::KEY_SEND_VARY_ACCEPT => true,
+        ]);
 
-            $this->validateRequestTypes($event->getRequest());
-        }
+        $this->validateRequestTypes($event->getRequest());
     }
 
     #[AsEventListener(priority: 0)]
@@ -73,15 +74,13 @@ readonly class HttpListener
             return;
         }
 
-        if ($this->isApiRequestUri($event->getRequest())) {
-            $httpError = new HttpError($event->getThrowable());
+        $httpError = new HttpError($event->getThrowable());
 
-            $data = $this->serializeResponse($httpError, [
-                'exception' => $event->getThrowable(),
-            ]);
+        $data = $this->serializeResponse($httpError, [
+            'exception' => $event->getThrowable(),
+        ]);
 
-            $event->setResponse(new JsonResponse($data, $httpError->getStatus(), $httpError->getHeaders(), true));
-        }
+        $event->setResponse(new JsonResponse($data, $httpError->getStatus(), $httpError->getHeaders(), true));
     }
 
     #[AsEventListener(priority: 0)]
@@ -96,11 +95,6 @@ readonly class HttpListener
         }
 
         $event->getResponse()->setVary('Accept');
-    }
-
-    private function isApiRequestUri(Request $request): bool
-    {
-        return 0 === stripos($request->getRequestUri(), $this->apiUriPrefix);
     }
 
     /**

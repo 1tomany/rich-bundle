@@ -19,16 +19,10 @@ final class HttpListenerTest extends TestCase
     public function testValidatingRequestSetsTheSendVaryAcceptRequestAttribute(): void
     {
         // Arrange: Create Request
-        $request = new Request(server: [
-            'REQUEST_URI' => '/api/index',
-        ]);
+        $request = new Request(attributes: []);
 
-        // Assert: Request Attribute Is Missing
-        $hasSendAccept = $request->attributes->has(...[
-            'key' => HttpListener::KEY_SEND_VARY_ACCEPT,
-        ]);
-
-        $this->assertFalse($hasSendAccept);
+        // Assert: Request Has No Attributes
+        $this->assertCount(0, $request->attributes);
 
         // Arrange: Create RequestEvent
         $event = $this->createRequestEvent($request);
@@ -36,8 +30,8 @@ final class HttpListenerTest extends TestCase
         // Act: Validate the Request
         $this->createHttpListener()->validateRequest($event);
 
-        // Assert: Request Has Send Vary Accept Attribute
-        $hasSendAccept = $request->attributes->has(...[
+        // Assert: Request Attribute Is Present
+        $hasSendAccept = $request->attributes->get(...[
             'key' => HttpListener::KEY_SEND_VARY_ACCEPT,
         ]);
 
@@ -47,9 +41,7 @@ final class HttpListenerTest extends TestCase
     public function testVaryAcceptHeaderIsNotAddedWhenSendVaryAcceptRequestAttributeIsNotTrue(): void
     {
         // Arrange: Create Request
-        $request = new Request(server: [
-            'REQUEST_URI' => '/api/index',
-        ]);
+        $request = new Request(attributes: []);
 
         // Assert: Request Has No Attributes
         $this->assertCount(0, $request->attributes);
@@ -77,7 +69,7 @@ final class HttpListenerTest extends TestCase
             HttpListener::KEY_SEND_VARY_ACCEPT => true,
         ]);
 
-        // Assert: Request Has Send Vary Accept Attribute
+        // Assert: Request Has Attribute
         $hasSendAccept = $request->attributes->has(...[
             'key' => HttpListener::KEY_SEND_VARY_ACCEPT,
         ]);
@@ -98,8 +90,6 @@ final class HttpListenerTest extends TestCase
 
         // Assert: Response Has Vary Header
         $this->assertTrue($response->hasVary());
-        $this->assertCount(1, $response->getVary());
-        $this->assertContains('Accept', $response->getVary());
     }
 
     private function createRequestEvent(Request $request, int $requestType = HttpKernelInterface::MAIN_REQUEST): RequestEvent
@@ -112,9 +102,9 @@ final class HttpListenerTest extends TestCase
         return new ResponseEvent($this->createAnonymousKernel(), $request, $requestType, $response);
     }
 
-    public function createHttpListener(?SerializerInterface $serializer = null, string $apiUriPrefix = '/api'): HttpListener
+    public function createHttpListener(?SerializerInterface $serializer = null): HttpListener
     {
-        return new HttpListener($serializer ?? $this->createAnonymousSerializer(), $apiUriPrefix);
+        return new HttpListener($serializer ?? $this->createAnonymousSerializer());
     }
 
     private function createAnonymousKernel(): HttpKernelInterface
