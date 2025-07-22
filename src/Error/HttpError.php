@@ -10,6 +10,7 @@ use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
+use Throwable;
 
 use function array_key_exists;
 use function is_string;
@@ -60,7 +61,7 @@ class HttpError implements HttpErrorInterface
      */
     private array $trace = [];
 
-    public function __construct(private \Throwable $exception)
+    public function __construct(private readonly \Throwable $throwable)
     {
         $this->resolveStatus();
         $this->resolveTitle();
@@ -69,6 +70,11 @@ class HttpError implements HttpErrorInterface
         $this->expandViolations();
         $this->flattenStack();
         $this->flattenTrace();
+    }
+
+    public function getThrowable(): Throwable
+    {
+        return $this->throwable;
     }
 
     public function getStatus(): int
@@ -118,12 +124,12 @@ class HttpError implements HttpErrorInterface
 
     private function resolveStatus(): void
     {
-        $status = (int) $this->exception->getCode();
+        $status = (int) $this->throwable->getCode();
 
-        if ($this->exception instanceof ValidationFailedException) {
+        if ($this->throwable instanceof ValidationFailedException) {
             $status = Response::HTTP_BAD_REQUEST;
-        } elseif ($this->exception instanceof HttpExceptionInterface) {
-            $status = $this->exception->getStatusCode();
+        } elseif ($this->throwable instanceof HttpExceptionInterface) {
+            $status = $this->throwable->getStatusCode();
         } elseif ($withHttpStatus = $this->getAttribute(WithHttpStatus::class)) {
             $status = $withHttpStatus->statusCode;
         }
@@ -144,8 +150,8 @@ class HttpError implements HttpErrorInterface
     {
         $headers = null;
 
-        if ($this->exception instanceof HttpExceptionInterface) {
-            $headers = $this->exception->getHeaders();
+        if ($this->throwable instanceof HttpExceptionInterface) {
+            $headers = $this->throwable->getHeaders();
         } elseif ($withHttpStatus = $this->getAttribute(WithHttpStatus::class)) {
             $headers = $withHttpStatus->headers;
         }
@@ -166,16 +172,16 @@ class HttpError implements HttpErrorInterface
         $message = null;
 
         if (
-            $this->exception instanceof ValidationFailedException
-            || $this->exception instanceof BadRequestHttpException
+            $this->throwable instanceof ValidationFailedException
+            || $this->throwable instanceof BadRequestHttpException
         ) {
             $message = 'The data provided is not valid.';
         } elseif (
-            $this->exception instanceof HttpExceptionInterface
+            $this->throwable instanceof HttpExceptionInterface
             || $this->hasAttribute(WithHttpStatus::class)
             || $this->hasAttribute(HasUserMessage::class)
         ) {
-            $message = $this->exception->getMessage();
+            $message = $this->throwable->getMessage();
         }
 
         $this->message = trim($message ?? '') ?: $this->message;
@@ -183,7 +189,7 @@ class HttpError implements HttpErrorInterface
 
     private function expandViolations(): void
     {
-        $exception = $this->exception;
+        $exception = $this->throwable;
 
         while (null !== $exception) {
             if ($exception instanceof ValidationFailedException) {
@@ -201,7 +207,7 @@ class HttpError implements HttpErrorInterface
 
     private function flattenStack(): void
     {
-        $exception = $this->exception;
+        $exception = $this->throwable;
 
         while (null !== $exception) {
             $this->stack[] = [
@@ -217,7 +223,7 @@ class HttpError implements HttpErrorInterface
 
     private function flattenTrace(): void
     {
-        foreach ($this->exception->getTrace() as $trace) {
+        foreach ($this->throwable->getTrace() as $trace) {
             $this->trace[] = [
                 'class' => $trace['class'] ?? null,
                 'function' => $trace['function'] ?? null,
@@ -236,7 +242,7 @@ class HttpError implements HttpErrorInterface
      */
     private function getAttribute(string $attributeClass): ?object
     {
-        $class = new \ReflectionClass($this->exception);
+        $class = new \ReflectionClass($this->throwable);
 
         do {
             if ($attributes = $class->getAttributes($attributeClass, \ReflectionAttribute::IS_INSTANCEOF)) {

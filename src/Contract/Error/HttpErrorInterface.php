@@ -9,6 +9,8 @@ namespace OneToMany\RichBundle\Contract\Error;
  */
 interface HttpErrorInterface
 {
+    public function getThrowable(): \Throwable;
+
     /**
      * @return int<100, 599>
      */

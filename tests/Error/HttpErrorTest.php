@@ -213,6 +213,13 @@ final class HttpErrorTest extends TestCase
         $this->assertSame($stackTrace, new HttpError($exception3)->getStack());
     }
 
+    public function testGettingThrowable(): void
+    {
+        $throwable = new \RuntimeException('Error');
+
+        $this->assertSame($throwable, new HttpError($throwable)->getThrowable());
+    }
+
     public function testGettingDescription(): void
     {
         /** @var int<100, 599> $status */
