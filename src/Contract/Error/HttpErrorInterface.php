@@ -2,8 +2,6 @@
 
 namespace OneToMany\RichBundle\Contract\Error;
 
-use Psr\Log\LogLevel;
-
 /**
  * @phpstan-type Stack array{class: string, message: string, file: string, line: int}
  * @phpstan-type Trace array{class: ?string, function: ?string, file: ?string, line: ?int}
