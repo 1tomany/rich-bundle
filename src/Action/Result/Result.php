@@ -2,12 +2,13 @@
 
 namespace OneToMany\RichBundle\Action\Result;
 
-use OneToMany\RichBundle\Action\Result\Exception\InvalidHttpStatusException;
 use OneToMany\RichBundle\Contract\Action\ResultInterface;
+use OneToMany\RichBundle\Exception\InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 
 use function array_key_exists;
+use function sprintf;
 
 /**
  * @template R
@@ -98,7 +99,7 @@ class Result implements ResultInterface
     public function withStatus(int $status): static
     {
         if (!isset(Response::$statusTexts[$status])) {
-            throw new InvalidHttpStatusException($status);
+            throw new InvalidArgumentException(sprintf('The value %d is not a valid HTTP status code.', $status));
         }
 
         $this->status = $status;
