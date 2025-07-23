@@ -2,6 +2,12 @@
 <container xmlns="http://symfony.com/schema/dic/services" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://symfony.com/schema/dic/services https://symfony.com/schema/dic/services/services-1.0.xsd">
   <services>
     <defaults autowire="true" autoconfigure="true"/>
+
+    <service id="OneToMany\RichBundle\EventListener\HttpListener">
+      <tag name="kernel.event_listener" event="kernel.request" method="generateRequestId" priority="128" />
+      <tag name="kernel.event_listener" event="kernel.view" method="renderControllerResult" priority="0" />
+    </service>
+
     <service id="OneToMany\RichBundle\Serializer\HttpErrorNormalizer">
       <tag>serializer.normalizer</tag>
       <argument key="$debug">%kernel.debug%</argument>

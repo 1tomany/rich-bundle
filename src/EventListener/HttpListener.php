@@ -5,13 +5,12 @@ namespace OneToMany\RichBundle\EventListener;
 use OneToMany\RichBundle\Contract\Action\ResultInterface;
 use OneToMany\RichBundle\Error\HttpError;
 use OneToMany\RichBundle\EventListener\Exception\SerializingResponseFailedException;
-use OneToMany\RichBundle\HTTP\ValidateRequestTrait;
-use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
-use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\Event\ViewEvent;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 use Symfony\Component\Serializer\SerializerInterface;
@@ -21,51 +20,39 @@ use function random_bytes;
 
 readonly class HttpListener
 {
-    use ValidateRequestTrait;
+    public const string DEFAULT_FORMAT = 'json';
+    public const string REQUEST_ID_KEY = '_rich_request_id';
 
-    public const string KEY_REQUEST_ID = '_rich_request_id';
-    public const string KEY_SEND_VARY_ACCEPT = '_rich_send_vary_accept';
-    public const string RESPONSE_FORMAT = 'json';
-
-    public function __construct(private SerializerInterface $serializer)
+    public function __construct(
+        private SerializerInterface $serializer,
+        private LoggerInterface $logger,
+    )
     {
     }
 
-    public static function isRichRequest(Request $request, string $uriPrefix = '/api'): bool
-    {
-        return 0 === stripos($request->getRequestUri(), $uriPrefix);
-    }
-
-    #[AsEventListener(priority: 128)]
-    public function createRequestId(RequestEvent $event): void
+    public function generateRequestId(RequestEvent $event): void
     {
         if (!$event->isMainRequest()) {
             return;
         }
 
-        $event->getRequest()->attributes->set(self::KEY_REQUEST_ID, bin2hex(random_bytes(6)));
+        $event->getRequest()->attributes->set(self::REQUEST_ID_KEY, bin2hex(random_bytes(6)));
     }
 
-    public function validateRequest(RequestEvent $event): void
+    public function renderControllerResult(ViewEvent $event): void
     {
-        if (!$event->isMainRequest()) {
-            return;
+        if (($result = $event->getControllerResult()) instanceof ResultInterface) {
+            $event->setResponse($this->generateResponse($event->getRequest(), $this->serializeResponse($event->getRequest(), $result(), $result->getContext()), $result->getStatus(), $result->getHeaders()));
         }
+    }
 
-        // Send the "Vary: Accept" response header
-        $event->getRequest()->attributes->add([
-            HttpListener::KEY_SEND_VARY_ACCEPT => true,
+    public function logException(ExceptionEvent $event): void
+    {
+        $error = new HttpError($event->getThrowable());
+
+        $this->logger->log($error->getLevel(), $event->getThrowable(), [
+            'exception' => $event->getThrowable(),
         ]);
-
-        $this->validateRequestTypes($event->getRequest());
-    }
-
-    #[AsEventListener(priority: 0)]
-    public function renderView(ViewEvent $event): void
-    {
-        if (($result = $result = $event->getControllerResult()) instanceof ResultInterface) {
-            $event->setResponse(new JsonResponse($this->serializeResponse($result(), $result->getContext()), $result->getStatus(), $result->getHeaders(), true));
-        }
     }
 
     public function renderException(ExceptionEvent $event): void
@@ -74,38 +61,40 @@ readonly class HttpListener
             return;
         }
 
-        $httpError = new HttpError($event->getThrowable());
+        $error = new HttpError($event->getThrowable());
 
-        $data = $this->serializeResponse($httpError, [
+        $content = $this->serializeResponse($event->getRequest(), $error, [
             'exception' => $event->getThrowable(),
         ]);
 
-        $event->setResponse(new JsonResponse($data, $httpError->getStatus(), $httpError->getHeaders(), true));
-    }
-
-    #[AsEventListener(priority: 0)]
-    public function addVaryAcceptHeader(ResponseEvent $event): void
-    {
-        $sendHeader = $event->getRequest()->attributes->get(...[
-            'key' => self::KEY_SEND_VARY_ACCEPT,
-        ]);
-
-        if (!$sendHeader) {
-            return;
-        }
-
-        $event->getResponse()->setVary('Accept');
+        $event->setResponse($this->generateResponse($event->getRequest(), $content, $error->getStatus(), $error->getHeaders()));
     }
 
     /**
      * @param array<string, mixed> $context
      */
-    private function serializeResponse(mixed $data, array $context): string
+    protected function serializeResponse(Request $request, mixed $data, array $context): string
     {
+        $format = $request->getPreferredFormat(null) ?? self::DEFAULT_FORMAT;
+
         try {
-            return $this->serializer->serialize($data, self::RESPONSE_FORMAT, $context);
+            return $this->serializer->serialize($data, $format, $context);
         } catch (SerializerExceptionInterface $e) {
             throw new SerializingResponseFailedException($data, $e);
         }
+    }
+
+    /**
+     * @param array<string, string> $headers
+     */
+    protected function generateResponse(Request $request, string $content, int $status, array $headers): Response
+    {
+        $format = $request->getPreferredFormat(null) ?? self::DEFAULT_FORMAT;
+
+        $response = new Response($content, $status, $headers + [
+            'Content-Type' => $request->getMimeType($format),
+        ]);
+
+        return $response;
     }
 }

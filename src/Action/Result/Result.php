@@ -32,7 +32,7 @@ class Result implements ResultInterface
     private array $groups = [];
 
     /**
-     * @var list<array<string, string>>
+     * @var array<string, string>
      */
     private array $headers = [];
 
@@ -82,6 +82,7 @@ class Result implements ResultInterface
 
     public function getContext(): array
     {
+        // Merge in the groups if none are explicitly set in the context
         if (!array_key_exists(AbstractNormalizer::GROUPS, $this->context)) {
             $this->context[AbstractNormalizer::GROUPS] = $this->groups;
         }
@@ -107,15 +108,6 @@ class Result implements ResultInterface
 
     public function withContext(array $context): static
     {
-        // $existingGroups = $this->context['groups'] ?? null;
-
-        // // Maintain existing groups if the context does not overwrite them
-        // if (is_array($existingGroups) && array_is_list($existingGroups)) {
-        //     if (is_array($context[AbstractNormalizer::GROUPS] ?? null)) {
-        //         $context[AbstractNormalizer::GROUPS] = $existingGroups;
-        //     }
-        // }
-
         $this->context = $context;
 
         return $this;
