@@ -5,6 +5,7 @@ namespace OneToMany\RichBundle\EventListener;
 use OneToMany\RichBundle\Contract\Action\ResultInterface;
 use OneToMany\RichBundle\Error\HttpError;
 use OneToMany\RichBundle\EventListener\Exception\SerializingResponseFailedException;
+use OneToMany\RichBundle\HTTP\ResponseTrait;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -19,12 +20,14 @@ use function random_bytes;
 
 readonly class HttpListener
 {
+    use ResponseTrait;
+
     public const string DEFAULT_FORMAT = 'json';
     public const string REQUEST_ID_KEY = '_rich_request_id';
 
     public function __construct(
         private SerializerInterface $serializer,
-        private LoggerInterface $logger,
+        // private LoggerInterface $logger,
     ) {
     }
 
@@ -42,57 +45,5 @@ readonly class HttpListener
         if (($result = $event->getControllerResult()) instanceof ResultInterface) {
             $event->setResponse($this->generateResponse($event->getRequest(), $this->serializeResponse($event->getRequest(), $result(), $result->getContext()), $result->getStatus(), $result->getHeaders()));
         }
-    }
-
-    public function logException(ExceptionEvent $event): void
-    {
-        $error = new HttpError($event->getThrowable());
-
-        $this->logger->log($error->getLevel(), $event->getThrowable(), [
-            'exception' => $event->getThrowable(),
-        ]);
-    }
-
-    public function renderException(ExceptionEvent $event): void
-    {
-        if (!$event->isMainRequest()) {
-            return;
-        }
-
-        $error = new HttpError($event->getThrowable());
-
-        $content = $this->serializeResponse($event->getRequest(), $error, [
-            'exception' => $event->getThrowable(),
-        ]);
-
-        $event->setResponse($this->generateResponse($event->getRequest(), $content, $error->getStatus(), $error->getHeaders()));
-    }
-
-    /**
-     * @param array<string, mixed> $context
-     */
-    protected function serializeResponse(Request $request, mixed $data, array $context): string
-    {
-        $format = $request->getPreferredFormat(null) ?? self::DEFAULT_FORMAT;
-
-        try {
-            return $this->serializer->serialize($data, $format, $context);
-        } catch (SerializerExceptionInterface $e) {
-            throw new SerializingResponseFailedException($data, $e);
-        }
-    }
-
-    /**
-     * @param array<string, string> $headers
-     */
-    protected function generateResponse(Request $request, string $content, int $status, array $headers): Response
-    {
-        $format = $request->getPreferredFormat(null) ?? self::DEFAULT_FORMAT;
-
-        $response = new Response($content, $status, $headers + [
-            'Content-Type' => $request->getMimeType($format),
-        ]);
-
-        return $response;
     }
 }

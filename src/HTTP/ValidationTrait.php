@@ -12,7 +12,7 @@ use function implode;
 use function in_array;
 use function sprintf;
 
-trait ValidateRequestTrait // @phpstan-ignore trait.unused
+trait ValidationTrait // @phpstan-ignore trait.unused
 {
     /**
      * @param list<non-empty-string> $types

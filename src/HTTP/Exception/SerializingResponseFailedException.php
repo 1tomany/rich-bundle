@@ -1,6 +1,6 @@
 <?php
 
-namespace OneToMany\RichBundle\EventListener\Exception;
+namespace OneToMany\RichBundle\HTTP\Exception;
 
 use OneToMany\RichBundle\Exception\RuntimeException;
 
