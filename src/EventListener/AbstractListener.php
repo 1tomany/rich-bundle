@@ -16,6 +16,8 @@ use Symfony\Component\Serializer\SerializerInterface;
 use function array_filter;
 use function array_map;
 use function get_debug_type;
+use function implode;
+use function sprintf;
 
 abstract readonly class AbstractListener
 {
@@ -58,7 +60,7 @@ abstract readonly class AbstractListener
             ]);
 
             if (!in_array($format, $acceptFormats, true)) {
-                throw new NotAcceptableHttpException(\sprintf('The server cannot respond with a media type the client will find acceptable. Acceptable media types are: "%s".', $this->flattenFormats($acceptFormats)));
+                throw new NotAcceptableHttpException(sprintf('The server cannot respond with a media type the client will find acceptable. Acceptable media types are: "%s".', $this->flattenFormats($acceptFormats)));
             }
         }
 
@@ -69,8 +71,8 @@ abstract readonly class AbstractListener
                 'request' => $event->getRequest(),
             ]);
 
-            if (!in_array($format, $contentFormats, true)) {
-                throw new UnsupportedMediaTypeHttpException(\sprintf('The server cannot process content with the media type "%s". Supported content media types are: "%s".', $event->getRequest()->getMimeType($format), $this->flattenFormats($contentFormats)));
+            if (!\in_array($format, $contentFormats, true)) {
+                throw new UnsupportedMediaTypeHttpException(sprintf('The server cannot process content with the media type "%s". Supported content media types are: "%s".', $event->getRequest()->getMimeType($format), $this->flattenFormats($contentFormats)));
             }
         }
     }
