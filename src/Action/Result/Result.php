@@ -17,24 +17,16 @@ use function sprintf;
  */
 class Result implements ResultInterface
 {
-    /**
-     * @var int<100, 599>
-     */
+    /** @var int<100, 599> */
     private int $status = Response::HTTP_OK;
 
-    /**
-     * @var array<string, mixed>
-     */
+    /** @var array<string, mixed> */
     private array $context = [];
 
-    /**
-     * @var list<non-empty-string>
-     */
+    /** @var list<non-empty-string> */
     private array $groups = [];
 
-    /**
-     * @var array<string, string>
-     */
+    /** @var array<string, string> */
     private array $headers = [];
 
     /**

@@ -260,7 +260,11 @@ final class HttpErrorTest extends TestCase
             Response::HTTP_INTERNAL_SERVER_ERROR
         ];
 
-        $httpStatus = random_int(1000, 2000);
+        $lastHttpStatus = \array_key_last(
+            Response::$statusTexts
+        );
+
+        $httpStatus = random_int($lastHttpStatus + 1, $lastHttpStatus * 2);
         $this->assertArrayNotHasKey($httpStatus, Response::$statusTexts);
 
         $exception = new \RuntimeException($title, $httpStatus);
