@@ -41,6 +41,7 @@ final class ErrorTypeTest extends TestCase
             [new \Error(), ErrorType::System],
             [new \InvalidArgumentException(), ErrorType::Data],
             [new ValidationFailedException(null, new ConstraintViolationList([])), ErrorType::Data],
+            [new \DomainException(), ErrorType::Domain],
             [new \LogicException(), ErrorType::Logic],
         ];
 

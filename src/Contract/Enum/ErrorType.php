@@ -10,6 +10,7 @@ use function in_array;
 enum ErrorType: string
 {
     case Data = 'data';
+    case Domain = 'domain';
     case Logic = 'logic';
     case System = 'system';
 
@@ -22,6 +23,7 @@ enum ErrorType: string
             return self::System;
         }
 
+        // InvalidArgumentException extends LogicException
         $isDataException = in_array($throwable::class, [
             \InvalidArgumentException::class,
             ValidationFailedException::class,
@@ -31,11 +33,12 @@ enum ErrorType: string
             return self::Data;
         }
 
-        $isLogicException = in_array($throwable::class, [
-            \LogicException::class,
-        ]);
+        // DomainException extends LogicException
+        if ($throwable instanceof \DomainException) {
+            return self::Domain;
+        }
 
-        if ($isLogicException) {
+        if ($throwable instanceof \LogicException) {
             return self::Logic;
         }
 
