@@ -9,6 +9,10 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 
+use function array_key_last;
+use function random_int;
+use function time;
+
 #[Group('UnitTests')]
 #[Group('ActionTests')]
 #[Group('ResultTests')]
@@ -26,8 +30,8 @@ final class ResultTest extends TestCase
 
     public function testInvokeReturnsResultData(): void
     {
-        $resultData = (object)[
-            'time' => \time(),
+        $resultData = (object) [
+            'time' => time(),
         ];
 
         $this->assertSame($resultData, new Result($resultData)());
@@ -40,7 +44,7 @@ final class ResultTest extends TestCase
         $context = [
             AbstractNormalizer::GROUPS => [
                 'read', 'read:all', 'read:self',
-            ]
+            ],
         ];
 
         $this->assertArrayHasKey(AbstractNormalizer::GROUPS, $context);
@@ -57,13 +61,17 @@ final class ResultTest extends TestCase
     {
         $groups = ['group1', 'group2'];
 
-        $context = [AbstractNormalizer::ATTRIBUTES => ['id', 'time']];
+        $context = [
+            AbstractNormalizer::ATTRIBUTES => [
+                'id', 'time', 'age', 'date',
+            ],
+        ];
+
         $this->assertArrayNotHasKey(AbstractNormalizer::GROUPS, $context);
 
         $result = new Result(true)
             ->withContext($context)
             ->withGroups($groups);
-
 
         $resultContext = $result->getContext();
 
@@ -73,11 +81,9 @@ final class ResultTest extends TestCase
 
     public function testWithStatusRequiresValidHttpStatus(): void
     {
-        $lastHttpStatus = \array_key_last(
-            Response::$statusTexts
-        );
+        $lastHttpStatus = array_key_last(Response::$statusTexts);
 
-        $httpStatus = \random_int($lastHttpStatus + 1, $lastHttpStatus * 2);
+        $httpStatus = random_int($lastHttpStatus + 1, $lastHttpStatus * 2);
         $this->assertArrayNotHasKey($httpStatus, Response::$statusTexts);
 
         $this->expectException(InvalidArgumentException::class);

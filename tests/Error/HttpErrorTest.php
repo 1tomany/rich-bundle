@@ -34,6 +34,7 @@ use Symfony\Component\Validator\ConstraintViolationInterface;
 use Symfony\Component\Validator\ConstraintViolationList;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
+use function array_key_last;
 use function array_map;
 use function array_rand;
 use function random_int;
@@ -260,7 +261,7 @@ final class HttpErrorTest extends TestCase
             Response::HTTP_INTERNAL_SERVER_ERROR
         ];
 
-        $lastHttpStatus = \array_key_last(
+        $lastHttpStatus = array_key_last(
             Response::$statusTexts
         );
 
