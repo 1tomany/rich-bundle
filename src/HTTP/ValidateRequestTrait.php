@@ -10,49 +10,50 @@ use function array_filter;
 use function array_map;
 use function implode;
 use function in_array;
-use function vsprintf;
+use function sprintf;
 
 trait ValidateRequestTrait // @phpstan-ignore trait.unused
 {
     /**
-     * @param list<non-empty-string> $acceptTypes
-     * @param list<non-empty-string> $contentTypes
+     * @param list<non-empty-string> $types
      */
-    private function validateRequestTypes(
-        Request $request,
-        array $acceptTypes = ['json'],
-        array $contentTypes = ['form', 'json'],
-    ): void {
-        /** @var non-empty-string $type */
-        $type = $request->getPreferredFormat('json');
+    private function validateAcceptTypes(Request $request, array $types = ['json']): void
+    {
+        $format = $request->getPreferredFormat(null);
 
-        if (!in_array($type, $acceptTypes, true)) {
-            $message = vsprintf('The type "%s" is not supported. Acceptable types are: "%s".', [
-                $request->getMimeType($type), $this->flattenMimeTypes($acceptTypes),
-            ]);
-
-            throw new NotAcceptableHttpException($message);
+        if (!$format) {
+            return;
         }
 
-        $type = $request->getContentTypeFormat();
-
-        if (null !== $type && !in_array($type, $contentTypes, true)) {
-            $message = vsprintf('The type "%s" is not supported. Supported content types are: "%s".', [
-                $request->getMimeType($type), $this->flattenMimeTypes($contentTypes),
-            ]);
-
-            throw new UnsupportedMediaTypeHttpException($message);
+        if (!in_array($format, $types, true)) {
+            throw new NotAcceptableHttpException(sprintf('The server cannot respond with a media type the client will find acceptable. Acceptable media types are: "%s".', $this->flattenMediaTypes($types)));
         }
     }
 
     /**
-     * @param list<non-empty-string> $mimeTypes
+     * @param list<non-empty-string> $types
      */
-    private function flattenMimeTypes(array $mimeTypes): string
+    private function validateContentType(Request $request, array $types = ['form', 'json']): void
+    {
+        $format = $request->getContentTypeFormat();
+
+        if (!$format) {
+            return;
+        }
+
+        if (!in_array($format, $types, true)) {
+            throw new UnsupportedMediaTypeHttpException(sprintf('The server cannot process content with the media type "%s". Supported content media types are: "%s".', $request->getMimeType($format), $this->flattenMediaTypes($types)));
+        }
+    }
+
+    /**
+     * @param list<non-empty-string> $mediaTypes
+     */
+    private function flattenMediaTypes(array $mediaTypes): string
     {
         $flattenedTypes = array_map(function (string $type): string {
             return Request::getMimeTypes($type)[0] ?? $type;
-        }, $mimeTypes);
+        }, $mediaTypes);
 
         return implode('", "', array_filter($flattenedTypes));
     }
