@@ -2,6 +2,8 @@
 
 namespace OneToMany\RichBundle\Contract\Error;
 
+use OneToMany\RichBundle\Contract\Enum\ErrorType;
+
 /**
  * @phpstan-type Stack array{class: string, message: string, file: string, line: int}
  * @phpstan-type Trace array{class: ?string, function: ?string, file: ?string, line: ?int}
@@ -25,6 +27,8 @@ interface HttpErrorInterface
      * @return non-empty-string
      */
     public function getDescription(): string;
+
+    public function getType(): ErrorType;
 
     /**
      * @return non-empty-string

@@ -2,7 +2,9 @@
 
 namespace OneToMany\RichBundle\Error;
 
+use OneToMany\RichBundle\Attribute\HasErrorType;
 use OneToMany\RichBundle\Attribute\HasUserMessage;
+use OneToMany\RichBundle\Contract\Enum\ErrorType;
 use OneToMany\RichBundle\Contract\Error\HttpErrorInterface;
 use Psr\Log\LogLevel;
 use Symfony\Component\HttpFoundation\Response;
@@ -35,6 +37,8 @@ class HttpError implements HttpErrorInterface
      */
     private string $title = 'Internal Server Error';
 
+    private ErrorType $type = ErrorType::Logic;
+
     /**
      * @var array<string, string>
      */
@@ -64,6 +68,7 @@ class HttpError implements HttpErrorInterface
     {
         $this->resolveStatus();
         $this->resolveTitle();
+        $this->resolveType();
         $this->resolveHeaders();
         $this->resolveMessage();
         $this->expandViolations();
@@ -89,6 +94,11 @@ class HttpError implements HttpErrorInterface
     public function getDescription(): string
     {
         return sprintf('%d %s', $this->status, $this->title);
+    }
+
+    public function getType(): ErrorType
+    {
+        return $this->type;
     }
 
     public function getMessage(): string
@@ -143,6 +153,22 @@ class HttpError implements HttpErrorInterface
     private function resolveTitle(): void
     {
         $this->title = (Response::$statusTexts[$this->status] ?? null) ?: $this->title;
+    }
+
+    private function resolveType(): void
+    {
+        $hasErrorType = $this->getAttribute(...[
+            'attributeClass' => HasErrorType::class,
+        ]);
+
+        if ($hasErrorType instanceof HasErrorType) {
+            $this->type = $hasErrorType->type;
+        } else {
+            $this->type = ErrorType::create(...[
+                'throwable' => $this->throwable,
+                'httpStatus' => $this->status,
+            ]);
+        }
     }
 
     private function resolveHeaders(): void
