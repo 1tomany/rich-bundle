@@ -2,11 +2,15 @@
 
 namespace OneToMany\RichBundle\HTTP;
 
-use OneToMany\RichBundle\HTTP\Exception\SerializingResponseFailedException;
+use OneToMany\RichBundle\Exception\LogicException;
+use OneToMany\RichBundle\Exception\RuntimeException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 use Symfony\Component\Serializer\SerializerInterface;
+
+use function get_debug_type;
+use function sprintf;
 
 trait ResponseTrait // @phpstan-ignore trait.unused
 {
@@ -18,7 +22,7 @@ trait ResponseTrait // @phpstan-ignore trait.unused
     private function serializeResponse(Request $request, mixed $data, array $context): string
     {
         if (!($this->serializer ?? null) instanceof SerializerInterface) {
-            throw new \RuntimeException('no serializer');
+            throw new LogicException(sprintf('You must provide a "%s" instance in the "%s::$serializer" property, but that property has not been initialized yet.', SerializerInterface::class, static::class));
         }
 
         $format = $request->getPreferredFormat(null) ?? self::DEFAULT_FORMAT;
@@ -26,7 +30,7 @@ trait ResponseTrait // @phpstan-ignore trait.unused
         try {
             return $this->serializer->serialize($data, $format, $context);
         } catch (SerializerExceptionInterface $e) {
-            throw new SerializingResponseFailedException($data, $e);
+            throw new RuntimeException(sprintf('Serializing the response failed because data of type "%s" could not be encoded.', get_debug_type($data)), previous: $e);
         }
     }
 
