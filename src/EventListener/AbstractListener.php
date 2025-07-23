@@ -10,6 +10,10 @@ use Symfony\Component\HttpKernel\Exception\UnsupportedMediaTypeHttpException;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 
+use function array_filter;
+use function array_map;
+use function get_debug_type;
+
 abstract readonly class AbstractListener
 {
     /**
@@ -72,7 +76,7 @@ abstract readonly class AbstractListener
         try {
             return $this->getSerializer()->serialize($data, $this->getResponseFormat($request), $context);
         } catch (SerializerExceptionInterface $e) {
-            throw new RuntimeException(sprintf('Serializing the response failed because data of type "%s" could not be encoded.', \get_debug_type($data)), previous: $e);
+            throw new RuntimeException(sprintf('Serializing the response failed because data of type "%s" could not be encoded.', get_debug_type($data)), previous: $e);
         }
     }
 
@@ -95,10 +99,10 @@ abstract readonly class AbstractListener
      */
     protected function flattenFormats(array $formats): string
     {
-        $mediaTypes = \array_map(function (string $type): string {
+        $mediaTypes = array_map(function (string $type): string {
             return Request::getMimeTypes($type)[0] ?? $type;
         }, $formats);
 
-        return implode('", "', \array_filter($mediaTypes));
+        return implode('", "', array_filter($mediaTypes));
     }
 }

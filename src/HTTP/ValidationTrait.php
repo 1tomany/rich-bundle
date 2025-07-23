@@ -14,7 +14,6 @@ use function sprintf;
 
 trait ValidationTrait // @phpstan-ignore trait.unused
 {
-
     /**
      * @return list<non-empty-string>
      */
