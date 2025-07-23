@@ -2,7 +2,9 @@
 
 namespace OneToMany\RichBundle\Tests\Error;
 
+use OneToMany\RichBundle\Attribute\HasErrorType;
 use OneToMany\RichBundle\Attribute\HasUserMessage;
+use OneToMany\RichBundle\Contract\Enum\ErrorType;
 use OneToMany\RichBundle\Error\HttpError;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -215,9 +217,41 @@ final class HttpErrorTest extends TestCase
 
     public function testGettingThrowable(): void
     {
-        $throwable = new \RuntimeException('Error');
+        $exception = new \RuntimeException('Error');
 
-        $this->assertSame($throwable, new HttpError($throwable)->getThrowable());
+        $this->assertSame($exception, new HttpError($exception)->getThrowable());
+    }
+
+    public function testGettingTypeResolvesErrorType(): void
+    {
+        // Arrange: Create Exception and HttpError
+        $exception = new \RuntimeException('Error');
+        $httpError = new HttpError($exception);
+
+        // Assert: HttpError::$type Is Uninitialized By Default
+        $refProperty = new \ReflectionProperty($httpError, 'type');
+        $this->assertFalse($refProperty->isInitialized($httpError));
+
+        // Act: Get the ErrorType
+        $errorType = $httpError->getType();
+
+        // Assert: ErrorType Objects Match
+        $this->assertSame(ErrorType::create($exception), $errorType);
+
+        // Assert: HttpError::$type Is Initialized
+        $this->assertTrue($refProperty->isInitialized($httpError));
+    }
+
+    public function testGettingTypeResolvesErrorTypeWhenHasErrorTypeAttributeIsPresent(): void
+    {
+        // Arrange: Create Exception With HasErrorType Attribute
+        $exception = new #[HasErrorType(ErrorType::Data)] class('Error') extends \Exception {};
+
+        // Act: Get the ErrorType
+        $errorType = new HttpError($exception)->getType();
+
+        // Assert: ErrorType Objects Match
+        $this->assertSame(ErrorType::Data, $errorType);
     }
 
     public function testGettingDescription(): void

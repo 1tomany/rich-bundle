@@ -12,6 +12,7 @@ use OneToMany\RichBundle\Contract\Enum\ErrorType;
 interface HttpErrorInterface
 {
     public function getThrowable(): \Throwable;
+    public function getType(): ErrorType;
 
     /**
      * @return int<100, 599>
@@ -27,8 +28,6 @@ interface HttpErrorInterface
      * @return non-empty-string
      */
     public function getDescription(): string;
-
-    public function getType(): ErrorType;
 
     /**
      * @return non-empty-string

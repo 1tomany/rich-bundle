@@ -27,48 +27,33 @@ use function trim;
  */
 class HttpError implements HttpErrorInterface
 {
-    /**
-     * @var int<100, 599>
-     */
+    private ErrorType $type;
+
+    /** @var int<100, 599> */
     private int $status = 500;
 
-    /**
-     * @var non-empty-string
-     */
+    /** @var non-empty-string */
     private string $title = 'Internal Server Error';
 
-    private ErrorType $type = ErrorType::Logic;
-
-    /**
-     * @var array<string, string>
-     */
+    /** @var array<string, string> */
     private array $headers = [];
 
-    /**
-     * @var non-empty-string
-     */
+    /** @var non-empty-string */
     private string $message = 'An unexpected error occurred.';
 
-    /**
-     * @var list<Violation>
-     */
+    /** @var list<Violation> */
     private array $violations = [];
 
-    /**
-     * @var list<Stack>
-     */
+    /** @var list<Stack> */
     private array $stack = [];
 
-    /**
-     * @var list<Trace>
-     */
+    /** @var list<Trace> */
     private array $trace = [];
 
     public function __construct(private readonly \Throwable $throwable)
     {
         $this->resolveStatus();
         $this->resolveTitle();
-        $this->resolveType();
         $this->resolveHeaders();
         $this->resolveMessage();
         $this->expandViolations();
@@ -79,6 +64,15 @@ class HttpError implements HttpErrorInterface
     public function getThrowable(): \Throwable
     {
         return $this->throwable;
+    }
+
+    public function getType(): ErrorType
+    {
+        if (!isset($this->type)) {
+            $this->resolveType();
+        }
+
+        return $this->type;
     }
 
     public function getStatus(): int
@@ -94,11 +88,6 @@ class HttpError implements HttpErrorInterface
     public function getDescription(): string
     {
         return sprintf('%d %s', $this->status, $this->title);
-    }
-
-    public function getType(): ErrorType
-    {
-        return $this->type;
     }
 
     public function getMessage(): string
