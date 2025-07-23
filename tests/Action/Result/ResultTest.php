@@ -36,12 +36,15 @@ final class ResultTest extends TestCase
     public function testGettingContextUsesGroupsSpecificallySetInTheContext(): void
     {
         $groups = ['read', 'read:children'];
-        $contextGroups = ['read', 'read:all'];
 
-        $this->assertNotSame($groups, $contextGroups);
+        $context = [
+            AbstractNormalizer::GROUPS => [
+                'read', 'read:all', 'read:self',
+            ]
+        ];
 
-        $context = [AbstractNormalizer::GROUPS => $contextGroups];
         $this->assertArrayHasKey(AbstractNormalizer::GROUPS, $context);
+        $this->assertNotSame($groups, $context[AbstractNormalizer::GROUPS]);
 
         $result = new Result(true)
             ->withContext($context)
@@ -54,9 +57,18 @@ final class ResultTest extends TestCase
     {
         $groups = ['group1', 'group2'];
 
-        $context = [
-            AbstractNormalizer::ATTRIBUTES => ['id', 'time'],
-        ];
+        $context = [AbstractNormalizer::ATTRIBUTES => ['id', 'time']];
+        $this->assertArrayNotHasKey(AbstractNormalizer::GROUPS, $context);
+
+        $result = new Result(true)
+            ->withContext($context)
+            ->withGroups($groups);
+
+
+        $resultContext = $result->getContext();
+
+        $this->assertArrayHasKey(AbstractNormalizer::GROUPS, $resultContext);
+        $this->assertSame($groups, $resultContext[AbstractNormalizer::GROUPS]);
     }
 
     public function testWithStatusRequiresValidHttpStatus(): void
