@@ -30,6 +30,9 @@ final class ErrorTypeTest extends TestCase
         $this->assertSame($type, ErrorType::create($throwable));
     }
 
+    /**
+     * @return list<list<\Throwable|ErrorType>>
+     */
     public static function providerThrowableAndErrorType(): array
     {
         $provider = [
