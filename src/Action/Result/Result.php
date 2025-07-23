@@ -2,12 +2,13 @@
 
 namespace OneToMany\RichBundle\Action\Result;
 
-use OneToMany\RichBundle\Action\Result\Exception\InvalidHttpStatusException;
 use OneToMany\RichBundle\Contract\Action\ResultInterface;
+use OneToMany\RichBundle\Exception\InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 
 use function array_key_exists;
+use function sprintf;
 
 /**
  * @template R
@@ -16,24 +17,16 @@ use function array_key_exists;
  */
 class Result implements ResultInterface
 {
-    /**
-     * @var int<100, 599>
-     */
+    /** @var int<100, 599> */
     private int $status = Response::HTTP_OK;
 
-    /**
-     * @var array<string, mixed>
-     */
+    /** @var array<string, mixed> */
     private array $context = [];
 
-    /**
-     * @var list<non-empty-string>
-     */
+    /** @var list<non-empty-string> */
     private array $groups = [];
 
-    /**
-     * @var list<array<string, string>>
-     */
+    /** @var array<string, string> */
     private array $headers = [];
 
     /**
@@ -82,6 +75,7 @@ class Result implements ResultInterface
 
     public function getContext(): array
     {
+        // Merge in the groups if none are explicitly set in the context
         if (!array_key_exists(AbstractNormalizer::GROUPS, $this->context)) {
             $this->context[AbstractNormalizer::GROUPS] = $this->groups;
         }
@@ -97,7 +91,7 @@ class Result implements ResultInterface
     public function withStatus(int $status): static
     {
         if (!isset(Response::$statusTexts[$status])) {
-            throw new InvalidHttpStatusException($status);
+            throw new InvalidArgumentException(sprintf('The value %d is not a valid HTTP status code.', $status));
         }
 
         $this->status = $status;
@@ -107,15 +101,6 @@ class Result implements ResultInterface
 
     public function withContext(array $context): static
     {
-        // $existingGroups = $this->context['groups'] ?? null;
-
-        // // Maintain existing groups if the context does not overwrite them
-        // if (is_array($existingGroups) && array_is_list($existingGroups)) {
-        //     if (is_array($context[AbstractNormalizer::GROUPS] ?? null)) {
-        //         $context[AbstractNormalizer::GROUPS] = $existingGroups;
-        //     }
-        // }
-
         $this->context = $context;
 
         return $this;

@@ -23,7 +23,7 @@ interface ResultInterface
     public function getContext(): array;
 
     /**
-     * @return list<array<string, string>>
+     * @return array<string, string>
      */
     public function getHeaders(): array;
 
@@ -43,7 +43,7 @@ interface ResultInterface
     public function withGroups(array $groups): static;
 
     /**
-     * @param list<array<string, string>> $headers
+     * @param array<string, string> $headers
      */
     public function withHeaders(array $headers): static;
 }

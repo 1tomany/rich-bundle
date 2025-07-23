@@ -2,7 +2,9 @@
 
 namespace OneToMany\RichBundle\Error;
 
+use OneToMany\RichBundle\Attribute\HasErrorType;
 use OneToMany\RichBundle\Attribute\HasUserMessage;
+use OneToMany\RichBundle\Contract\Enum\ErrorType;
 use OneToMany\RichBundle\Contract\Error\HttpErrorInterface;
 use Psr\Log\LogLevel;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,39 +27,27 @@ use function trim;
  */
 class HttpError implements HttpErrorInterface
 {
-    /**
-     * @var int<100, 599>
-     */
+    private ErrorType $type;
+
+    /** @var int<100, 599> */
     private int $status = 500;
 
-    /**
-     * @var non-empty-string
-     */
+    /** @var non-empty-string */
     private string $title = 'Internal Server Error';
 
-    /**
-     * @var array<string, string>
-     */
+    /** @var array<string, string> */
     private array $headers = [];
 
-    /**
-     * @var non-empty-string
-     */
+    /** @var non-empty-string */
     private string $message = 'An unexpected error occurred.';
 
-    /**
-     * @var list<Violation>
-     */
+    /** @var list<Violation> */
     private array $violations = [];
 
-    /**
-     * @var list<Stack>
-     */
+    /** @var list<Stack> */
     private array $stack = [];
 
-    /**
-     * @var list<Trace>
-     */
+    /** @var list<Trace> */
     private array $trace = [];
 
     public function __construct(private readonly \Throwable $throwable)
@@ -69,11 +59,17 @@ class HttpError implements HttpErrorInterface
         $this->expandViolations();
         $this->flattenStack();
         $this->flattenTrace();
+        $this->resolveType();
     }
 
     public function getThrowable(): \Throwable
     {
         return $this->throwable;
+    }
+
+    public function getType(): ErrorType
+    {
+        return $this->type;
     }
 
     public function getStatus(): int
@@ -143,6 +139,22 @@ class HttpError implements HttpErrorInterface
     private function resolveTitle(): void
     {
         $this->title = (Response::$statusTexts[$this->status] ?? null) ?: $this->title;
+    }
+
+    private function resolveType(): void
+    {
+        $hasErrorType = $this->getAttribute(...[
+            'attributeClass' => HasErrorType::class,
+        ]);
+
+        if ($hasErrorType instanceof HasErrorType) {
+            $this->type = $hasErrorType->type;
+        } else {
+            $this->type = ErrorType::create(...[
+                'throwable' => $this->throwable,
+                'httpStatus' => $this->status,
+            ]);
+        }
     }
 
     private function resolveHeaders(): void

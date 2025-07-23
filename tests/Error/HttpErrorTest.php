@@ -2,7 +2,9 @@
 
 namespace OneToMany\RichBundle\Tests\Error;
 
+use OneToMany\RichBundle\Attribute\HasErrorType;
 use OneToMany\RichBundle\Attribute\HasUserMessage;
+use OneToMany\RichBundle\Contract\Enum\ErrorType;
 use OneToMany\RichBundle\Error\HttpError;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -32,6 +34,7 @@ use Symfony\Component\Validator\ConstraintViolationInterface;
 use Symfony\Component\Validator\ConstraintViolationList;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
+use function array_key_last;
 use function array_map;
 use function array_rand;
 use function random_int;
@@ -173,7 +176,7 @@ final class HttpErrorTest extends TestCase
         $this->assertSame($errors, new HttpError($exception)->getViolations());
     }
 
-    public function testConstructorResolvesStack(): void
+    public function testConstructorFlattensStack(): void
     {
         $exception1 = new \Exception(...[
             'message' => 'Exception 1',
@@ -213,14 +216,29 @@ final class HttpErrorTest extends TestCase
         $this->assertSame($stackTrace, new HttpError($exception3)->getStack());
     }
 
-    public function testGettingThrowable(): void
+    public function testConstructorResolvesType(): void
     {
-        $throwable = new \RuntimeException('Error');
+        $exception = new \RuntimeException('Error');
+        $errorType = ErrorType::create($exception);
 
-        $this->assertSame($throwable, new HttpError($throwable)->getThrowable());
+        $this->assertSame($errorType, new HttpError($exception)->getType());
     }
 
-    public function testGettingDescription(): void
+    public function testGettingThrowable(): void
+    {
+        $exception = new \RuntimeException('Error');
+
+        $this->assertSame($exception, new HttpError($exception)->getThrowable());
+    }
+
+    public function testGettingTypeResolvesErrorTypeWhenHasErrorTypeAttributeIsPresent(): void
+    {
+        $exception = new #[HasErrorType(ErrorType::Data)] class('Error') extends \Exception {};
+
+        $this->assertSame(ErrorType::Data, new HttpError($exception)->getType());
+    }
+
+    public function testGettingDescriptionFromValidHttpStatus(): void
     {
         /** @var int<100, 599> $status */
         $status = array_rand(Response::$statusTexts);
@@ -229,7 +247,7 @@ final class HttpErrorTest extends TestCase
         /** @var non-empty-string $title */
         $title = Response::$statusTexts[$status];
 
-        // Arrange: Manually Create Description
+        // Arrange: Create Error Description
         $description = "{$status} {$title}";
 
         // Assert: Descriptions Match
@@ -243,7 +261,11 @@ final class HttpErrorTest extends TestCase
             Response::HTTP_INTERNAL_SERVER_ERROR
         ];
 
-        $httpStatus = random_int(1000, 2000);
+        $lastHttpStatus = array_key_last(
+            Response::$statusTexts
+        );
+
+        $httpStatus = random_int($lastHttpStatus + 1, $lastHttpStatus * 2);
         $this->assertArrayNotHasKey($httpStatus, Response::$statusTexts);
 
         $exception = new \RuntimeException($title, $httpStatus);

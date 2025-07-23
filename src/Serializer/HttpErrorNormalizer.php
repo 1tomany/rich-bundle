@@ -22,6 +22,7 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
         $record = [
             'status' => $data->getStatus(),
             'title' => $data->getTitle(),
+            'type' => $data->getType(),
             'detail' => $data->getMessage(),
             'violations' => $data->getViolations(),
             'stack' => $data->getStack(),
