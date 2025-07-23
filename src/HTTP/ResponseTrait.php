@@ -10,6 +10,7 @@ use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExcep
 use Symfony\Component\Serializer\SerializerInterface;
 
 use function get_debug_type;
+use function is_a;
 use function sprintf;
 
 trait ResponseTrait // @phpstan-ignore trait.unused
@@ -21,7 +22,7 @@ trait ResponseTrait // @phpstan-ignore trait.unused
      */
     private function serializeResponse(Request $request, mixed $data, array $context): string
     {
-        if (!($this->serializer ?? null) instanceof SerializerInterface) {
+        if (!isset($this->serializer) || !is_a($this->serializer, SerializerInterface::class)) {
             throw new LogicException(sprintf('You must provide a "%s" instance in the "%s::$serializer" property, but that property has not been initialized yet.', SerializerInterface::class, static::class));
         }
 
