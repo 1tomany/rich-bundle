@@ -25,12 +25,12 @@ abstract readonly class AbstractListener
     /**
      * @return non-empty-list<non-empty-string>
      */
-    abstract public function getAcceptFormats(Request $request): array;
+    abstract public function getAcceptFormats(): array;
 
     /**
      * @return non-empty-list<non-empty-string>
      */
-    abstract public function getContentFormats(Request $request): array;
+    abstract public function getContentFormats(): array;
 
     abstract protected function getSerializer(): SerializerInterface;
 
@@ -56,24 +56,16 @@ abstract readonly class AbstractListener
         $format = $event->getRequest()->getPreferredFormat(null);
 
         if (null !== $format) {
-            $acceptFormats = $this->getAcceptFormats(...[
-                'request' => $event->getRequest(),
-            ]);
-
-            if (!in_array($format, $acceptFormats, true)) {
-                throw new NotAcceptableHttpException(sprintf('The server cannot respond with a media type the client will find acceptable. Acceptable media types are: "%s".', $this->flattenFormats($acceptFormats)));
+            if (!in_array($format, $this->getAcceptFormats(), true)) {
+                throw new NotAcceptableHttpException(sprintf('The server cannot respond with a media type the client will find acceptable. Acceptable media types are: "%s".', $this->flattenFormats($this->getAcceptFormats())));
             }
         }
 
         $format = $event->getRequest()->getContentTypeFormat();
 
         if (null !== $format) {
-            $contentFormats = $this->getContentFormats(...[
-                'request' => $event->getRequest(),
-            ]);
-
-            if (!in_array($format, $contentFormats, true)) {
-                throw new UnsupportedMediaTypeHttpException(sprintf('The server cannot process content with the media type "%s". Supported content media types are: "%s".', $event->getRequest()->getMimeType($format), $this->flattenFormats($contentFormats)));
+            if (!in_array($format, $this->getContentFormats(), true)) {
+                throw new UnsupportedMediaTypeHttpException(sprintf('The server cannot process content with the media type "%s". Supported content media types are: "%s".', $event->getRequest()->getMimeType($format), $this->flattenFormats($this->getContentFormats())));
             }
         }
     }
