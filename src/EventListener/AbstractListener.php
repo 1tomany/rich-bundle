@@ -17,6 +17,7 @@ use function array_filter;
 use function array_map;
 use function get_debug_type;
 use function implode;
+use function in_array;
 use function sprintf;
 
 abstract readonly class AbstractListener
@@ -71,7 +72,7 @@ abstract readonly class AbstractListener
                 'request' => $event->getRequest(),
             ]);
 
-            if (!\in_array($format, $contentFormats, true)) {
+            if (!in_array($format, $contentFormats, true)) {
                 throw new UnsupportedMediaTypeHttpException(sprintf('The server cannot process content with the media type "%s". Supported content media types are: "%s".', $event->getRequest()->getMimeType($format), $this->flattenFormats($contentFormats)));
             }
         }

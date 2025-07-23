@@ -18,20 +18,20 @@ enum ErrorType: string
         int $httpStatus = 0,
         self $default = self::System,
     ): self {
-        $isDataType = in_array($throwable::class, [
+        $isDataException = in_array($throwable::class, [
             \InvalidArgumentException::class,
             ValidationFailedException::class,
         ]);
 
-        if ($isDataType) {
+        if ($isDataException) {
             return self::Data;
         }
 
-        $isLogicType = in_array($throwable::class, [
+        $isLogicException = in_array($throwable::class, [
             \LogicException::class,
         ]);
 
-        if ($isLogicType) {
+        if ($isLogicException) {
             return self::Logic;
         }
 
