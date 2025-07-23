@@ -244,17 +244,12 @@ final class HttpErrorTest extends TestCase
 
     public function testGettingTypeResolvesErrorTypeWhenHasErrorTypeAttributeIsPresent(): void
     {
-        // Arrange: Create Exception With HasErrorType Attribute
         $exception = new #[HasErrorType(ErrorType::Data)] class('Error') extends \Exception {};
 
-        // Act: Get the ErrorType
-        $errorType = new HttpError($exception)->getType();
-
-        // Assert: ErrorType Objects Match
-        $this->assertSame(ErrorType::Data, $errorType);
+        $this->assertSame(ErrorType::Data, new HttpError($exception)->getType());
     }
 
-    public function testGettingDescription(): void
+    public function testGettingDescriptionFromValidHttpStatus(): void
     {
         /** @var int<100, 599> $status */
         $status = array_rand(Response::$statusTexts);
@@ -263,7 +258,7 @@ final class HttpErrorTest extends TestCase
         /** @var non-empty-string $title */
         $title = Response::$statusTexts[$status];
 
-        // Arrange: Manually Create Description
+        // Arrange: Create Error Description
         $description = "{$status} {$title}";
 
         // Assert: Descriptions Match
