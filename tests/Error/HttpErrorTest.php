@@ -175,7 +175,7 @@ final class HttpErrorTest extends TestCase
         $this->assertSame($errors, new HttpError($exception)->getViolations());
     }
 
-    public function testConstructorResolvesStack(): void
+    public function testConstructorFlattensStack(): void
     {
         $exception1 = new \Exception(...[
             'message' => 'Exception 1',
@@ -215,31 +215,19 @@ final class HttpErrorTest extends TestCase
         $this->assertSame($stackTrace, new HttpError($exception3)->getStack());
     }
 
+    public function testConstructorResolvesType(): void
+    {
+        $exception = new \RuntimeException('Error');
+        $errorType = ErrorType::create($exception);
+
+        $this->assertSame($errorType, new HttpError($exception)->getType());
+    }
+
     public function testGettingThrowable(): void
     {
         $exception = new \RuntimeException('Error');
 
         $this->assertSame($exception, new HttpError($exception)->getThrowable());
-    }
-
-    public function testGettingTypeResolvesErrorType(): void
-    {
-        // Arrange: Create Exception and HttpError
-        $exception = new \RuntimeException('Error');
-        $httpError = new HttpError($exception);
-
-        // Assert: HttpError::$type Is Uninitialized By Default
-        $refProperty = new \ReflectionProperty($httpError, 'type');
-        $this->assertFalse($refProperty->isInitialized($httpError));
-
-        // Act: Get the ErrorType
-        $errorType = $httpError->getType();
-
-        // Assert: ErrorType Objects Match
-        $this->assertSame(ErrorType::create($exception), $errorType);
-
-        // Assert: HttpError::$type Is Initialized
-        $this->assertTrue($refProperty->isInitialized($httpError));
     }
 
     public function testGettingTypeResolvesErrorTypeWhenHasErrorTypeAttributeIsPresent(): void

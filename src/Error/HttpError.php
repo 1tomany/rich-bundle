@@ -59,6 +59,7 @@ class HttpError implements HttpErrorInterface
         $this->expandViolations();
         $this->flattenStack();
         $this->flattenTrace();
+        $this->resolveType();
     }
 
     public function getThrowable(): \Throwable
@@ -68,10 +69,6 @@ class HttpError implements HttpErrorInterface
 
     public function getType(): ErrorType
     {
-        if (!isset($this->type)) {
-            $this->resolveType();
-        }
-
         return $this->type;
     }
 
