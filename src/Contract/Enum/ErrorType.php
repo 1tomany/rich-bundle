@@ -18,6 +18,10 @@ enum ErrorType: string
         int $httpStatus = 0,
         self $default = self::System,
     ): self {
+        if ($throwable instanceof \Error) {
+            return self::System;
+        }
+
         $isDataException = in_array($throwable::class, [
             \InvalidArgumentException::class,
             ValidationFailedException::class,
@@ -45,7 +49,7 @@ enum ErrorType: string
             return self::Data;
         }
 
-        if ($httpStatus >= 500) {
+        if ($httpStatus >= Response::HTTP_INTERNAL_SERVER_ERROR) {
             return self::System;
         }
 
