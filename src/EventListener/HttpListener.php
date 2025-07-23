@@ -6,7 +6,6 @@ use OneToMany\RichBundle\Contract\Action\ResultInterface;
 use OneToMany\RichBundle\Error\HttpError;
 use OneToMany\RichBundle\EventListener\Exception\SerializingResponseFailedException;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
@@ -26,8 +25,7 @@ readonly class HttpListener
     public function __construct(
         private SerializerInterface $serializer,
         private LoggerInterface $logger,
-    )
-    {
+    ) {
     }
 
     public function generateRequestId(RequestEvent $event): void
