@@ -36,9 +36,7 @@ abstract readonly class AbstractListener
 
     public function getResponseFormat(Request $request): string
     {
-        $acceptFormats = $this->getAcceptFormats($request);
-
-        foreach ($acceptFormats as $acceptFormat) {
+        foreach ($this->getAcceptFormats() as $acceptFormat) {
             $format = $request->getPreferredFormat(...[
                 'default' => $acceptFormat,
             ]);
@@ -48,7 +46,7 @@ abstract readonly class AbstractListener
             }
         }
 
-        return $acceptFormats[0];
+        return $this->getAcceptFormats()[0];
     }
 
     protected function validateMediaTypes(RequestEvent $event): void
