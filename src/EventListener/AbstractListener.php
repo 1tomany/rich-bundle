@@ -73,28 +73,28 @@ abstract readonly class AbstractListener
     protected function renderView(ViewEvent $event): void
     {
         if (($result = $event->getControllerResult()) instanceof ResultInterface) {
-            $event->setResponse($this->generateResponse($event->getRequest(), $this->serializeResponse($event->getRequest(), $result(), $result->getContext()), $result->getStatus(), $result->getHeaders()));
+            $event->setResponse($this->serializeResponse($event->getRequest(), $result(), $result->getContext(), $result->getStatus(), $result->getHeaders()));
         }
     }
 
     /**
      * @param array<string, mixed> $context
+     * @param array<string, string> $headers
      */
-    protected function serializeResponse(Request $request, mixed $data, array $context): string
-    {
+    protected function serializeResponse(
+        Request $request,
+        mixed $data,
+        array $context = [],
+        int $status = Response::HTTP_OK,
+        array $headers = [],
+    ): Response {
+        $format = $this->getResponseFormat($request);
+
         try {
-            return $this->getSerializer()->serialize($data, $this->getResponseFormat($request), $context);
+            $content = $this->getSerializer()->serialize($data, $format, $context);
         } catch (SerializerExceptionInterface $e) {
             throw new RuntimeException(sprintf('Serializing the response failed because data of type "%s" could not be encoded.', get_debug_type($data)), previous: $e);
         }
-    }
-
-    /**
-     * @param array<string, string> $headers
-     */
-    protected function generateResponse(Request $request, string $content, int $status, array $headers): Response
-    {
-        $format = $this->getResponseFormat($request);
 
         $response = new Response($content, $status, $headers + [
             'Content-Type' => $request->getMimeType($format),
