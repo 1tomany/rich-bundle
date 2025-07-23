@@ -10,6 +10,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Validator\ConstraintViolationList;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
+use function array_rand;
+
 #[Group('UnitTests')]
 #[Group('ContractTests')]
 #[Group('EnumTests')]
@@ -18,7 +20,7 @@ final class ErrorTypeTest extends TestCase
     public function testCreatingTypeFromThrowableUsesDefault(): void
     {
         $default = ErrorType::cases()[
-            \array_rand(ErrorType::cases())
+            array_rand(ErrorType::cases())
         ];
 
         $this->assertSame($default, ErrorType::create(new \Exception(), default: $default));
@@ -75,5 +77,4 @@ final class ErrorTypeTest extends TestCase
 
         return $provider;
     }
-
 }
