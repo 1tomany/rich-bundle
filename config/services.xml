@@ -5,9 +5,9 @@
     <service id="OneToMany\RichBundle\EventListener\RequestListener">
       <tag name="kernel.event_listener" event="kernel.request" priority="192"/>
     </service>
-    <service id="OneToMany\RichBundle\EventListener\ViewListener">
+    <!-- <service id="OneToMany\RichBundle\EventListener\ViewListener">
       <tag name="kernel.event_listener" event="kernel.view" priority="0"/>
-    </service>
+    </service> -->
     <service id="OneToMany\RichBundle\Serializer\HttpErrorNormalizer">
       <tag>serializer.normalizer</tag>
       <argument key="$debug">%kernel.debug%</argument>
