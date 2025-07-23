@@ -14,10 +14,16 @@ use function sprintf;
 
 trait ValidationTrait // @phpstan-ignore trait.unused
 {
+
     /**
-     * @param list<non-empty-string> $types
+     * @return list<non-empty-string>
      */
-    private function validateAcceptTypes(Request $request, array $types = ['json']): void
+    private function getAcceptableTypes(): array
+    {
+        return ['json'];
+    }
+
+    private function validateAcceptTypes(Request $request): void
     {
         $format = $request->getPreferredFormat(null);
 
@@ -25,8 +31,8 @@ trait ValidationTrait // @phpstan-ignore trait.unused
             return;
         }
 
-        if (!in_array($format, $types, true)) {
-            throw new NotAcceptableHttpException(sprintf('The server cannot respond with a media type the client will find acceptable. Acceptable media types are: "%s".', $this->flattenMediaTypes($types)));
+        if (!in_array($format, $this->getAcceptableTypes(), true)) {
+            throw new NotAcceptableHttpException(sprintf('The server cannot respond with a media type the client will find acceptable. Acceptable media types are: "%s".', $this->flattenMediaTypes($this->getAcceptableTypes())));
         }
     }
 
