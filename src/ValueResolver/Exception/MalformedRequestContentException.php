@@ -4,7 +4,6 @@ namespace OneToMany\RichBundle\ValueResolver\Exception;
 
 use OneToMany\RichBundle\Attribute\HasUserMessage;
 use OneToMany\RichBundle\Contract\Exception\ExceptionInterface;
-use OneToMany\RichBundle\Exception\RuntimeException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 use function sprintf;

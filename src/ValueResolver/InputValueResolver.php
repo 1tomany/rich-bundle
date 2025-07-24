@@ -20,6 +20,8 @@ use OneToMany\RichBundle\Exception\LogicException;
 use OneToMany\RichBundle\Exception\RuntimeException;
 use OneToMany\RichBundle\Validator\UninitializedProperties;
 use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedContentTypeHeaderNotFoundException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedSecurityBundleMissingException;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
@@ -186,7 +188,7 @@ final class InputValueResolver implements ValueResolverInterface
 
         if (!$format) {
             if (!empty($content)) {
-                throw new HttpException(422, 'The request content could not be parsed because the Content-Type header was missing or malformed.');
+                throw new ResolutionFailedContentTypeHeaderNotFoundException();
             }
 
             return;
@@ -282,7 +284,7 @@ final class InputValueResolver implements ValueResolverInterface
     private function extractUser(\ReflectionProperty $property, SourceUser $source): void
     {
         if (null === $this->tokenStorage) {
-            throw new LogicException(sprintf('The property "%s" could not be extracted because the Symfony Security Bundle is not installed. Try running "composer require symfony/security-bundle".', $property));
+            throw new ResolutionFailedSecurityBundleMissingException($property);
         }
 
         if ($user = $this->tokenStorage->getToken()?->getUser()) {

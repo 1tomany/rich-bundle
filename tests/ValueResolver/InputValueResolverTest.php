@@ -10,10 +10,12 @@ use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceToken;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
-use OneToMany\RichBundle\ValueResolver\Exception\ContentTypeHeaderNotFoundException;
+use OneToMany\RichBundle\Exception\LogicException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedContentTypeHeaderNotFoundException;
 use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
 use OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException;
-use OneToMany\RichBundle\ValueResolver\Exception\SourceSecurityMappingFailedTokenStorageIsNullException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedSecurityBundleMissingException;
+// use OneToMany\RichBundle\ValueResolver\Exception\SourceSecurityMappingFailedTokenStorageIsNullException;
 use OneToMany\RichBundle\ValueResolver\InputValueResolver;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -55,7 +57,7 @@ final class InputValueResolverTest extends TestCase
 
     public function testResolvingValueRequiresContentTypeHeaderWithNonEmptyBody(): void
     {
-        $this->expectException(ContentTypeHeaderNotFoundException::class);
+        $this->expectException(ResolutionFailedContentTypeHeaderNotFoundException::class);
 
         $request = new Request(...[
             'content' => '{"id": 10}',
@@ -439,10 +441,9 @@ final class InputValueResolverTest extends TestCase
         $this->assertEquals($headers['x-custom-id'][0], $inputs[0]->customId);
     }
 
-    public function testResolvingSourceTokenRequiresSymfonySecurityBundle(): void
+    public function testResolvingSourceUserRequiresSymfonySecurityBundle(): void
     {
-        $this->expectException(SourceSecurityMappingFailedTokenStorageIsNullException::class);
-        $this->expectExceptionMessage('The property "username" could not be extracted from the security token because the Symfony Security Bundle is not installed. Try running "composer require symfony/security-bundle".');
+        $this->expectException(ResolutionFailedSecurityBundleMissingException::class);
 
         // Arrange: Create Input Class
         $input = new class implements InputInterface {

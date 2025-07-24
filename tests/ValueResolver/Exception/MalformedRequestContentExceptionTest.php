@@ -11,8 +11,8 @@ use PHPUnit\Framework\TestCase;
 #[Group('ExceptionTests')]
 final class MalformedRequestContentExceptionTest extends TestCase
 {
-    public function testGettingCode(): void
+    public function testGettingStatusCode(): void
     {
-        $this->assertEquals(400, new MalformedRequestContentException('xml', null)->getCode());
+        $this->assertEquals(400, new MalformedRequestContentException('xml', null)->getStatusCode());
     }
 }
