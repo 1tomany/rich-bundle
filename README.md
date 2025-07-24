@@ -270,7 +270,6 @@ You'll also notice some new attributes: `#[SourceUser]`, `#[SourceRequest]`, and
 - `#[SourceUser(class: 'class-string<User>', getter: 'getId')]` Fetches the result of the `$getter` argument of the authenticated user. The `$class` argument should be a `class-string` of a class that implements the `Symfony\Component\Security\Core\User\UserInterface` interface. In a multi-tenant application, you could add a method to your `User` object to get the tenant ID and inject that into the input object as well:
   ```php
   // src/Account/Action/Input/ReadAccountInput.php
-  
   public function __construct(
       #[SourceUser(class: User::class, getter: 'getAccountId')]
       public ?int $accountId,
@@ -278,7 +277,6 @@ You'll also notice some new attributes: `#[SourceUser]`, `#[SourceRequest]`, and
   }
   
   // src/Entity/User.php
-  
   public function getAccountId(): ?int
   {
       return $this->getAccount()?->getId();
@@ -314,11 +312,11 @@ use Symfony\Component\Validator\Constraints as Assert;
 final class ReadAccountInput implements InputInterface
 {
     public function __construct(
+        #[SourceQuery('email')]
+        #[SourceQuery('username')]
         #[Assert\Email]
         #[Assert\NotBlank]
         #[Assert\Length(max: 128)]
-        #[SourceQuery('email')]
-        #[SourceQuery('username')]
         private(set) public string $username,
     ) {
     }
