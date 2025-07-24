@@ -7,7 +7,7 @@ use OneToMany\RichBundle\Attribute\SourceContent;
 use OneToMany\RichBundle\Attribute\SourceHeader;
 use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
-use OneToMany\RichBundle\Attribute\SourceSecurity;
+use OneToMany\RichBundle\Attribute\SourceToken;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
 use OneToMany\RichBundle\ValueResolver\Exception\ContentTypeHeaderNotFoundException;
@@ -440,14 +440,14 @@ final class InputValueResolverTest extends TestCase
         $this->assertEquals($headers['x-custom-id'][0], $inputs[0]->customId);
     }
 
-    public function testResolvingSourceSecurityRequiresSymfonySecurityBundle(): void
+    public function testResolvingSourceTokenRequiresSymfonySecurityBundle(): void
     {
         $this->expectException(SourceSecurityMappingFailedTokenStorageIsNullException::class);
         $this->expectExceptionMessage('The property "username" could not be extracted from the security token because the Symfony Security Bundle is not installed. Try running "composer require symfony/security-bundle".');
 
         // Arrange: Create Input Class
         $input = new class implements InputInterface {
-            #[SourceSecurity]
+            #[SourceToken]
             public string $username;
 
             public function __construct()
@@ -475,7 +475,7 @@ final class InputValueResolverTest extends TestCase
 
         $this->assertNull($refProperty->getValue($valueResolver));
 
-        // Assert: Resolving SourceSecurity Property Requires TokenStorage
+        // Assert: Resolving SourceToken Property Requires TokenStorage
         $valueResolver->resolve(new Request(), $this->createArgument($input::class));
     }
 

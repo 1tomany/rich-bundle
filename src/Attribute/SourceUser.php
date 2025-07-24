@@ -8,10 +8,10 @@ use Symfony\Component\Security\Core\User\UserInterface;
 final readonly class SourceUser extends PropertySource
 {
     /**
-     * @param class-string<UserInterface> $userClass
+     * @param class-string<UserInterface> $class
      */
     public function __construct(
-        public string $userClass,
+        public string $class,
         public string $getter = 'getId',
         bool $trim = true,
         bool $nullify = false,

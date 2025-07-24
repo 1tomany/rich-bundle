@@ -12,17 +12,15 @@ use OneToMany\RichBundle\Attribute\SourceIpAddress;
 use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceRoute;
-use OneToMany\RichBundle\Attribute\SourceSecurity;
-use OneToMany\RichBundle\Attribute\SourceToken;
 use OneToMany\RichBundle\Attribute\SourceUser;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
+use OneToMany\RichBundle\Exception\HttpException;
+use OneToMany\RichBundle\Exception\LogicException;
+use OneToMany\RichBundle\Exception\RuntimeException;
 use OneToMany\RichBundle\Validator\UninitializedProperties;
-use OneToMany\RichBundle\ValueResolver\Exception\ContentTypeHeaderNotFoundException;
 use OneToMany\RichBundle\ValueResolver\Exception\InvalidMappingException;
-use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
 use OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException;
-use OneToMany\RichBundle\ValueResolver\Exception\SourceSecurityMappingFailedTokenStorageIsNullException;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
@@ -43,6 +41,7 @@ use function in_array;
 use function is_a;
 use function is_array;
 use function is_scalar;
+use function method_exists;
 use function trim;
 
 final class InputValueResolver implements ValueResolverInterface
@@ -124,12 +123,12 @@ final class InputValueResolver implements ValueResolverInterface
                     $this->extractRoute($property, $source, $name);
                 }
 
-                if ($source instanceof SourceToken) {
-                    $this->extractToken($property, $source);
-                }
+                // if ($source instanceof SourceToken) {
+                //     $this->extractToken($property, $source);
+                // }
 
                 if ($source instanceof SourceUser) {
-                    // $this->extractFromUser($property, $source);
+                    $this->extractUser($property, $source);
                 }
             }
         }
@@ -196,7 +195,7 @@ final class InputValueResolver implements ValueResolverInterface
 
         if (!$format) {
             if (!empty($content)) {
-                throw new ContentTypeHeaderNotFoundException();
+                throw new HttpException(422, 'The request content could not be parsed because the Content-Type header was missing or malformed.');
             }
 
             return;
@@ -207,19 +206,15 @@ final class InputValueResolver implements ValueResolverInterface
         }
 
         try {
-            // Attempt to decode all other formats
-            $decodedContent = $this->serializer->decode($content, $format);
-
-            if (!is_array($decodedContent)) {
-                throw new MalformedRequestContentException($format);
-            }
+            $data = $this->serializer->decode($content, $format);
         } catch (SerializerExceptionInterface $e) {
-            throw new MalformedRequestContentException($format, $e);
         }
 
-        $this->content = new ParameterBag(...[
-            'parameters' => $decodedContent,
-        ]);
+        if (!is_array($data ?? null) || (($e ?? null) instanceof \Throwable)) {
+            throw new HttpException(400, sprintf('The request content is expected to be "%s" but could not be decoded because it is malformed.', $format), $e ?? null);
+        }
+
+        $this->content = new ParameterBag($data);
     }
 
     private function isPropertyIgnored(\ReflectionProperty $property): bool
@@ -293,16 +288,27 @@ final class InputValueResolver implements ValueResolverInterface
         $this->appendPropertyValue($property, $source, $this->request->getClientIp());
     }
 
-
-    private function extractToken(\ReflectionProperty $property, SourceToken $source): void
+    private function extractUser(\ReflectionProperty $property, SourceUser $source): void
     {
         if (null === $this->tokenStorage) {
-            throw new SourceSecurityMappingFailedTokenStorageIsNullException($property->getName());
+            throw new LogicException(\sprintf('The property "%s" could not be extracted from the security token because the Symfony Security Bundle is not installed. Try running "composer require symfony/security-bundle".', $property));
         }
 
-        if (null !== $token = $this->tokenStorage->getToken()) {
-            $this->appendPropertyValue($property, $source, $token->getUserIdentifier());
+        if ($user = $this->tokenStorage->getToken()?->getUser()) {
+            if (!is_a($source->class, $user::class, true)) {
+                throw new RuntimeException('user not instance of userclass');
+            }
+
+            if (!method_exists($user, $source->getter)) {
+                throw new RuntimeException('getter not exist');
+            }
+
+            $userValue = $user->{$source->getter}();
+        } else {
+            $userValue = null;
         }
+
+        $this->appendPropertyValue($property, $source, $userValue);
     }
 
     private function appendPropertyValue(
