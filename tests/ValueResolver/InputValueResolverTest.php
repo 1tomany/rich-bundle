@@ -58,12 +58,8 @@ final class InputValueResolverTest extends TestCase
     {
         $this->expectException(ResolutionFailedContentTypeHeaderNotFoundException::class);
 
-        $request = new Request(...[
-            'content' => '{"id": 10}',
-        ]);
-
+        $request = new Request(content: '{"id": 10}');
         $this->assertNotEmpty($request->getContent());
-        $this->assertEmpty($request->headers->get('CONTENT_TYPE'));
 
         $this->createValueResolver()->resolve(
             $request, $this->createArgument()
@@ -78,7 +74,7 @@ final class InputValueResolverTest extends TestCase
             'server' => [
                 'CONTENT_TYPE' => 'text/plain',
             ],
-            'content' => 'My|pipe|delmited|format',
+            'content' => 'Pipe|delmited|format',
         ]);
 
         $this->assertNotEmpty($request->getContent());
@@ -163,13 +159,10 @@ final class InputValueResolverTest extends TestCase
             }
         };
 
-        $id = random_int(1, 100);
-        $name = new \ReflectionProperty($input, 'name')->getDefaultValue();
+        $requestId = random_int(1, 100);
 
-        $request = new Request(...[
-            'query' => [
-                'id' => $id,
-            ],
+        $request = new Request(query: [
+            'id' => $requestId,
         ]);
 
         $this->assertTrue($request->query->has('id'));
@@ -180,8 +173,9 @@ final class InputValueResolverTest extends TestCase
         );
 
         $this->assertInstanceOf($input::class, $inputs[0]);
-        $this->assertEquals($id, $inputs[0]->id);
-        $this->assertEquals($name, $inputs[0]->name);
+
+        $this->assertEquals($requestId, $inputs[0]->id);
+        $this->assertEquals($input->name, $inputs[0]->name);
     }
 
     public function testResolvingPropertiesOverwritesDefaultValueIfMapped(): void
@@ -200,15 +194,13 @@ final class InputValueResolverTest extends TestCase
         };
 
         $id = random_int(1, 100);
-        $name = 'Vic Cherubini';
+        $name = 'Modesto Herman';
 
-        $request = new Request(...[
-            'query' => [
-                'id' => $id,
-                'name' => $name,
-            ],
+        $request = new Request(query: [
+            'id' => $id, 'name' => $name,
         ]);
 
+        $this->assertNotEquals($input->name, $name);
         $this->assertTrue($request->query->has('id'));
         $this->assertTrue($request->query->has('name'));
 
@@ -217,6 +209,7 @@ final class InputValueResolverTest extends TestCase
         );
 
         $this->assertInstanceOf($input::class, $inputs[0]);
+
         $this->assertEquals($id, $inputs[0]->id);
         $this->assertEquals($name, $inputs[0]->name);
     }
