@@ -16,11 +16,12 @@ use OneToMany\RichBundle\Attribute\SourceUser;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
 use OneToMany\RichBundle\Exception\HttpException;
-use OneToMany\RichBundle\Exception\LogicException;
 use OneToMany\RichBundle\Exception\RuntimeException;
 use OneToMany\RichBundle\Validator\UninitializedProperties;
-use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedDecodingContentFailedException;
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedContentTypeHeaderNotFoundException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedMappingRequestFailedException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedPropertyNotNullableException;
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedSecurityBundleMissingException;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\HttpFoundation\ParameterBag;
@@ -133,7 +134,7 @@ final class InputValueResolver implements ValueResolverInterface
                 'filter_bool' => true, 'disable_type_enforcement' => true,
             ]);
         } catch (\Throwable $e) {
-            throw new HttpException(400, 'The request could not be processed because the content is malformed and could not be mapped correctly.', $e);
+            throw new ResolutionFailedMappingRequestFailedException();
         }
 
         // Ensure all input class properties are mapped
@@ -204,7 +205,7 @@ final class InputValueResolver implements ValueResolverInterface
         }
 
         if (!is_array($data ?? null) || (($e ?? null) instanceof \Throwable)) {
-            throw new MalformedRequestContentException($format, $e ?? null);
+            throw new ResolutionFailedDecodingContentFailedException($format, $e ?? null);
         }
 
         $this->content = new ParameterBag($data);
@@ -241,13 +242,6 @@ final class InputValueResolver implements ValueResolverInterface
         $this->appendPropertyValue($property, $source, $this->request->getContent(false));
     }
 
-    private function extractQuery(\ReflectionProperty $property, SourceQuery $source, string $name): void
-    {
-        if ($this->request->query->has($name) && !$this->data->has($property->name)) {
-            $this->appendPropertyValue($property, $source, $this->request->query->get($name));
-        }
-    }
-
     private function extractFile(\ReflectionProperty $property, SourceFile $source, string $name): void
     {
         if ($this->request->files->has($name) && !$this->data->has($property->name)) {
@@ -259,6 +253,18 @@ final class InputValueResolver implements ValueResolverInterface
     {
         if ($this->request->headers->has($name) && !$this->data->has($property->name)) {
             $this->appendPropertyValue($property, $source, $this->request->headers->get($name));
+        }
+    }
+
+    private function extractIpAddress(\ReflectionProperty $property, SourceIpAddress $source): void
+    {
+        $this->appendPropertyValue($property, $source, $this->request->getClientIp());
+    }
+
+    private function extractQuery(\ReflectionProperty $property, SourceQuery $source, string $name): void
+    {
+        if ($this->request->query->has($name) && !$this->data->has($property->name)) {
+            $this->appendPropertyValue($property, $source, $this->request->query->get($name));
         }
     }
 
@@ -274,11 +280,6 @@ final class InputValueResolver implements ValueResolverInterface
         if ($this->request->attributes->has($name) && !$this->data->has($property->name)) {
             $this->appendPropertyValue($property, $source, $this->request->attributes->get($name));
         }
-    }
-
-    private function extractIpAddress(\ReflectionProperty $property, SourceIpAddress $source): void
-    {
-        $this->appendPropertyValue($property, $source, $this->request->getClientIp());
     }
 
     private function extractUser(\ReflectionProperty $property, SourceUser $source): void
@@ -318,7 +319,7 @@ final class InputValueResolver implements ValueResolverInterface
 
             if (true === $source->nullify && '' === $value) {
                 if (true !== $property->getType()?->allowsNull()) {
-                    throw new HttpException(400, sprintf('The property "%s" could not be extracted because it is not nullable.', $property));
+                    throw new ResolutionFailedPropertyNotNullableException($property);
                 }
 
                 $value = null;

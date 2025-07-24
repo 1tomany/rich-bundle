@@ -12,8 +12,8 @@ use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
 use OneToMany\RichBundle\Exception\LogicException;
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedContentTypeHeaderNotFoundException;
-use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
-use OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedDecodingContentFailedException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedPropertyNotNullableException;
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedSecurityBundleMissingException;
 // use OneToMany\RichBundle\ValueResolver\Exception\SourceSecurityMappingFailedTokenStorageIsNullException;
 use OneToMany\RichBundle\ValueResolver\InputValueResolver;
@@ -73,7 +73,7 @@ final class InputValueResolverTest extends TestCase
 
     public function testResolvingValueRequiresValidFormatAndDecoder(): void
     {
-        $this->expectExceptionMessage(MalformedRequestContentException::class);
+        $this->expectExceptionMessage(ResolutionFailedDecodingContentFailedException::class);
 
         $request = new Request(...[
             'server' => [
@@ -93,7 +93,7 @@ final class InputValueResolverTest extends TestCase
     #[DataProvider('providerContentTypeAndMalformedContent')]
     public function testResolvingValueRequiresNonMalformedContent(string $contentType, string $content): void
     {
-        $this->expectException(MalformedRequestContentException::class);
+        $this->expectException(ResolutionFailedDecodingContentFailedException::class);
 
         $request = new Request(...[
             'server' => [
@@ -303,7 +303,7 @@ final class InputValueResolverTest extends TestCase
 
     public function testResolvingPropertiesRequiresThemToAllowNullsIfNullable(): void
     {
-        $this->expectException(PropertyIsNotNullableException::class);
+        $this->expectException(ResolutionFailedPropertyNotNullableException::class);
 
         $input = new class implements InputInterface {
             #[SourceQuery(nullify: true)]

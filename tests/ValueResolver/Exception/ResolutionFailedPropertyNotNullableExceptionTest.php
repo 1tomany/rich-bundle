@@ -2,17 +2,17 @@
 
 namespace OneToMany\RichBundle\Tests\ValueResolver\Exception;
 
-use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedPropertyNotNullableException;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
 #[Group('UnitTests')]
 #[Group('ValueResolverTests')]
 #[Group('ExceptionTests')]
-final class MalformedRequestContentExceptionTest extends TestCase
+final class ResolutionFailedPropertyNotNullableExceptionTest extends TestCase
 {
     public function testGettingStatusCode(): void
     {
-        $this->assertEquals(400, new MalformedRequestContentException('xml', null)->getStatusCode());
+        $this->assertEquals(400, new ResolutionFailedPropertyNotNullableException('name')->getStatusCode());
     }
 }
