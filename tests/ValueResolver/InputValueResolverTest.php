@@ -7,15 +7,13 @@ use OneToMany\RichBundle\Attribute\SourceContent;
 use OneToMany\RichBundle\Attribute\SourceHeader;
 use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
-use OneToMany\RichBundle\Attribute\SourceToken;
+use OneToMany\RichBundle\Attribute\SourceUser;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
-use OneToMany\RichBundle\Exception\LogicException;
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedContentTypeHeaderNotFoundException;
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedDecodingContentFailedException;
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedPropertyNotNullableException;
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedSecurityBundleMissingException;
-// use OneToMany\RichBundle\ValueResolver\Exception\SourceSecurityMappingFailedTokenStorageIsNullException;
 use OneToMany\RichBundle\ValueResolver\InputValueResolver;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -29,6 +27,7 @@ use Symfony\Component\PropertyInfo\Extractor\ConstructorExtractor;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Encoder\XmlEncoder;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
@@ -73,7 +72,7 @@ final class InputValueResolverTest extends TestCase
 
     public function testResolvingValueRequiresValidFormatAndDecoder(): void
     {
-        $this->expectExceptionMessage(ResolutionFailedDecodingContentFailedException::class);
+        $this->expectException(ResolutionFailedDecodingContentFailedException::class);
 
         $request = new Request(...[
             'server' => [
@@ -447,8 +446,8 @@ final class InputValueResolverTest extends TestCase
 
         // Arrange: Create Input Class
         $input = new class implements InputInterface {
-            #[SourceToken]
-            public string $username;
+            #[SourceUser(self::class)] // @phpstan-ignore argument.type
+            public ?int $userId;
 
             public function __construct()
             {
@@ -463,11 +462,7 @@ final class InputValueResolverTest extends TestCase
         // Arrange: Create Value Resolver
         $container = new Container(null);
 
-        $valueResolver = new InputValueResolver(
-            new ContainerBag($container),
-            new Serializer([], [], []),
-            Validation::createValidator()
-        );
+        $valueResolver = new InputValueResolver(new ContainerBag($container), new Serializer([], [], []), Validation::createValidator());
 
         // Assert: $tokenStorage Property Is Null
         $refProperty = new \ReflectionProperty($valueResolver, 'tokenStorage');
@@ -475,7 +470,7 @@ final class InputValueResolverTest extends TestCase
 
         $this->assertNull($refProperty->getValue($valueResolver));
 
-        // Assert: Resolving SourceToken Property Requires TokenStorage
+        // Assert: Resolving SourceUser Property Requires TokenStorage
         $valueResolver->resolve(new Request(), $this->createArgument($input::class));
     }
 
@@ -556,10 +551,6 @@ final class InputValueResolverTest extends TestCase
             'parameters' => $parameters,
         ]);
 
-        $containerBag = new ContainerBag(
-            new Container($parameters)
-        );
-
         // Default encoders
         $encoders = [
             new JsonEncoder(),
@@ -589,15 +580,6 @@ final class InputValueResolverTest extends TestCase
             'propertyTypeExtractor' => $typeExtractor,
         ]);
 
-        $serializer = new Serializer(...[
-            'normalizers' => $normalizers,
-            'encoders' => $encoders,
-        ]);
-
-        $validator = Validation::createValidatorBuilder()
-            ->enableAttributeMapping()
-            ->getValidator();
-
-        return new InputValueResolver($containerBag, $serializer, $validator);
+        return new InputValueResolver(new ContainerBag(new Container($parameters)), new Serializer($normalizers, $encoders), Validation::createValidatorBuilder()->enableAttributeMapping()->getValidator());
     }
 }
