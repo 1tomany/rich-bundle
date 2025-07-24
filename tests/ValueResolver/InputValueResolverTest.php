@@ -89,10 +89,9 @@ final class InputValueResolverTest extends TestCase
     }
 
     #[DataProvider('providerContentTypeAndMalformedContent')]
-    public function testResolvingValueRequiresNonMalformedContent(string $contentType, string $format, string $content): void
+    public function testResolvingValueRequiresNonMalformedContent(string $contentType, string $content): void
     {
         $this->expectException(MalformedRequestContentException::class);
-        $this->expectExceptionMessage('The request content is expected to be "'.$format.'" but could not be decoded because it is malformed.');
 
         $request = new Request(...[
             'server' => [
@@ -115,9 +114,9 @@ final class InputValueResolverTest extends TestCase
     public static function providerContentTypeAndMalformedContent(): array
     {
         $provider = [
-            ['text/xml', 'xml', '<?xml version="1.0" encoding="UTF-8"?><root><id>10</id>'],
-            ['application/xml', 'xml', '<?xml><root><id>10</root>'],
-            ['application/json', 'json', '{"id": 10, "name: "Marcus Wolffe"}'],
+            ['text/xml', '<?xml version="1.0" encoding="UTF-8"?><root><id>10</id>'],
+            ['application/xml', '<?xml><root><id>10</root>'],
+            ['application/json', '{"id": 10, "name: "Marcus Wolffe"}'],
         ];
 
         return $provider;

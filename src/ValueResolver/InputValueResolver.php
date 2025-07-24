@@ -19,6 +19,7 @@ use OneToMany\RichBundle\Exception\HttpException;
 use OneToMany\RichBundle\Exception\LogicException;
 use OneToMany\RichBundle\Exception\RuntimeException;
 use OneToMany\RichBundle\Validator\UninitializedProperties;
+use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
@@ -201,7 +202,7 @@ final class InputValueResolver implements ValueResolverInterface
         }
 
         if (!is_array($data ?? null) || (($e ?? null) instanceof \Throwable)) {
-            throw new HttpException(400, sprintf('The request format is expected to be "%s" but an error occurred when decoding it.', $format), $e ?? null);
+            throw new MalformedRequestContentException($format, $e ?? null);
         }
 
         $this->content = new ParameterBag($data);
