@@ -23,6 +23,8 @@ use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedContentTypeHead
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedMappingRequestFailedException;
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedPropertyNotNullableException;
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedSecurityBundleMissingException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedUserGetterMissingException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedUserIncorrectTypeException;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
@@ -290,11 +292,11 @@ final class InputValueResolver implements ValueResolverInterface
 
         if ($user = $this->tokenStorage->getToken()?->getUser()) {
             if (!is_a($source->class, $user::class, true)) {
-                throw new RuntimeException(sprintf('The property "%s" could not be extracted because the user extracted is not of type "%s".', $property, $source->class));
+                throw new ResolutionFailedUserIncorrectTypeException($property, $source->class);
             }
 
             if (!method_exists($user, $source->getter)) {
-                throw new RuntimeException(sprintf('The property "%s" could not be extracted because the getter method "%s::%s()" does not exist.', $property, $source->class, $source->getter));
+                throw new ResolutionFailedUserGetterMissingException($property, $source->class, $source->getter);
             }
 
             $userValue = $user->{$source->getter}();
