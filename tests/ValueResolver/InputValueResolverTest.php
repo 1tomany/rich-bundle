@@ -446,10 +446,10 @@ final class InputValueResolverTest extends TestCase
 
         // Arrange: Create Input Class
         $input = new class implements InputInterface {
-            #[SourceUser(self::class)] // @phpstan-ignore argument.type
-            public ?int $userId;
-
-            public function __construct()
+            public function __construct(
+                #[SourceUser(self::class)] // @phpstan-ignore argument.type
+                public ?int $userId,
+            )
             {
             }
 
@@ -459,10 +459,8 @@ final class InputValueResolverTest extends TestCase
             }
         };
 
-        // Arrange: Create Value Resolver
-        $container = new Container(null);
-
-        $valueResolver = new InputValueResolver(new ContainerBag($container), new Serializer([], [], []), Validation::createValidator());
+        // Arrange: Create Value Resolver Without TokenStorageInterface
+        $valueResolver = new InputValueResolver(new ContainerBag(new Container(null)), new Serializer([], [], []), Validation::createValidator());
 
         // Assert: $tokenStorage Property Is Null
         $refProperty = new \ReflectionProperty($valueResolver, 'tokenStorage');
