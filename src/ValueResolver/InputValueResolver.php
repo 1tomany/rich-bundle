@@ -12,15 +12,17 @@ use OneToMany\RichBundle\Attribute\SourceIpAddress;
 use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceRoute;
-use OneToMany\RichBundle\Attribute\SourceSecurity;
+use OneToMany\RichBundle\Attribute\SourceUser;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
 use OneToMany\RichBundle\Validator\UninitializedProperties;
-use OneToMany\RichBundle\ValueResolver\Exception\ContentTypeHeaderNotFoundException;
-use OneToMany\RichBundle\ValueResolver\Exception\InvalidMappingException;
-use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
-use OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException;
-use OneToMany\RichBundle\ValueResolver\Exception\SourceSecurityMappingFailedTokenStorageIsNullException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedContentTypeHeaderNotFoundException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedDecodingContentFailedException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedMappingRequestFailedException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedPropertyNotNullableException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedSecurityBundleMissingException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedUserGetterMissingException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedUserIncorrectTypeException;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
@@ -29,8 +31,6 @@ use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Serializer\Encoder\DecoderInterface;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
-use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
-use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
@@ -41,6 +41,7 @@ use function in_array;
 use function is_a;
 use function is_array;
 use function is_scalar;
+use function method_exists;
 use function trim;
 
 final class InputValueResolver implements ValueResolverInterface
@@ -74,9 +75,7 @@ final class InputValueResolver implements ValueResolverInterface
         }
 
         // Parse the HTTP request body
-        $this->initializeDataSources(...[
-            'request' => $request,
-        ]);
+        $this->initializeDataSources($request);
 
         // Read the properties from the class
         $class = new \ReflectionClass($type);
@@ -91,60 +90,39 @@ final class InputValueResolver implements ValueResolverInterface
                 $name = $source->getName($property->name);
 
                 if ($source instanceof SourceContainer) {
-                    $this->extractFromContainerBag(
-                        $property, $source, $name
-                    );
+                    $this->extractContainer($property, $source, $name);
                 }
 
                 if ($source instanceof SourceContent) {
-                    $this->extractRequestContent(...[
-                        'property' => $property,
-                        'source' => $source,
-                    ]);
+                    $this->extractContent($property, $source);
                 }
 
                 if ($source instanceof SourceFile) {
-                    $this->extractFromRequestFiles(
-                        $property, $source, $name
-                    );
+                    $this->extractFile($property, $source, $name);
                 }
 
                 if ($source instanceof SourceHeader) {
-                    $this->extractFromRequestHeaders(
-                        $property, $source, $name
-                    );
+                    $this->extractHeader($property, $source, $name);
                 }
 
                 if ($source instanceof SourceIpAddress) {
-                    $this->extractIpAddress(...[
-                        'property' => $property,
-                        'source' => $source,
-                    ]);
+                    $this->extractIpAddress($property, $source);
                 }
 
                 if ($source instanceof SourceQuery) {
-                    $this->extractFromQueryString(
-                        $property, $source, $name
-                    );
+                    $this->extractQuery($property, $source, $name);
                 }
 
                 if ($source instanceof SourceRequest) {
-                    $this->extractFromRequestContent(
-                        $property, $source, $name
-                    );
+                    $this->extractRequest($property, $source, $name);
                 }
 
                 if ($source instanceof SourceRoute) {
-                    $this->extractFromRouteParameters(
-                        $property, $source, $name
-                    );
+                    $this->extractRoute($property, $source, $name);
                 }
 
-                if ($source instanceof SourceSecurity) {
-                    $this->extractSecurityToken(...[
-                        'property' => $property,
-                        'source' => $source,
-                    ]);
+                if ($source instanceof SourceUser) {
+                    $this->extractUser($property, $source);
                 }
             }
         }
@@ -152,11 +130,10 @@ final class InputValueResolver implements ValueResolverInterface
         try {
             /** @var InputInterface<CommandInterface> $input */
             $input = $this->serializer->denormalize($this->data->all(), $type, null, [
-                AbstractNormalizer::FILTER_BOOL => true,
-                AbstractObjectNormalizer::DISABLE_TYPE_ENFORCEMENT => true,
+                'filter_bool' => true, 'disable_type_enforcement' => true,
             ]);
         } catch (\Throwable $e) {
-            throw new InvalidMappingException($e);
+            throw new ResolutionFailedMappingRequestFailedException();
         }
 
         // Ensure all input class properties are mapped
@@ -202,9 +179,7 @@ final class InputValueResolver implements ValueResolverInterface
 
         // Content-Type: multipart/form-data
         if (in_array($format, ['form'])) {
-            $this->content = new ParameterBag(
-                $request->request->all()
-            );
+            $this->content = new ParameterBag($request->request->all());
 
             return;
         }
@@ -213,7 +188,7 @@ final class InputValueResolver implements ValueResolverInterface
 
         if (!$format) {
             if (!empty($content)) {
-                throw new ContentTypeHeaderNotFoundException();
+                throw new ResolutionFailedContentTypeHeaderNotFoundException();
             }
 
             return;
@@ -224,19 +199,15 @@ final class InputValueResolver implements ValueResolverInterface
         }
 
         try {
-            // Attempt to decode all other formats
-            $decodedContent = $this->serializer->decode($content, $format);
-
-            if (!is_array($decodedContent)) {
-                throw new MalformedRequestContentException($format);
-            }
+            $data = $this->serializer->decode($content, $format);
         } catch (SerializerExceptionInterface $e) {
-            throw new MalformedRequestContentException($format, $e);
         }
 
-        $this->content = new ParameterBag(...[
-            'parameters' => $decodedContent,
-        ]);
+        if (!is_array($data ?? null) || (($e ?? null) instanceof \Throwable)) {
+            throw new ResolutionFailedDecodingContentFailedException($format, $e ?? null);
+        }
+
+        $this->content = new ParameterBag($data);
     }
 
     private function isPropertyIgnored(\ReflectionProperty $property): bool
@@ -258,69 +229,79 @@ final class InputValueResolver implements ValueResolverInterface
         return $propertySources ?? [new SourceRequest()];
     }
 
-    private function extractFromContainerBag(\ReflectionProperty $property, PropertySource $source, string $name): void
+    private function extractContainer(\ReflectionProperty $property, SourceContainer $source, string $name): void
     {
         if ($this->containerBag->has($name) && !$this->data->has($property->name)) {
             $this->appendPropertyValue($property, $source, $this->containerBag->get($name));
         }
     }
 
-    private function extractFromQueryString(\ReflectionProperty $property, PropertySource $source, string $name): void
+    private function extractContent(\ReflectionProperty $property, SourceContent $source): void
     {
-        if ($this->request->query->has($name) && !$this->data->has($property->name)) {
-            $this->appendPropertyValue($property, $source, $this->request->query->get($name));
-        }
+        $this->appendPropertyValue($property, $source, $this->request->getContent(false));
     }
 
-    private function extractFromRequestFiles(\ReflectionProperty $property, PropertySource $source, string $name): void
+    private function extractFile(\ReflectionProperty $property, SourceFile $source, string $name): void
     {
         if ($this->request->files->has($name) && !$this->data->has($property->name)) {
             $this->appendPropertyValue($property, $source, $this->request->files->get($name));
         }
     }
 
-    private function extractFromRequestHeaders(\ReflectionProperty $property, PropertySource $source, string $name): void
+    private function extractHeader(\ReflectionProperty $property, SourceHeader $source, string $name): void
     {
         if ($this->request->headers->has($name) && !$this->data->has($property->name)) {
             $this->appendPropertyValue($property, $source, $this->request->headers->get($name));
         }
     }
 
-    private function extractFromRequestContent(\ReflectionProperty $property, PropertySource $source, string $name): void
+    private function extractIpAddress(\ReflectionProperty $property, SourceIpAddress $source): void
+    {
+        $this->appendPropertyValue($property, $source, $this->request->getClientIp());
+    }
+
+    private function extractQuery(\ReflectionProperty $property, SourceQuery $source, string $name): void
+    {
+        if ($this->request->query->has($name) && !$this->data->has($property->name)) {
+            $this->appendPropertyValue($property, $source, $this->request->query->get($name));
+        }
+    }
+
+    private function extractRequest(\ReflectionProperty $property, SourceRequest $source, string $name): void
     {
         if ($this->content->has($name) && !$this->data->has($property->name)) {
             $this->appendPropertyValue($property, $source, $this->content->get($name));
         }
     }
 
-    private function extractFromRouteParameters(\ReflectionProperty $property, PropertySource $source, string $name): void
+    private function extractRoute(\ReflectionProperty $property, SourceRoute $source, string $name): void
     {
         if ($this->request->attributes->has($name) && !$this->data->has($property->name)) {
             $this->appendPropertyValue($property, $source, $this->request->attributes->get($name));
         }
     }
 
-    private function extractIpAddress(\ReflectionProperty $property, PropertySource $source): void
-    {
-        $this->appendPropertyValue($property, $source, $this->request->getClientIp());
-    }
-
-    private function extractRequestContent(\ReflectionProperty $property, PropertySource $source): void
-    {
-        $this->appendPropertyValue($property, $source, $this->request->getContent(false));
-    }
-
-    private function extractSecurityToken(\ReflectionProperty $property, PropertySource $source): void
+    private function extractUser(\ReflectionProperty $property, SourceUser $source): void
     {
         if (null === $this->tokenStorage) {
-            throw new SourceSecurityMappingFailedTokenStorageIsNullException($property->getName());
+            throw new ResolutionFailedSecurityBundleMissingException($property->name);
         }
 
-        $token = $this->tokenStorage->getToken();
+        if ($user = $this->tokenStorage->getToken()?->getUser()) {
+            if (!is_a($source->class, $user::class, true)) {
+                throw new ResolutionFailedUserIncorrectTypeException($property->name, $source->class);
+            }
 
-        if (null !== $userId = $token?->getUserIdentifier()) {
-            $this->appendPropertyValue($property, $source, $userId);
+            if (!method_exists($user, $source->getter)) {
+                throw new ResolutionFailedUserGetterMissingException($property->name, $source->class, $source->getter);
+            }
+
+            $userValue = $user->{$source->getter}();
+        } else {
+            $userValue = null;
         }
+
+        $this->appendPropertyValue($property, $source, $userValue);
     }
 
     private function appendPropertyValue(
@@ -337,7 +318,7 @@ final class InputValueResolver implements ValueResolverInterface
 
             if (true === $source->nullify && '' === $value) {
                 if (true !== $property->getType()?->allowsNull()) {
-                    throw new PropertyIsNotNullableException($property->name);
+                    throw new ResolutionFailedPropertyNotNullableException($property->name);
                 }
 
                 $value = null;

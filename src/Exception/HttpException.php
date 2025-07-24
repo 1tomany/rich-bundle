@@ -4,6 +4,6 @@ namespace OneToMany\RichBundle\Exception;
 
 use OneToMany\RichBundle\Contract\Exception\ExceptionInterface;
 
-class InvalidArgumentException extends \InvalidArgumentException implements ExceptionInterface
+class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpException implements ExceptionInterface
 {
 }

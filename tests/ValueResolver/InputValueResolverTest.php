@@ -7,13 +7,13 @@ use OneToMany\RichBundle\Attribute\SourceContent;
 use OneToMany\RichBundle\Attribute\SourceHeader;
 use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
-use OneToMany\RichBundle\Attribute\SourceSecurity;
+use OneToMany\RichBundle\Attribute\SourceUser;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
-use OneToMany\RichBundle\ValueResolver\Exception\ContentTypeHeaderNotFoundException;
-use OneToMany\RichBundle\ValueResolver\Exception\MalformedRequestContentException;
-use OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException;
-use OneToMany\RichBundle\ValueResolver\Exception\SourceSecurityMappingFailedTokenStorageIsNullException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedContentTypeHeaderNotFoundException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedDecodingContentFailedException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedPropertyNotNullableException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedSecurityBundleMissingException;
 use OneToMany\RichBundle\ValueResolver\InputValueResolver;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -39,6 +39,7 @@ use Symfony\Component\Validator\Validation;
 
 use function json_encode;
 use function random_int;
+use function time;
 
 #[Group('UnitTests')]
 #[Group('ValueResolverTests')]
@@ -55,14 +56,10 @@ final class InputValueResolverTest extends TestCase
 
     public function testResolvingValueRequiresContentTypeHeaderWithNonEmptyBody(): void
     {
-        $this->expectException(ContentTypeHeaderNotFoundException::class);
+        $this->expectException(ResolutionFailedContentTypeHeaderNotFoundException::class);
 
-        $request = new Request(...[
-            'content' => '{"id": 10}',
-        ]);
-
+        $request = new Request(content: '{"id": 10}');
         $this->assertNotEmpty($request->getContent());
-        $this->assertEmpty($request->headers->get('CONTENT_TYPE'));
 
         $this->createValueResolver()->resolve(
             $request, $this->createArgument()
@@ -71,13 +68,13 @@ final class InputValueResolverTest extends TestCase
 
     public function testResolvingValueRequiresValidFormatAndDecoder(): void
     {
-        $this->expectException(MalformedRequestContentException::class);
+        $this->expectException(ResolutionFailedDecodingContentFailedException::class);
 
         $request = new Request(...[
             'server' => [
                 'CONTENT_TYPE' => 'text/plain',
             ],
-            'content' => 'My|pipe|delmited|format',
+            'content' => 'Pipe|delmited|format',
         ]);
 
         $this->assertNotEmpty($request->getContent());
@@ -89,10 +86,9 @@ final class InputValueResolverTest extends TestCase
     }
 
     #[DataProvider('providerContentTypeAndMalformedContent')]
-    public function testResolvingValueRequiresNonMalformedContent(string $contentType, string $format, string $content): void
+    public function testResolvingValueRequiresNonMalformedContent(string $contentType, string $content): void
     {
-        $this->expectException(MalformedRequestContentException::class);
-        $this->expectExceptionMessage('The request content is expected to be "'.$format.'" but could not be decoded because it is malformed.');
+        $this->expectException(ResolutionFailedDecodingContentFailedException::class);
 
         $request = new Request(...[
             'server' => [
@@ -115,9 +111,9 @@ final class InputValueResolverTest extends TestCase
     public static function providerContentTypeAndMalformedContent(): array
     {
         $provider = [
-            ['text/xml', 'xml', '<?xml version="1.0" encoding="UTF-8"?><root><id>10</id>'],
-            ['application/xml', 'xml', '<?xml><root><id>10</root>'],
-            ['application/json', 'json', '{"id": 10, "name: "Marcus Wolffe"}'],
+            ['text/xml', '<?xml version="1.0" encoding="UTF-8"?><root><id>10</id>'],
+            ['application/xml', '<?xml><root><id>10</root>'],
+            ['application/json', '{"id": 10, "name: "Marcus Wolffe"}'],
         ];
 
         return $provider;
@@ -137,12 +133,8 @@ final class InputValueResolverTest extends TestCase
             }
         };
 
-        $id = random_int(1, 100);
-
-        $request = new Request(...[
-            'query' => [
-                'id' => $id,
-            ],
+        $request = new Request(query: [
+            'id' => random_int(1, 100),
         ]);
 
         $this->assertFalse($request->query->has('name'));
@@ -167,13 +159,10 @@ final class InputValueResolverTest extends TestCase
             }
         };
 
-        $id = random_int(1, 100);
-        $name = new \ReflectionProperty($input, 'name')->getDefaultValue();
+        $requestId = random_int(1, 100);
 
-        $request = new Request(...[
-            'query' => [
-                'id' => $id,
-            ],
+        $request = new Request(query: [
+            'id' => $requestId,
         ]);
 
         $this->assertTrue($request->query->has('id'));
@@ -184,8 +173,9 @@ final class InputValueResolverTest extends TestCase
         );
 
         $this->assertInstanceOf($input::class, $inputs[0]);
-        $this->assertEquals($id, $inputs[0]->id);
-        $this->assertEquals($name, $inputs[0]->name);
+
+        $this->assertEquals($requestId, $inputs[0]->id);
+        $this->assertEquals($input->name, $inputs[0]->name);
     }
 
     public function testResolvingPropertiesOverwritesDefaultValueIfMapped(): void
@@ -204,15 +194,13 @@ final class InputValueResolverTest extends TestCase
         };
 
         $id = random_int(1, 100);
-        $name = 'Vic Cherubini';
+        $name = 'Modesto Herman';
 
-        $request = new Request(...[
-            'query' => [
-                'id' => $id,
-                'name' => $name,
-            ],
+        $request = new Request(query: [
+            'id' => $id, 'name' => $name,
         ]);
 
+        $this->assertNotEquals($input->name, $name);
         $this->assertTrue($request->query->has('id'));
         $this->assertTrue($request->query->has('name'));
 
@@ -221,6 +209,7 @@ final class InputValueResolverTest extends TestCase
         );
 
         $this->assertInstanceOf($input::class, $inputs[0]);
+
         $this->assertEquals($id, $inputs[0]->id);
         $this->assertEquals($name, $inputs[0]->name);
     }
@@ -237,12 +226,8 @@ final class InputValueResolverTest extends TestCase
             }
         };
 
-        $name = 'Vic Cherubini';
-
-        $request = new Request(...[
-            'query' => [
-                'name' => $name,
-            ],
+        $request = new Request(query: [
+            'name' => 'Modesto Herman',
         ]);
 
         $this->assertTrue($request->query->has('name'));
@@ -252,7 +237,7 @@ final class InputValueResolverTest extends TestCase
         );
 
         $this->assertInstanceOf($input::class, $inputs[0]);
-        $this->assertNotEquals($name, $inputs[0]->name);
+        $this->assertEquals($input->name, $inputs[0]->name);
     }
 
     public function testTrimmingNonNullScalarValues(): void
@@ -282,12 +267,10 @@ final class InputValueResolverTest extends TestCase
         $name = 'Vic Cherubini';
         $dob = '1984-08-25';
 
-        $request = new Request(...[
-            'query' => [
-                'id' => " {$id} ",
-                'name' => " {$name} ",
-                'dob' => " {$dob} ",
-            ],
+        $request = new Request(query: [
+            'id' => " {$id} ",
+            'name' => " {$name} ",
+            'dob' => " {$dob} ",
         ]);
 
         $inputs = $this->createValueResolver()->resolve(
@@ -295,6 +278,7 @@ final class InputValueResolverTest extends TestCase
         );
 
         $this->assertInstanceOf($input::class, $inputs[0]);
+
         $this->assertEquals($id, $inputs[0]->id);
         $this->assertEquals($name, $inputs[0]->name);
         $this->assertEquals($dob, $inputs[0]->birthday);
@@ -302,7 +286,7 @@ final class InputValueResolverTest extends TestCase
 
     public function testResolvingPropertiesRequiresThemToAllowNullsIfNullable(): void
     {
-        $this->expectException(PropertyIsNotNullableException::class);
+        $this->expectException(ResolutionFailedPropertyNotNullableException::class);
 
         $input = new class implements InputInterface {
             #[SourceQuery(nullify: true)]
@@ -314,11 +298,7 @@ final class InputValueResolverTest extends TestCase
             }
         };
 
-        $request = new Request(...[
-            'query' => [
-                'name' => ' ',
-            ],
-        ]);
+        $request = new Request(query: ['name' => ' ']);
 
         $this->createValueResolver()->resolve(
             $request, $this->createArgument($input::class)
@@ -348,13 +328,11 @@ final class InputValueResolverTest extends TestCase
 
         $id = random_int(1, 100);
 
-        $request = new Request(...[
-            'query' => [
-                'id' => $id,
-                'age' => null,
-                'name' => '',
-                'color' => '  ',
-            ],
+        $request = new Request(query: [
+            'id' => $id,
+            'age' => null,
+            'name' => '',
+            'color' => '  ',
         ]);
 
         $inputs = $this->createValueResolver()->resolve(
@@ -362,6 +340,7 @@ final class InputValueResolverTest extends TestCase
         );
 
         $this->assertInstanceOf($input::class, $inputs[0]);
+
         $this->assertEquals($id, $inputs[0]->id);
         $this->assertNull($inputs[0]->age);
         $this->assertNull($inputs[0]->name);
@@ -381,9 +360,7 @@ final class InputValueResolverTest extends TestCase
         };
 
         /** @var non-empty-string $content */
-        $content = json_encode([
-            'id' => random_int(1, 10),
-        ]);
+        $content = json_encode(['time' => time()]);
 
         $request = new Request(...[
             'server' => [
@@ -440,18 +417,16 @@ final class InputValueResolverTest extends TestCase
         $this->assertEquals($headers['x-custom-id'][0], $inputs[0]->customId);
     }
 
-    public function testResolvingSourceSecurityRequiresSymfonySecurityBundle(): void
+    public function testResolvingSourceUserRequiresSymfonySecurityBundle(): void
     {
-        $this->expectException(SourceSecurityMappingFailedTokenStorageIsNullException::class);
-        $this->expectExceptionMessage('The property "username" could not be extracted from the security token because the Symfony Security Bundle is not installed. Try running "composer require symfony/security-bundle".');
+        $this->expectException(ResolutionFailedSecurityBundleMissingException::class);
 
         // Arrange: Create Input Class
         $input = new class implements InputInterface {
-            #[SourceSecurity]
-            public string $username;
-
-            public function __construct()
-            {
+            public function __construct(
+                #[SourceUser(self::class)] // @phpstan-ignore argument.type
+                public ?int $userId = null,
+            ) {
             }
 
             public function toCommand(): CommandInterface
@@ -460,14 +435,8 @@ final class InputValueResolverTest extends TestCase
             }
         };
 
-        // Arrange: Create Value Resolver
-        $container = new Container(null);
-
-        $valueResolver = new InputValueResolver(
-            new ContainerBag($container),
-            new Serializer([], [], []),
-            Validation::createValidator()
-        );
+        // Arrange: Create Value Resolver Without TokenStorageInterface
+        $valueResolver = new InputValueResolver(new ContainerBag(new Container(null)), new Serializer([], [], []), Validation::createValidator());
 
         // Assert: $tokenStorage Property Is Null
         $refProperty = new \ReflectionProperty($valueResolver, 'tokenStorage');
@@ -475,7 +444,7 @@ final class InputValueResolverTest extends TestCase
 
         $this->assertNull($refProperty->getValue($valueResolver));
 
-        // Assert: Resolving SourceSecurity Property Requires TokenStorage
+        // Assert: Resolving SourceUser Property Requires TokenStorage
         $valueResolver->resolve(new Request(), $this->createArgument($input::class));
     }
 
@@ -556,10 +525,6 @@ final class InputValueResolverTest extends TestCase
             'parameters' => $parameters,
         ]);
 
-        $containerBag = new ContainerBag(
-            new Container($parameters)
-        );
-
         // Default encoders
         $encoders = [
             new JsonEncoder(),
@@ -589,15 +554,6 @@ final class InputValueResolverTest extends TestCase
             'propertyTypeExtractor' => $typeExtractor,
         ]);
 
-        $serializer = new Serializer(...[
-            'normalizers' => $normalizers,
-            'encoders' => $encoders,
-        ]);
-
-        $validator = Validation::createValidatorBuilder()
-            ->enableAttributeMapping()
-            ->getValidator();
-
-        return new InputValueResolver($containerBag, $serializer, $validator);
+        return new InputValueResolver(new ContainerBag(new Container($parameters)), new Serializer($normalizers, $encoders), Validation::createValidatorBuilder()->enableAttributeMapping()->getValidator());
     }
 }
