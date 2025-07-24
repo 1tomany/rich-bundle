@@ -13,6 +13,8 @@ use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceRoute;
 use OneToMany\RichBundle\Attribute\SourceSecurity;
+use OneToMany\RichBundle\Attribute\SourceToken;
+use OneToMany\RichBundle\Attribute\SourceUser;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
 use OneToMany\RichBundle\Validator\UninitializedProperties;
@@ -91,60 +93,43 @@ final class InputValueResolver implements ValueResolverInterface
                 $name = $source->getName($property->name);
 
                 if ($source instanceof SourceContainer) {
-                    $this->extractFromContainerBag(
-                        $property, $source, $name
-                    );
+                    $this->extractContainer($property, $source, $name);
                 }
 
                 if ($source instanceof SourceContent) {
-                    $this->extractRequestContent(...[
-                        'property' => $property,
-                        'source' => $source,
-                    ]);
+                    $this->extractContent($property, $source);
                 }
 
                 if ($source instanceof SourceFile) {
-                    $this->extractFromRequestFiles(
-                        $property, $source, $name
-                    );
+                    $this->extractFile($property, $source, $name);
                 }
 
                 if ($source instanceof SourceHeader) {
-                    $this->extractFromRequestHeaders(
-                        $property, $source, $name
-                    );
+                    $this->extractHeader($property, $source, $name);
                 }
 
                 if ($source instanceof SourceIpAddress) {
-                    $this->extractIpAddress(...[
-                        'property' => $property,
-                        'source' => $source,
-                    ]);
+                    $this->extractIpAddress($property, $source);
                 }
 
                 if ($source instanceof SourceQuery) {
-                    $this->extractFromQueryString(
-                        $property, $source, $name
-                    );
+                    $this->extractQuery($property, $source, $name);
                 }
 
                 if ($source instanceof SourceRequest) {
-                    $this->extractFromRequestContent(
-                        $property, $source, $name
-                    );
+                    $this->extractRequest($property, $source, $name);
                 }
 
                 if ($source instanceof SourceRoute) {
-                    $this->extractFromRouteParameters(
-                        $property, $source, $name
-                    );
+                    $this->extractRoute($property, $source, $name);
                 }
 
-                if ($source instanceof SourceSecurity) {
-                    $this->extractSecurityToken(...[
-                        'property' => $property,
-                        'source' => $source,
-                    ]);
+                if ($source instanceof SourceToken) {
+                    $this->extractToken($property, $source);
+                }
+
+                if ($source instanceof SourceUser) {
+                    // $this->extractFromUser($property, $source);
                 }
             }
         }
@@ -202,9 +187,7 @@ final class InputValueResolver implements ValueResolverInterface
 
         // Content-Type: multipart/form-data
         if (in_array($format, ['form'])) {
-            $this->content = new ParameterBag(
-                $request->request->all()
-            );
+            $this->content = new ParameterBag($request->request->all());
 
             return;
         }
@@ -258,68 +241,67 @@ final class InputValueResolver implements ValueResolverInterface
         return $propertySources ?? [new SourceRequest()];
     }
 
-    private function extractFromContainerBag(\ReflectionProperty $property, PropertySource $source, string $name): void
+    private function extractContainer(\ReflectionProperty $property, SourceContainer $source, string $name): void
     {
         if ($this->containerBag->has($name) && !$this->data->has($property->name)) {
             $this->appendPropertyValue($property, $source, $this->containerBag->get($name));
         }
     }
 
-    private function extractFromQueryString(\ReflectionProperty $property, PropertySource $source, string $name): void
+    private function extractContent(\ReflectionProperty $property, SourceContent $source): void
+    {
+        $this->appendPropertyValue($property, $source, $this->request->getContent(false));
+    }
+
+    private function extractQuery(\ReflectionProperty $property, SourceQuery $source, string $name): void
     {
         if ($this->request->query->has($name) && !$this->data->has($property->name)) {
             $this->appendPropertyValue($property, $source, $this->request->query->get($name));
         }
     }
 
-    private function extractFromRequestFiles(\ReflectionProperty $property, PropertySource $source, string $name): void
+    private function extractFile(\ReflectionProperty $property, SourceFile $source, string $name): void
     {
         if ($this->request->files->has($name) && !$this->data->has($property->name)) {
             $this->appendPropertyValue($property, $source, $this->request->files->get($name));
         }
     }
 
-    private function extractFromRequestHeaders(\ReflectionProperty $property, PropertySource $source, string $name): void
+    private function extractHeader(\ReflectionProperty $property, SourceHeader $source, string $name): void
     {
         if ($this->request->headers->has($name) && !$this->data->has($property->name)) {
             $this->appendPropertyValue($property, $source, $this->request->headers->get($name));
         }
     }
 
-    private function extractFromRequestContent(\ReflectionProperty $property, PropertySource $source, string $name): void
+    private function extractRequest(\ReflectionProperty $property, SourceRequest $source, string $name): void
     {
         if ($this->content->has($name) && !$this->data->has($property->name)) {
             $this->appendPropertyValue($property, $source, $this->content->get($name));
         }
     }
 
-    private function extractFromRouteParameters(\ReflectionProperty $property, PropertySource $source, string $name): void
+    private function extractRoute(\ReflectionProperty $property, SourceRoute $source, string $name): void
     {
         if ($this->request->attributes->has($name) && !$this->data->has($property->name)) {
             $this->appendPropertyValue($property, $source, $this->request->attributes->get($name));
         }
     }
 
-    private function extractIpAddress(\ReflectionProperty $property, PropertySource $source): void
+    private function extractIpAddress(\ReflectionProperty $property, SourceIpAddress $source): void
     {
         $this->appendPropertyValue($property, $source, $this->request->getClientIp());
     }
 
-    private function extractRequestContent(\ReflectionProperty $property, PropertySource $source): void
-    {
-        $this->appendPropertyValue($property, $source, $this->request->getContent(false));
-    }
 
-    private function extractSecurityToken(\ReflectionProperty $property, PropertySource $source): void
+    private function extractToken(\ReflectionProperty $property, SourceToken $source): void
     {
         if (null === $this->tokenStorage) {
             throw new SourceSecurityMappingFailedTokenStorageIsNullException($property->getName());
         }
 
-        $token = $this->tokenStorage->getToken();
-
-        if (null !== $userId = $token?->getUserIdentifier()) {
-            $this->appendPropertyValue($property, $source, $userId);
+        if (null !== $token = $this->tokenStorage->getToken()) {
+            $this->appendPropertyValue($property, $source, $token->getUserIdentifier());
         }
     }
 
