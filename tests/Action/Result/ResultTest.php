@@ -3,7 +3,6 @@
 namespace OneToMany\RichBundle\Tests\Action\Result;
 
 use OneToMany\RichBundle\Action\Result\Result;
-use OneToMany\RichBundle\Exception\InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Response;
@@ -79,16 +78,13 @@ final class ResultTest extends TestCase
         $this->assertSame($groups, $resultContext[AbstractNormalizer::GROUPS]);
     }
 
-    public function testWithStatusRequiresValidHttpStatus(): void
+    public function testWithStatusUsingInvalidHttpStatusSetsStatusToInternalServerError(): void
     {
         $lastHttpStatus = array_key_last(Response::$statusTexts);
 
         $httpStatus = random_int($lastHttpStatus + 1, $lastHttpStatus * 2);
         $this->assertArrayNotHasKey($httpStatus, Response::$statusTexts);
 
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("The value {$httpStatus} is not a valid HTTP status code.");
-
-        new Result(true)->withStatus($httpStatus); // @phpstan-ignore-line
+        $this->assertEquals(Response::HTTP_INTERNAL_SERVER_ERROR, new Result(true)->withStatus($httpStatus)->getStatus()); // @phpstan-ignore-line
     }
 }
