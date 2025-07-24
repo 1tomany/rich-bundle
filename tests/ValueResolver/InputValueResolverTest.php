@@ -226,12 +226,8 @@ final class InputValueResolverTest extends TestCase
             }
         };
 
-        $name = 'Vic Cherubini';
-
-        $request = new Request(...[
-            'query' => [
-                'name' => $name,
-            ],
+        $request = new Request(query: [
+            'name' => 'Modesto Herman',
         ]);
 
         $this->assertTrue($request->query->has('name'));
@@ -241,7 +237,7 @@ final class InputValueResolverTest extends TestCase
         );
 
         $this->assertInstanceOf($input::class, $inputs[0]);
-        $this->assertNotEquals($name, $inputs[0]->name);
+        $this->assertEquals($input->name, $inputs[0]->name);
     }
 
     public function testTrimmingNonNullScalarValues(): void
