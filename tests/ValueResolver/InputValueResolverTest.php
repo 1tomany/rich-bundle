@@ -71,7 +71,7 @@ final class InputValueResolverTest extends TestCase
 
     public function testResolvingValueRequiresValidFormatAndDecoder(): void
     {
-        $this->expectException(MalformedRequestContentException::class);
+        $this->expectExceptionMessage(MalformedRequestContentException::class);
 
         $request = new Request(...[
             'server' => [
