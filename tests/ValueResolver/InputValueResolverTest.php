@@ -267,12 +267,10 @@ final class InputValueResolverTest extends TestCase
         $name = 'Vic Cherubini';
         $dob = '1984-08-25';
 
-        $request = new Request(...[
-            'query' => [
-                'id' => " {$id} ",
-                'name' => " {$name} ",
-                'dob' => " {$dob} ",
-            ],
+        $request = new Request(query: [
+            'id' => " {$id} ",
+            'name' => " {$name} ",
+            'dob' => " {$dob} ",
         ]);
 
         $inputs = $this->createValueResolver()->resolve(
@@ -280,6 +278,7 @@ final class InputValueResolverTest extends TestCase
         );
 
         $this->assertInstanceOf($input::class, $inputs[0]);
+
         $this->assertEquals($id, $inputs[0]->id);
         $this->assertEquals($name, $inputs[0]->name);
         $this->assertEquals($dob, $inputs[0]->birthday);
@@ -299,11 +298,7 @@ final class InputValueResolverTest extends TestCase
             }
         };
 
-        $request = new Request(...[
-            'query' => [
-                'name' => ' ',
-            ],
-        ]);
+        $request = new Request(query: ['name' => ' ']);
 
         $this->createValueResolver()->resolve(
             $request, $this->createArgument($input::class)
@@ -333,13 +328,11 @@ final class InputValueResolverTest extends TestCase
 
         $id = random_int(1, 100);
 
-        $request = new Request(...[
-            'query' => [
-                'id' => $id,
-                'age' => null,
-                'name' => '',
-                'color' => '  ',
-            ],
+        $request = new Request(query: [
+            'id' => $id,
+            'age' => null,
+            'name' => '',
+            'color' => '  ',
         ]);
 
         $inputs = $this->createValueResolver()->resolve(
@@ -347,6 +340,7 @@ final class InputValueResolverTest extends TestCase
         );
 
         $this->assertInstanceOf($input::class, $inputs[0]);
+
         $this->assertEquals($id, $inputs[0]->id);
         $this->assertNull($inputs[0]->age);
         $this->assertNull($inputs[0]->name);
