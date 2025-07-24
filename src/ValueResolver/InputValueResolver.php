@@ -284,16 +284,16 @@ final class InputValueResolver implements ValueResolverInterface
     private function extractUser(\ReflectionProperty $property, SourceUser $source): void
     {
         if (null === $this->tokenStorage) {
-            throw new ResolutionFailedSecurityBundleMissingException($property);
+            throw new ResolutionFailedSecurityBundleMissingException($property->name);
         }
 
         if ($user = $this->tokenStorage->getToken()?->getUser()) {
             if (!is_a($source->class, $user::class, true)) {
-                throw new ResolutionFailedUserIncorrectTypeException($property, $source->class);
+                throw new ResolutionFailedUserIncorrectTypeException($property->name, $source->class);
             }
 
             if (!method_exists($user, $source->getter)) {
-                throw new ResolutionFailedUserGetterMissingException($property, $source->class, $source->getter);
+                throw new ResolutionFailedUserGetterMissingException($property->name, $source->class, $source->getter);
             }
 
             $userValue = $user->{$source->getter}();
@@ -318,7 +318,7 @@ final class InputValueResolver implements ValueResolverInterface
 
             if (true === $source->nullify && '' === $value) {
                 if (true !== $property->getType()?->allowsNull()) {
-                    throw new ResolutionFailedPropertyNotNullableException($property);
+                    throw new ResolutionFailedPropertyNotNullableException($property->name);
                 }
 
                 $value = null;
