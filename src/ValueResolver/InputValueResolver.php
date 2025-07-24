@@ -42,6 +42,7 @@ use function is_a;
 use function is_array;
 use function is_scalar;
 use function method_exists;
+use function sprintf;
 use function trim;
 
 final class InputValueResolver implements ValueResolverInterface
@@ -75,9 +76,7 @@ final class InputValueResolver implements ValueResolverInterface
         }
 
         // Parse the HTTP request body
-        $this->initializeDataSources(...[
-            'request' => $request,
-        ]);
+        $this->initializeDataSources($request);
 
         // Read the properties from the class
         $class = new \ReflectionClass($type);
@@ -123,10 +122,6 @@ final class InputValueResolver implements ValueResolverInterface
                     $this->extractRoute($property, $source, $name);
                 }
 
-                // if ($source instanceof SourceToken) {
-                //     $this->extractToken($property, $source);
-                // }
-
                 if ($source instanceof SourceUser) {
                     $this->extractUser($property, $source);
                 }
@@ -136,11 +131,10 @@ final class InputValueResolver implements ValueResolverInterface
         try {
             /** @var InputInterface<CommandInterface> $input */
             $input = $this->serializer->denormalize($this->data->all(), $type, null, [
-                AbstractNormalizer::FILTER_BOOL => true,
-                AbstractObjectNormalizer::DISABLE_TYPE_ENFORCEMENT => true,
+                'filter_bool' => true, 'disable_type_enforcement' => true,
             ]);
         } catch (\Throwable $e) {
-            throw new InvalidMappingException($e);
+            throw new HttpException(400, 'The request could not be processed because the content is malformed and could not be mapped correctly.', $e);
         }
 
         // Ensure all input class properties are mapped
@@ -211,7 +205,7 @@ final class InputValueResolver implements ValueResolverInterface
         }
 
         if (!is_array($data ?? null) || (($e ?? null) instanceof \Throwable)) {
-            throw new HttpException(400, sprintf('The request content is expected to be "%s" but could not be decoded because it is malformed.', $format), $e ?? null);
+            throw new HttpException(400, sprintf('The request format is expected to be "%s" but an error occurred when decoding it.', $format), $e ?? null);
         }
 
         $this->content = new ParameterBag($data);
@@ -291,16 +285,16 @@ final class InputValueResolver implements ValueResolverInterface
     private function extractUser(\ReflectionProperty $property, SourceUser $source): void
     {
         if (null === $this->tokenStorage) {
-            throw new LogicException(\sprintf('The property "%s" could not be extracted from the security token because the Symfony Security Bundle is not installed. Try running "composer require symfony/security-bundle".', $property));
+            throw new LogicException(sprintf('The property "%s" could not be extracted because the Symfony Security Bundle is not installed. Try running "composer require symfony/security-bundle".', $property));
         }
 
         if ($user = $this->tokenStorage->getToken()?->getUser()) {
             if (!is_a($source->class, $user::class, true)) {
-                throw new RuntimeException('user not instance of userclass');
+                throw new RuntimeException(sprintf('The property "%s" could not be extracted because the user extracted is not of type "%s".', $property, $source->class));
             }
 
             if (!method_exists($user, $source->getter)) {
-                throw new RuntimeException('getter not exist');
+                throw new RuntimeException(sprintf('The property "%s" could not be extracted because the getter method "%s::%s()" does not exist.', $property, $source->class, $source->getter));
             }
 
             $userValue = $user->{$source->getter}();
@@ -325,7 +319,7 @@ final class InputValueResolver implements ValueResolverInterface
 
             if (true === $source->nullify && '' === $value) {
                 if (true !== $property->getType()?->allowsNull()) {
-                    throw new PropertyIsNotNullableException($property->name);
+                    throw new HttpException(400, sprintf('The property "%s" could not be extracted because it is not nullable.', $property));
                 }
 
                 $value = null;
