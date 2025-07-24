@@ -381,9 +381,7 @@ final class InputValueResolverTest extends TestCase
         };
 
         /** @var non-empty-string $content */
-        $content = json_encode([
-            'id' => random_int(1, 10),
-        ]);
+        $content = json_encode(['time' => \time()]);
 
         $request = new Request(...[
             'server' => [
@@ -448,7 +446,7 @@ final class InputValueResolverTest extends TestCase
         $input = new class implements InputInterface {
             public function __construct(
                 #[SourceUser(self::class)] // @phpstan-ignore argument.type
-                public ?int $userId,
+                public ?int $userId = null,
             )
             {
             }
