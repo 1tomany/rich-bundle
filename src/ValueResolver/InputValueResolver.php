@@ -15,11 +15,9 @@ use OneToMany\RichBundle\Attribute\SourceRoute;
 use OneToMany\RichBundle\Attribute\SourceUser;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
-use OneToMany\RichBundle\Exception\HttpException;
-use OneToMany\RichBundle\Exception\RuntimeException;
 use OneToMany\RichBundle\Validator\UninitializedProperties;
-use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedDecodingContentFailedException;
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedContentTypeHeaderNotFoundException;
+use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedDecodingContentFailedException;
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedMappingRequestFailedException;
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedPropertyNotNullableException;
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedSecurityBundleMissingException;
@@ -44,7 +42,6 @@ use function is_a;
 use function is_array;
 use function is_scalar;
 use function method_exists;
-use function sprintf;
 use function trim;
 
 final class InputValueResolver implements ValueResolverInterface

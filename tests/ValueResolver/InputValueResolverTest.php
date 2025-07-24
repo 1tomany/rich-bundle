@@ -27,7 +27,6 @@ use Symfony\Component\PropertyInfo\Extractor\ConstructorExtractor;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
-use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Encoder\XmlEncoder;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
@@ -40,6 +39,7 @@ use Symfony\Component\Validator\Validation;
 
 use function json_encode;
 use function random_int;
+use function time;
 
 #[Group('UnitTests')]
 #[Group('ValueResolverTests')]
@@ -137,12 +137,8 @@ final class InputValueResolverTest extends TestCase
             }
         };
 
-        $id = random_int(1, 100);
-
-        $request = new Request(...[
-            'query' => [
-                'id' => $id,
-            ],
+        $request = new Request(query: [
+            'id' => random_int(1, 100),
         ]);
 
         $this->assertFalse($request->query->has('name'));
@@ -381,7 +377,7 @@ final class InputValueResolverTest extends TestCase
         };
 
         /** @var non-empty-string $content */
-        $content = json_encode(['time' => \time()]);
+        $content = json_encode(['time' => time()]);
 
         $request = new Request(...[
             'server' => [
@@ -447,8 +443,7 @@ final class InputValueResolverTest extends TestCase
             public function __construct(
                 #[SourceUser(self::class)] // @phpstan-ignore argument.type
                 public ?int $userId = null,
-            )
-            {
+            ) {
             }
 
             public function toCommand(): CommandInterface
