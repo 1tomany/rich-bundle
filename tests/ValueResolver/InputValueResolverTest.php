@@ -27,6 +27,7 @@ use Symfony\Component\PropertyInfo\Extractor\ConstructorExtractor;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Encoder\XmlEncoder;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
@@ -424,8 +425,8 @@ final class InputValueResolverTest extends TestCase
         // Arrange: Create Input Class
         $input = new class implements InputInterface {
             public function __construct(
-                #[SourceUser(self::class)] // @phpstan-ignore argument.type
-                public ?int $userId = null,
+                #[SourceUser]
+                public ?UserInterface $user = null,
             ) {
             }
 
