@@ -325,6 +325,14 @@ final class InputValueResolver implements ValueResolverInterface
             }
         }
 
+        if (\is_callable($callback = $source->callback)) {
+            if ($callback instanceof \Closure) {
+                $value = $callback($value);
+            } else {
+                $value = \call_user_func($callback, $value);
+            }
+        }
+
         $this->data->set($property->name, $value);
     }
 }
