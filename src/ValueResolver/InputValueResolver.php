@@ -12,7 +12,6 @@ use OneToMany\RichBundle\Attribute\SourceIpAddress;
 use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceRoute;
-use OneToMany\RichBundle\Attribute\SourceToken;
 use OneToMany\RichBundle\Attribute\SourceUser;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
@@ -22,9 +21,6 @@ use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedDecodingContent
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedMappingRequestFailedException;
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedPropertyNotNullableException;
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedSecurityBundleMissingException;
-use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedUserGetterMissingException;
-use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedUserIncorrectTypeException;
-use PgSql\Lob;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
@@ -44,8 +40,7 @@ use function in_array;
 use function is_a;
 use function is_array;
 use function is_callable;
-use function is_scalar;
-use function method_exists;
+use function is_string;
 use function trim;
 
 final class InputValueResolver implements ValueResolverInterface
@@ -125,7 +120,7 @@ final class InputValueResolver implements ValueResolverInterface
                     $this->extractRoute($property, $source, $name);
                 }
 
-                if ($source instanceof SourceToken) {
+                if ($source instanceof SourceUser) {
                     $this->extractUser($property, $source);
                 }
             }
@@ -236,113 +231,79 @@ final class InputValueResolver implements ValueResolverInterface
     private function extractContainer(\ReflectionProperty $property, SourceContainer $source, string $name): void
     {
         if ($this->containerBag->has($name) && !$this->data->has($property->name)) {
-            $this->appendPropertyValue($property, $source, $this->containerBag->get($name));
+            $this->appendValue($property, $source, $this->containerBag->get($name));
         }
     }
 
     private function extractContent(\ReflectionProperty $property, SourceContent $source): void
     {
-        $this->appendPropertyValue($property, $source, $this->request->getContent(false));
+        $this->appendValue($property, $source, $this->request->getContent(false));
     }
 
     private function extractFile(\ReflectionProperty $property, SourceFile $source, string $name): void
     {
         if ($this->request->files->has($name) && !$this->data->has($property->name)) {
-            $this->appendPropertyValue($property, $source, $this->request->files->get($name));
+            $this->appendValue($property, $source, $this->request->files->get($name));
         }
     }
 
     private function extractHeader(\ReflectionProperty $property, SourceHeader $source, string $name): void
     {
         if ($this->request->headers->has($name) && !$this->data->has($property->name)) {
-            $this->appendPropertyValue($property, $source, $this->request->headers->get($name));
+            $this->appendValue($property, $source, $this->request->headers->get($name));
         }
     }
 
     private function extractIpAddress(\ReflectionProperty $property, SourceIpAddress $source): void
     {
-        $this->appendPropertyValue($property, $source, $this->request->getClientIp());
+        $this->appendValue($property, $source, $this->request->getClientIp());
     }
 
     private function extractQuery(\ReflectionProperty $property, SourceQuery $source, string $name): void
     {
         if ($this->request->query->has($name) && !$this->data->has($property->name)) {
-            $this->appendPropertyValue($property, $source, $this->request->query->get($name));
+            $this->appendValue($property, $source, $this->request->query->get($name));
         }
     }
 
     private function extractRequest(\ReflectionProperty $property, SourceRequest $source, string $name): void
     {
         if ($this->content->has($name) && !$this->data->has($property->name)) {
-            $this->appendPropertyValue($property, $source, $this->content->get($name));
+            $this->appendValue($property, $source, $this->content->get($name));
         }
     }
 
     private function extractRoute(\ReflectionProperty $property, SourceRoute $source, string $name): void
     {
         if ($this->request->attributes->has($name) && !$this->data->has($property->name)) {
-            $this->appendPropertyValue($property, $source, $this->request->attributes->get($name));
+            $this->appendValue($property, $source, $this->request->attributes->get($name));
         }
     }
 
-    private function extractUser(\ReflectionProperty $property, SourceToken $source): void
+    private function extractUser(\ReflectionProperty $property, SourceUser $source): void
     {
         if (null === $this->tokenStorage) {
             throw new ResolutionFailedSecurityBundleMissingException($property->name);
         }
 
-        if ($token = $this->tokenStorage->getToken()) {
-            if ($source instanceof SourceUser) {
-                $user = $token->getUser();
-
-                if (null !== $user && null !== $source->class) {
-                    if (!is_a($source->class, $user::class, true)) {
-                        throw new ResolutionFailedUserIncorrectTypeException($property->name, $source->class);
-                    }
-
-                    if (null !== $source->getter && !method_exists($user, $source->getter)) {
-                        throw new ResolutionFailedUserGetterMissingException($property->name, $source->class, $source->getter);
-                    }
-
-                    $user = $user->{$source->getter}();
-                }
-
-                $this->appendPropertyValue($property, $source, $user);
-            } else {
-                $this->appendPropertyValue($property, $source, $token);
-            }
-        }
+        $this->appendValue($property, $source, $this->tokenStorage->getToken()?->getUser());
     }
 
-    private function appendPropertyValue(
-        \ReflectionProperty $property,
-        PropertySource $source,
-        mixed $value,
-    ): void {
-        if (true === is_scalar($value)) {
-            $value = (string) $value;
-
-            if (true === $source->trim) {
-                $value = trim($value);
-            }
-
-            if (true === $source->nullify && '' === $value) {
-                if (true !== $property->getType()?->allowsNull()) {
-                    throw new ResolutionFailedPropertyNotNullableException($property->name);
-                }
-
-                $value = null;
-            }
-        }
-
+    private function appendValue(\ReflectionProperty $property, PropertySource $source, mixed $value): void
+    {
         if (is_callable($callback = $source->callback)) {
-            if ($callback instanceof \Closure) {
-                $value = $callback($value);
-            } else {
-                $value = call_user_func($callback, $value);
-            }
+            $value = call_user_func($callback, $value);
         }
 
-        $this->data->set($property->name, $value);
+        // Trim the value if the source indicates to and it is a string
+        $value = $source->trim && is_string($value) ? trim($value) : $value;
+
+        // Ensure nullified sources support null property values
+        if ($source->nullify && !$property->getType()?->allowsNull()) {
+            throw new ResolutionFailedPropertyNotNullableException($property->name);
+        }
+
+        // Nullify empty string values, leave other types alone
+        $this->data->set($property->name, ($source->nullify && is_string($value) && empty($value)) ? null : $value);
     }
 }

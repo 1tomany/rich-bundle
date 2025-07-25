@@ -18,7 +18,7 @@ abstract readonly class PropertySource
         public mixed $callback = null,
     ) {
         if (null !== $callback && !is_callable($callback)) {
-            throw new RuntimeException('The callback parameter is not callable: ensure it references a closure, function, or public static class method.');
+            throw new RuntimeException('The callback parameter is not callable: ensure it references a closure, function, or static class method.');
         }
     }
 
