@@ -12,6 +12,7 @@ use OneToMany\RichBundle\Attribute\SourceIpAddress;
 use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceRoute;
+use OneToMany\RichBundle\Attribute\SourceToken;
 use OneToMany\RichBundle\Attribute\SourceUser;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
@@ -23,6 +24,7 @@ use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedPropertyNotNull
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedSecurityBundleMissingException;
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedUserGetterMissingException;
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedUserIncorrectTypeException;
+use PgSql\Lob;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
@@ -36,10 +38,12 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+use function call_user_func;
 use function count;
 use function in_array;
 use function is_a;
 use function is_array;
+use function is_callable;
 use function is_scalar;
 use function method_exists;
 use function trim;
@@ -121,7 +125,7 @@ final class InputValueResolver implements ValueResolverInterface
                     $this->extractRoute($property, $source, $name);
                 }
 
-                if ($source instanceof SourceUser) {
+                if ($source instanceof SourceToken) {
                     $this->extractUser($property, $source);
                 }
             }
@@ -281,27 +285,33 @@ final class InputValueResolver implements ValueResolverInterface
         }
     }
 
-    private function extractUser(\ReflectionProperty $property, SourceUser $source): void
+    private function extractUser(\ReflectionProperty $property, SourceToken $source): void
     {
         if (null === $this->tokenStorage) {
             throw new ResolutionFailedSecurityBundleMissingException($property->name);
         }
 
-        if ($user = $this->tokenStorage->getToken()?->getUser()) {
-            if (!is_a($source->class, $user::class, true)) {
-                throw new ResolutionFailedUserIncorrectTypeException($property->name, $source->class);
-            }
+        if ($token = $this->tokenStorage->getToken()) {
+            if ($source instanceof SourceUser) {
+                $user = $token->getUser();
 
-            if (!method_exists($user, $source->getter)) {
-                throw new ResolutionFailedUserGetterMissingException($property->name, $source->class, $source->getter);
-            }
+                if (null !== $user && null !== $source->class) {
+                    if (!is_a($source->class, $user::class, true)) {
+                        throw new ResolutionFailedUserIncorrectTypeException($property->name, $source->class);
+                    }
 
-            $userValue = $user->{$source->getter}();
-        } else {
-            $userValue = null;
+                    if (null !== $source->getter && !method_exists($user, $source->getter)) {
+                        throw new ResolutionFailedUserGetterMissingException($property->name, $source->class, $source->getter);
+                    }
+
+                    $user = $user->{$source->getter}();
+                }
+
+                $this->appendPropertyValue($property, $source, $user);
+            } else {
+                $this->appendPropertyValue($property, $source, $token);
+            }
         }
-
-        $this->appendPropertyValue($property, $source, $userValue);
     }
 
     private function appendPropertyValue(
@@ -325,11 +335,11 @@ final class InputValueResolver implements ValueResolverInterface
             }
         }
 
-        if (\is_callable($callback = $source->callback)) {
+        if (is_callable($callback = $source->callback)) {
             if ($callback instanceof \Closure) {
                 $value = $callback($value);
             } else {
-                $value = \call_user_func($callback, $value);
+                $value = call_user_func($callback, $value);
             }
         }
 
