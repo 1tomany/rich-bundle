@@ -194,6 +194,7 @@ use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceUser;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
@@ -202,10 +203,10 @@ use Symfony\Component\Validator\Constraints as Assert;
 final class CreateAccountInput implements InputInterface
 {
     public function __construct(
-        #[SourceUser(class: User::class)]
+        #[SourceUser]
         #[Assert\Email]
         #[Assert\Length(max: 128)]
-        private(set) public ?int $userId,
+        private(set) public ?UserInterface $user,
 
         #[SourceRequest]
         #[Assert\Length(min: 4, max: 128)]
@@ -241,7 +242,7 @@ final class CreateAccountInput implements InputInterface
     public function toCommand(): CommandInterface
     {
         return new CreateAccountCommand(...[
-            'userId' => $this->userId,
+            'user' => $this->user,
             'name' => $this->name,
             'company' => $this->company,
             'email' => $this->email,
@@ -267,26 +268,12 @@ You'll also notice some new attributes: `#[SourceUser]`, `#[SourceRequest]`, and
 - `#[SourceQuery(name: 'query')]` Fetches a parameter named `query` from the `Symfony\Component\HttpFoundation\Request::$query` bag.
 - `#[SourceRequest(name: 'user')]` Fetches a parameter named `user` from the request content. This bundle uses HTTP content negotiation via the `Content-Type` request header to attempt to determine the type of content submitted. A standard Symfony installation allows you to use `form`, `json`, and `xml` formats by default.
 - `#[SourceRoute(name: 'productId')]` Fetches a parameter named `productId` from the route.
-- `#[SourceUser(class: 'class-string<User>', getter: 'getId')]` Fetches the result of the `$getter` argument of the authenticated user. The `$class` argument should be a `class-string` of a class that implements the `Symfony\Component\Security\Core\User\UserInterface` interface. In a multi-tenant application, you could add a method to your `User` object to get the tenant ID and inject that into the input object as well:
-  ```php
-  // src/Account/Action/Input/ReadAccountInput.php
-  public function __construct(
-      #[SourceUser(class: User::class, getter: 'getAccountId')]
-      public ?int $accountId,
-  ) {
-  }
-  
-  // src/Entity/User.php
-  public function getAccountId(): ?int
-  {
-      return $this->getAccount()?->getId();
-  }
-  ```
+- `#[SourceUser]` Fetches the authenticated user and returns `null` or an instance of the `Symfony\Component\Security\Core\User\UserInterface` interface.
 - `#[PropertyIgnored]` Indicates that the value resolver should ignore this property.
 
 If a property is not explicitly ignored or sourced, the value resolver will assume it uses the `#[SourceRequest]` attribute.
 
-The `$name` argument for each attribute is optional. The value resolver will use the name of the property if a `$name` is not given. The `#[SourceIpAddress]` and `#[SourceUser]` attributes do not have a `$name` argument because their values are the results of a method call.
+The `$name` argument for each attribute is optional. The value resolver will use the name of the property if a `$name` is not given. The `name` property is ignored in the `#[SourceIpAddress]` and `#[SourceUser]` attributes because their values are the results of a method call.
 
 Sources are also chainable. This allows you to support multiple versions of an API without having to change the underlying input object. For example, the first version if your API might use a key named `email` but the second version of your API changed that to `username`. All attributes are chainable, but `#[SourceIpAddress]` and `#[SourceUser]` are not repeatable.
 
