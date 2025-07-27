@@ -3,6 +3,7 @@
 namespace OneToMany\RichBundle\Serializer;
 
 use OneToMany\DataUri\SmartFile;
+use OneToMany\RichBundle\Exception\InvalidArgumentException;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
@@ -10,6 +11,7 @@ use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use function class_exists;
 use function is_a;
 use function is_string;
+use function str_starts_with;
 
 final readonly class SmartFileDenormalizer implements DenormalizerInterface
 {
@@ -20,10 +22,18 @@ final readonly class SmartFileDenormalizer implements DenormalizerInterface
     public function denormalize(mixed $data, string $type, ?string $format = null, array $context = []): SmartFile // @phpstan-ignore-line
     {
         if ($data instanceof UploadedFile) {
+            if (!$data->isValid()) {
+                throw new InvalidArgumentException($data->getErrorMessage());
+            }
+
             $name = $data->getClientOriginalName();
         }
 
-        return \OneToMany\DataUri\parse_data($data, name: $name ?? null); // @phpstan-ignore-line
+        if (is_string($data) && !str_starts_with($data, 'data:')) {
+            return \OneToMany\DataUri\parse_text_data($data, null); // @phpstan-ignore-line
+        }
+
+        return \OneToMany\DataUri\parse_data($data, $name ?? null); // @phpstan-ignore-line
     }
 
     /**
