@@ -132,7 +132,7 @@ final class InputValueResolver implements ValueResolverInterface
                 'filter_bool' => true, 'disable_type_enforcement' => true,
             ]);
         } catch (\Throwable $e) {
-            throw new ResolutionFailedMappingRequestFailedException();
+            throw new ResolutionFailedMappingRequestFailedException($e);
         }
 
         // Ensure all input class properties are mapped
