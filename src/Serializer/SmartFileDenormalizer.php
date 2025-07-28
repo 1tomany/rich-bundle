@@ -4,6 +4,7 @@ namespace OneToMany\RichBundle\Serializer;
 
 use OneToMany\DataUri\SmartFile;
 use OneToMany\RichBundle\Exception\InvalidArgumentException;
+use OneToMany\RichBundle\Exception\LogicException;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
@@ -42,7 +43,7 @@ final readonly class SmartFileDenormalizer implements DenormalizerInterface
     public function supportsDenormalization(mixed $data, string $type, ?string $format = null, array $context = []): bool
     {
         if (!class_exists(SmartFile::class)) {
-            throw new \LogicException('The SmartFile can not be denormalized because the Data URI library is not installed. Try running "composer require 1tomany/data-uri".');
+            throw new LogicException('The SmartFile can not be denormalized because the Data URI library is not installed. Try running "composer require 1tomany/data-uri".');
         }
 
         return (is_string($data) || $data instanceof File) && is_a($type, SmartFile::class, true);
