@@ -3,13 +3,12 @@
 namespace OneToMany\RichBundle\EventListener;
 
 use OneToMany\RichBundle\Contract\Action\ResultInterface;
+use OneToMany\RichBundle\Exception\HttpException;
 use OneToMany\RichBundle\Exception\RuntimeException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Event\ViewEvent;
-use Symfony\Component\HttpKernel\Exception\NotAcceptableHttpException;
-use Symfony\Component\HttpKernel\Exception\UnsupportedMediaTypeHttpException;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 
@@ -55,7 +54,7 @@ abstract readonly class AbstractListener
 
         if (null !== $format) {
             if (!in_array($format, $this->getAcceptFormats(), true)) {
-                throw new NotAcceptableHttpException(sprintf('The server cannot respond with a media type the client will find acceptable. Acceptable media types are: "%s".', $this->flattenFormats($this->getAcceptFormats())));
+                throw new HttpException(406, sprintf('The server cannot respond with a media type the client will find acceptable. Acceptable media types are: "%s".', $this->flattenFormats($this->getAcceptFormats())));
             }
         }
 
@@ -63,7 +62,7 @@ abstract readonly class AbstractListener
 
         if (null !== $format) {
             if (!in_array($format, $this->getContentFormats(), true)) {
-                throw new UnsupportedMediaTypeHttpException(sprintf('The server cannot process content with the media type "%s". Supported content media types are: "%s".', $event->getRequest()->getMimeType($format), $this->flattenFormats($this->getContentFormats())));
+                throw new HttpException(415, sprintf('The server cannot process content with the media type "%s". Supported content media types are: "%s".', $event->getRequest()->getMimeType($format), $this->flattenFormats($this->getContentFormats())));
             }
         }
     }
