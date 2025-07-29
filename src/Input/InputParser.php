@@ -13,13 +13,18 @@ use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceRoute;
 use OneToMany\RichBundle\Attribute\SourceUser;
+use OneToMany\RichBundle\Contract\Action\InputInterface;
 use OneToMany\RichBundle\Contract\Input\InputParserInterface;
+use OneToMany\RichBundle\Validator\UninitializedProperties;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Serializer\Encoder\DecoderInterface;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
+use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
+use Symfony\Component\Validator\Exception\ValidationFailedException;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 use function call_user_func;
 use function count;
@@ -35,19 +40,21 @@ readonly class InputParser implements InputParserInterface
     public function __construct(
         private ContainerBagInterface $containerBag,
         private DecoderInterface $decoder,
+        private DenormalizerInterface $denormalizer,
+        private ValidatorInterface $validator,
         private ?TokenStorageInterface $tokenStorage = null,
     ) {
     }
 
-    public function parse(Request $request, string $type, array $defaultData = []): ParameterBag
+    public function parse(Request $request, string $type, array $defaultData = []): InputInterface
     {
         // Initialize the data source
         $inputData = new ParameterBag($defaultData);
 
-        $format = strtolower($request->getContentTypeFormat() ?? '');
+        // Decode the content based on the format
+        $format = $request->getContentTypeFormat();
 
-        // Content-Type: multipart/form-data
-        if (in_array($format, ['form'])) {
+        if (in_array($format, ['form'])) { // application/x-www-form-urlencoded or multipart/form-data
             $requestData = $request->request->all();
         } else {
             $content = trim($request->getContent());
@@ -157,7 +164,27 @@ readonly class InputParser implements InputParserInterface
             }
         }
 
-        return $inputData;
+        try {
+            /** @var InputInterface<CommandInterface> $input */
+            $input = $this->denormalizer->denormalize($inputData, $type, null, [
+                'filter_bool' => true, 'disable_type_enforcement' => true,
+            ]);
+        } catch (\Throwable $e) {
+            throw new \RuntimeException('mapping failed', previous: $e); //ResolutionFailedMappingRequestFailedException($e);
+        }
+
+        // Ensure all input class properties are mapped
+        $violations = $this->validator->validate($input, [
+            new UninitializedProperties(),
+        ]);
+
+        // Validate the input class itself
+        if ($violations->count() > 0) {
+            throw new \RuntimeException('some properties not mapped');
+            // throw new ValidationFailedException($input, $violations);
+        }
+
+        return $input;
     }
 
     private function isPropertyIgnored(\ReflectionProperty $property): bool

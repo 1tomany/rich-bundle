@@ -12,6 +12,8 @@ interface InputParserInterface
     /**
      * @param class-string<InputInterface<CommandInterface>> $type
      * @param array<string, mixed> $defaultData
+     *
+     * @return list<InputInterface<CommandInterface>>
      */
-    public function parse(Request $request, string $type, array $defaultData = []): ParameterBag;
+    public function parse(Request $request, string $type, array $defaultData = []): InputInterface;
 }
