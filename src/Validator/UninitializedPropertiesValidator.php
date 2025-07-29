@@ -21,7 +21,7 @@ final class UninitializedPropertiesValidator extends ConstraintValidator
 
         foreach (new \ReflectionClass($value)->getProperties() as $property) {
             if (!$property->isInitialized($value)) {
-                $this->context->buildViolation($constraint->message)->atPath($property->name)->addViolation();
+                $this->context->buildViolation($constraint->message)->atPath($property->getName())->addViolation();
             }
         }
     }
