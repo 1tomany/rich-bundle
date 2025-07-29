@@ -20,6 +20,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBag;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
+use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PropertyInfo\Extractor\ConstructorExtractor;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
@@ -368,22 +369,55 @@ final class InputParserTest extends TestCase
         };
 
         $query = [
-            'id' => random_int(1, 100),
+            'id' => 10,
             'age' => null,
             'name' => '',
             'color' => ' ',
         ];
 
-        $request = new Request(query: $query);
-
-        $input = $this->createInputParser()->parse($request, $class::class);
+        $input = $this->createInputParser()->parse(new Request(query: $query), $class::class);
 
         $this->assertInstanceOf($class::class, $input);
-        $this->assertEquals($query['id'], $input->id);
-
         $this->assertNull($input->age);
         $this->assertNull($input->name);
         $this->assertNull($input->color);
+    }
+
+    public function testParsingRequestDoesNotOverwriteDefaultData(): void
+    {
+        $defaultData = [
+            'age' => random_int(1, 100),
+        ];
+
+        $class = new class implements InputInterface {
+            #[SourceRequest]
+            public string $name;
+
+            #[SourceRequest]
+            public int $age;
+
+            public function toCommand(): CommandInterface
+            {
+                throw new \Exception('Not implemented!');
+            }
+        };
+
+        $requestData = [
+            'name' => 'Vic Cherubini',
+            'age' => random_int(101, 200),
+        ];
+
+        $this->assertNotEquals($defaultData['age'], $requestData['age']);
+
+        $request = new Request(request: $requestData, server: [
+            'CONTENT_TYPE' => 'multipart/form-data',
+        ]);
+
+        $input = $this->createInputParser()->parse($request, $class::class, $defaultData);
+
+        $this->assertInstanceOf($class::class, $input);
+        $this->assertEquals($defaultData['age'], $input->age);
+        $this->assertEquals($requestData['name'], $input->name);
     }
 
     public function testParsingSourceContent(): void
