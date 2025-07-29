@@ -3,8 +3,11 @@
 namespace OneToMany\RichBundle\Tests\Input;
 
 use OneToMany\RichBundle\Attribute\PropertyIgnored;
+use OneToMany\RichBundle\Attribute\SourceContent;
+use OneToMany\RichBundle\Attribute\SourceHeader;
 use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
+use OneToMany\RichBundle\Attribute\SourceUser;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
 use OneToMany\RichBundle\Contract\Input\InputParserInterface;
@@ -22,6 +25,7 @@ use Symfony\Component\PropertyInfo\Extractor\ConstructorExtractor;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Encoder\XmlEncoder;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
@@ -31,6 +35,10 @@ use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validation;
+
+use function json_encode;
+use function random_int;
+use function time;
 
 #[Group('UnitTests')]
 #[Group('InputTests')]
@@ -316,6 +324,98 @@ final class InputParserTest extends TestCase
         $this->assertNull($input->age);
         $this->assertNull($input->name);
         $this->assertNull($input->color);
+    }
+
+    public function testParsingSourceContent(): void
+    {
+        $class = new class implements InputInterface {
+            #[SourceContent]
+            public string $content;
+
+            public function toCommand(): CommandInterface
+            {
+                throw new \Exception('Not implemented!');
+            }
+        };
+
+        /** @var non-empty-string $content */
+        $content = json_encode(['time' => time()]);
+        $request = new Request(server: ['CONTENT_TYPE' => 'application/json'], content: $content);
+
+        $input = $this->createInputParser()->parse($request, $class::class);
+
+        $this->assertInstanceOf($class::class, $input);
+        $this->assertEquals($content, $input->content);
+    }
+
+    public function testParsingSourceHeader(): void
+    {
+        $faker = \Faker\Factory::create();
+
+        $class = new class implements InputInterface {
+            #[SourceHeader(name: 'ACCEPT')]
+            public ?string $accept;
+
+            #[SourceHeader(name: 'content-type')]
+            public ?string $type;
+
+            #[SourceHeader(name: 'X-Custom-Id')]
+            public ?string $customId;
+
+            public function toCommand(): CommandInterface
+            {
+                throw new \Exception('Not implemented!');
+            }
+        };
+
+        $request = new Request(server: [
+            'HTTP_ACCEPT' => $faker->mimeType(),
+            'CONTENT_TYPE' => $faker->mimeType(),
+            'HTTP_X_CUSTOM_ID' => $faker->sha256(),
+        ]);
+
+        $input = $this->createInputParser()->parse($request, $class::class);
+
+        $this->assertInstanceOf($class::class, $input);
+
+        $headers = $request->headers->all();
+        $this->assertEquals($headers['accept'][0], $input->accept);
+        $this->assertEquals($headers['content-type'][0], $input->type);
+        $this->assertEquals($headers['x-custom-id'][0], $input->customId);
+    }
+
+    public function testParsingSourceUserRequiresSymfonySecurityBundle(): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessageMatches('/Symfony Security Bundle is not installed/');
+
+        $class = new class implements InputInterface {
+            public function __construct(
+                #[SourceUser]
+                public ?UserInterface $user = null,
+            ) {
+            }
+
+            public function toCommand(): CommandInterface
+            {
+                return new class implements CommandInterface {};
+            }
+        };
+
+        $this->createInputParser()->parse(new Request(), $class::class);
+
+        /*
+        $valueResolver = new InputValueResolver(new ContainerBag(new Container(null)), new Serializer([], [], []), Validation::createValidator());
+
+        // Assert: $tokenStorage Property Is Null
+        $refProperty = new \ReflectionProperty($valueResolver, 'tokenStorage');
+        $refProperty->setAccessible(true);
+
+        $this->assertNull($refProperty->getValue($valueResolver));
+
+        // Assert: Resolving SourceUser Property Requires TokenStorage
+        $valueResolver->resolve(new Request(), $this->createArgument($input::class));
+        */
     }
 
     /**

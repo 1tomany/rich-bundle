@@ -38,9 +38,7 @@ use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validation;
 
-use function json_encode;
-use function random_int;
-use function time;
+
 
 #[Group('UnitTests')]
 #[Group('ValueResolverTests')]
@@ -73,106 +71,11 @@ final class InputValueResolverTest extends TestCase
 
 
 
-    public function testResolvingSourceContent(): void
-    {
-        $input = new class implements InputInterface {
-            #[SourceContent]
-            public string $content;
 
-            public function toCommand(): CommandInterface
-            {
-                return new class implements CommandInterface {};
-            }
-        };
 
-        /** @var non-empty-string $content */
-        $content = json_encode(['time' => time()]);
 
-        $request = new Request(...[
-            'server' => [
-                'HTTP_CONTENT_TYPE' => 'application/json',
-            ],
-            'content' => $content,
-        ]);
 
-        $inputs = $this->createValueResolver()->resolve(
-            $request, $this->createArgument($input::class)
-        );
 
-        $this->assertInstanceOf($input::class, $inputs[0]);
-        $this->assertEquals($content, $inputs[0]->content);
-    }
-
-    public function testResolvingSourceHeader(): void
-    {
-        $faker = \Faker\Factory::create();
-
-        $input = new class implements InputInterface {
-            #[SourceHeader(name: 'ACCEPT')]
-            public ?string $accept;
-
-            #[SourceHeader(name: 'content-type')]
-            public ?string $type;
-
-            #[SourceHeader(name: 'X-Custom-Id')]
-            public ?string $customId;
-
-            public function toCommand(): CommandInterface
-            {
-                return new class implements CommandInterface {};
-            }
-        };
-
-        $request = new Request(...[
-            'server' => [
-                'HTTP_ACCEPT' => $faker->mimeType(),
-                'HTTP_CONTENT_TYPE' => $faker->mimeType(),
-                'HTTP_X_CUSTOM_ID' => $faker->sha256(),
-            ],
-        ]);
-
-        $inputs = $this->createValueResolver()->resolve(
-            $request, $this->createArgument($input::class)
-        );
-
-        $this->assertInstanceOf($input::class, $inputs[0]);
-
-        $headers = $request->headers->all();
-        $this->assertEquals($headers['accept'][0], $inputs[0]->accept);
-        $this->assertEquals($headers['content-type'][0], $inputs[0]->type);
-        $this->assertEquals($headers['x-custom-id'][0], $inputs[0]->customId);
-    }
-
-    public function testResolvingSourceUserRequiresSymfonySecurityBundle(): void
-    {
-        $this->expectException(ResolutionFailedSecurityBundleMissingException::class);
-
-        // Arrange: Create Input Class
-        $input = new class implements InputInterface {
-            public function __construct(
-                #[SourceUser]
-                public ?UserInterface $user = null,
-            ) {
-            }
-
-            public function toCommand(): CommandInterface
-            {
-                return new class implements CommandInterface {};
-            }
-        };
-
-        // Arrange: Create Value Resolver Without TokenStorageInterface
-        $valueResolver = new InputValueResolver(new ContainerBag(new Container(null)), new Serializer([], [], []), Validation::createValidator());
-
-        // Assert: $tokenStorage Property Is Null
-        $refProperty = new \ReflectionProperty($valueResolver, 'tokenStorage');
-        $refProperty->setAccessible(true);
-
-        $this->assertNull($refProperty->getValue($valueResolver));
-
-        // Assert: Resolving SourceUser Property Requires TokenStorage
-        $valueResolver->resolve(new Request(), $this->createArgument($input::class));
-    }
 
     public function testResolverDoesNotAttemptToDeserializeEmptyRequestContent(): void
     {
