@@ -12,6 +12,8 @@ use Symfony\Component\HttpFoundation\RequestStack;
 
 use function is_string;
 use function is_subclass_of;
+use function iterator_to_array;
+use function sprintf;
 
 /**
  * @template C of CommandInterface
@@ -33,12 +35,16 @@ readonly class InputDataMapper implements DataMapperInterface
             return;
         }
 
-        if ($viewData instanceof InputInterface) {
-            /** @var FormInterface[] $forms */
-            $forms = \iterator_to_array($forms);
+        if (!$viewData instanceof InputInterface) {
+            throw new RuntimeException(sprintf('Mapping the data failed because the data mapper requires an object of type "%s".', InputInterface::class));
+        }
 
-            foreach (new \ReflectionClass($viewData)->getProperties() as $property) {
-                $forms[$property->getName()] = $property->getValue($viewData);
+        /** @var FormInterface[] $forms */
+        $forms = iterator_to_array($forms);
+
+        foreach (new \ReflectionClass($viewData)->getProperties() as $property) {
+            if ($property->isInitialized($viewData) && isset($forms[$property->getName()])) {
+                $forms[$property->getName()]->setData($property->getValue($viewData));
             }
         }
     }
