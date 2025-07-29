@@ -39,9 +39,6 @@ use function is_string;
 use function sprintf;
 use function trim;
 
-/**
- * @template C of CommandInterface
- */
 readonly class InputParser implements InputParserInterface
 {
     private ParameterBag $data;
@@ -56,6 +53,8 @@ readonly class InputParser implements InputParserInterface
     }
 
     /**
+     * @template C of CommandInterface
+     *
      * @return InputInterface<C>
      */
     public function parse(Request $request, string $type, array $defaultData = []): InputInterface

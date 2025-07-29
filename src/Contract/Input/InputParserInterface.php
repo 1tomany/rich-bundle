@@ -6,12 +6,11 @@ use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
 use Symfony\Component\HttpFoundation\Request;
 
-/**
- * @template C of CommandInterface
- */
 interface InputParserInterface
 {
     /**
+     * @template C of CommandInterface
+     *
      * @param class-string<InputInterface<C>> $type
      * @param array<string, mixed> $defaultData
      *
