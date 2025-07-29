@@ -44,7 +44,7 @@ final class InputParserTest extends TestCase
         {
             public function toCommand(): CommandInterface
             {
-                throw new \RuntimeException('Not implemented!');
+                throw new \Exception('Not implemented!');
             }
         };
 
@@ -62,13 +62,6 @@ final class InputParserTest extends TestCase
             new BackedEnumNormalizer(),
             new DateTimeNormalizer(),
             new ArrayDenormalizer(),
-        ];
-
-        $typeExtractors = [
-            new ReflectionExtractor(),
-            new ConstructorExtractor([
-                new PhpDocExtractor(),
-            ]),
         ];
 
         $normalizers[] = new ObjectNormalizer(null, null, null, new PropertyInfoExtractor([], [
