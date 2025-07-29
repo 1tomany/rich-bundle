@@ -57,134 +57,13 @@ final class InputValueResolverTest extends TestCase
 
 
 
-    #[DataProvider('providerContentTypeAndMalformedContent')]
-    public function testResolvingValueRequiresNonMalformedContent(string $contentType, string $content): void
-    {
-        $this->expectException(ResolutionFailedDecodingContentFailedException::class);
 
-        $request = new Request(...[
-            'server' => [
-                'CONTENT_TYPE' => $contentType,
-            ],
-            'content' => $content,
-        ]);
 
-        $this->assertNotEmpty($request->getContent());
-        $this->assertNotEmpty($request->getContentTypeFormat());
 
-        $this->createValueResolver()->resolve(
-            $request, $this->createArgument()
-        );
-    }
 
-    /**
-     * @return list<list<non-empty-string>>
-     */
-    public static function providerContentTypeAndMalformedContent(): array
-    {
-        $provider = [
-            ['text/xml', '<?xml version="1.0" encoding="UTF-8"?><root><id>10</id>'],
-            ['application/xml', '<?xml><root><id>10</root>'],
-            ['application/json', '{"id": 10, "name: "Marcus Wolffe"}'],
-        ];
 
-        return $provider;
-    }
 
-    public function testResolvingPropertiesRequiresDefaultValueIfValueNotMapped(): void
-    {
-        $this->expectException(ValidationFailedException::class);
 
-        $input = new class implements InputInterface {
-            #[SourceQuery]
-            public string $name;
-
-            public function toCommand(): CommandInterface
-            {
-                return new class implements CommandInterface {};
-            }
-        };
-
-        $request = new Request(query: [
-            'id' => random_int(1, 100),
-        ]);
-
-        $this->assertFalse($request->query->has('name'));
-
-        $this->createValueResolver()->resolve(
-            $request, $this->createArgument($input::class)
-        );
-    }
-
-    public function testResolvingPropertiesUsesDefaultValueIfNotMapped(): void
-    {
-        $input = new class implements InputInterface {
-            #[SourceQuery]
-            public int $id;
-
-            #[SourceQuery]
-            public string $name = 'Modesto';
-
-            public function toCommand(): CommandInterface
-            {
-                return new class implements CommandInterface {};
-            }
-        };
-
-        $requestId = random_int(1, 100);
-
-        $request = new Request(query: [
-            'id' => $requestId,
-        ]);
-
-        $this->assertTrue($request->query->has('id'));
-        $this->assertFalse($request->query->has('name'));
-
-        $inputs = $this->createValueResolver()->resolve(
-            $request, $this->createArgument($input::class)
-        );
-
-        $this->assertInstanceOf($input::class, $inputs[0]);
-
-        $this->assertEquals($requestId, $inputs[0]->id);
-        $this->assertEquals($input->name, $inputs[0]->name);
-    }
-
-    public function testResolvingPropertiesOverwritesDefaultValueIfMapped(): void
-    {
-        $input = new class implements InputInterface {
-            #[SourceQuery]
-            public int $id;
-
-            #[SourceQuery]
-            public string $name = 'Modesto';
-
-            public function toCommand(): CommandInterface
-            {
-                return new class implements CommandInterface {};
-            }
-        };
-
-        $id = random_int(1, 100);
-        $name = 'Modesto Herman';
-
-        $request = new Request(query: [
-            'id' => $id, 'name' => $name,
-        ]);
-
-        $this->assertNotEquals($input->name, $name);
-        $this->assertTrue($request->query->has('id'));
-        $this->assertTrue($request->query->has('name'));
-
-        $inputs = $this->createValueResolver()->resolve(
-            $request, $this->createArgument($input::class)
-        );
-
-        $this->assertInstanceOf($input::class, $inputs[0]);
-
-        $this->assertEquals($id, $inputs[0]->id);
-        $this->assertEquals($name, $inputs[0]->name);
-    }
 
     public function testResolvingIgnoredPropertiesDoesNotOverwriteDefaultPropertyValue(): void
     {

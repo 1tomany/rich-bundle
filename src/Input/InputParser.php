@@ -82,7 +82,7 @@ readonly class InputParser implements InputParserInterface
                 }
 
                 if (!is_array($requestData ?? null) || (($e ?? null) instanceof \Throwable)) {
-                    throw new HttpException(400, sprintf('Parsing the request failed because the content could not be decoded as "%s".', $format), previous: ($e ?? null));
+                    throw HttpException::create(400, sprintf('Parsing the request failed because the content could not be decoded as "%s".', $format), previous: ($e ?? null));
                 }
             }
         }
