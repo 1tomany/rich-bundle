@@ -55,24 +55,7 @@ final class InputValueResolverTest extends TestCase
         $this->assertCount(0, $arguments);
     }
 
-    public function testResolvingValueRequiresValidFormatAndDecoder(): void
-    {
-        $this->expectException(ResolutionFailedDecodingContentFailedException::class);
 
-        $request = new Request(...[
-            'server' => [
-                'CONTENT_TYPE' => 'text/plain',
-            ],
-            'content' => 'Pipe|delmited|format',
-        ]);
-
-        $this->assertNotEmpty($request->getContent());
-        $this->assertNotEmpty($request->getContentTypeFormat());
-
-        $this->createValueResolver()->resolve(
-            $request, $this->createArgument()
-        );
-    }
 
     #[DataProvider('providerContentTypeAndMalformedContent')]
     public function testResolvingValueRequiresNonMalformedContent(string $contentType, string $content): void

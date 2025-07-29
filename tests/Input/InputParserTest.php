@@ -40,15 +40,24 @@ final class InputParserTest extends TestCase
         $request = new Request(content: '{"id": 10}');
         $this->assertNotEmpty($request->getContent());
 
-        $input = new class implements InputInterface
-        {
-            public function toCommand(): CommandInterface
-            {
-                throw new \Exception('Not implemented!');
-            }
-        };
+        $this->createInputParser()->parse($request, InputInterface::class);
+    }
 
-        $this->createInputParser()->parse($request, $input::class);
+    public function testParsingRequestRequiresValidFormatAndDecoder(): void
+    {
+        $this->expectExceptionObject(HttpException::create(400, 'Parsing the request failed because the content could not be decoded as "txt".'));
+
+        $request = new Request(...[
+            'server' => [
+                'CONTENT_TYPE' => 'text/plain',
+            ],
+            'content' => 'Pipe|delmited|format',
+        ]);
+
+        $this->assertNotEmpty($request->getContent());
+        $this->assertNotEmpty($request->getContentTypeFormat());
+
+        $this->createInputParser()->parse($request, InputInterface::class);
     }
 
     /**
