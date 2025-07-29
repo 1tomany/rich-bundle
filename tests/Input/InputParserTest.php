@@ -261,6 +261,26 @@ final class InputParserTest extends TestCase
         $this->createInputParser()->parse(new Request(query: ['name' => ' ']), $class::class);
     }
 
+    public function testParsingRequestDoesNotNullifyEmptyIntegerProperties(): void
+    {
+        $class = new class implements InputInterface {
+            #[SourceQuery(nullify: true)]
+            public ?int $id;
+
+            public function toCommand(): CommandInterface
+            {
+                throw new \Exception('Not implemented!');
+            }
+        };
+
+        $request = new Request(query: ['id' => 0]);
+
+        $input = $this->createInputParser()->parse($request, $class::class);
+
+        $this->assertInstanceOf($class::class, $input);
+        $this->assertSame(0, $input->id);
+    }
+
     public function testParsingRequestNullifiesNullablePropertiesIfValueIsEmptyString(): void
     {
         $class = new class implements InputInterface {
