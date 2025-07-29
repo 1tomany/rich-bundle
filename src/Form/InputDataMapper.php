@@ -8,7 +8,6 @@ use OneToMany\RichBundle\Contract\Input\InputParserInterface;
 use OneToMany\RichBundle\Exception\RuntimeException;
 use Symfony\Component\Form\DataMapperInterface;
 use Symfony\Component\Form\FormInterface;
-use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 use function is_string;
@@ -43,12 +42,8 @@ readonly class InputDataMapper implements DataMapperInterface
 
         $formData = [];
 
-        foreach ($forms as $key => $form) {
-            if (!is_string($key)) {
-                continue;
-            }
-
-            $formData[$key] = $form->getData();
+        foreach ($forms as $form) {
+            $formData[$form->getName()] = $form->getData();
         }
 
         if (!isset($form) || (null === $type = $this->getDataClass($form))) {
