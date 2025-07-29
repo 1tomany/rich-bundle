@@ -4,6 +4,9 @@ namespace OneToMany\RichBundle\EventListener;
 
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 
+use function bin2hex;
+use function random_bytes;
+
 readonly class RequestListener
 {
     public const string REQUEST_ID_KEY = '_rich_request_id';
