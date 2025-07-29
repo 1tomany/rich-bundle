@@ -15,9 +15,6 @@ use function is_subclass_of;
 use function iterator_to_array;
 use function sprintf;
 
-/**
- * @template C of CommandInterface
- */
 readonly class InputDataMapper implements DataMapperInterface
 {
     public function __construct(
@@ -27,7 +24,7 @@ readonly class InputDataMapper implements DataMapperInterface
     }
 
     /**
-     * @param ?InputInterface<C> $viewData
+     * @param ?InputInterface<CommandInterface> $viewData
      */
     public function mapDataToForms(mixed $viewData, \Traversable $forms): void
     {
@@ -50,7 +47,7 @@ readonly class InputDataMapper implements DataMapperInterface
     }
 
     /**
-     * @param-out InputInterface<C> $viewData
+     * @param-out InputInterface<CommandInterface> $viewData
      */
     public function mapFormsToData(\Traversable $forms, mixed &$viewData): void
     {
@@ -72,7 +69,7 @@ readonly class InputDataMapper implements DataMapperInterface
     }
 
     /**
-     * @return ?class-string<InputInterface<C>>
+     * @return ?class-string<InputInterface<CommandInterface>>
      */
     private function getDataClass(FormInterface $form): ?string
     {
