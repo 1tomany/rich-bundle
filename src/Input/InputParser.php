@@ -23,7 +23,6 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 use Symfony\Component\Serializer\Encoder\DecoderInterface;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
-use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 use function call_user_func;
@@ -32,7 +31,6 @@ use function in_array;
 use function is_array;
 use function is_callable;
 use function is_string;
-use function strtolower;
 use function trim;
 
 readonly class InputParser implements InputParserInterface
