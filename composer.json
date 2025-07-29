@@ -1,4 +1,5 @@
 {
+    "version": "999.999.999",
     "name": "1tomany/rich-bundle",
     "description": "Symfony bundle that provides easy scaffolding to build RICH applications",
     "license": "MIT",
