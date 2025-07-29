@@ -15,11 +15,20 @@ use OneToMany\RichBundle\Attribute\SourceRoute;
 use OneToMany\RichBundle\Attribute\SourceUser;
 use OneToMany\RichBundle\Contract\Input\InputParserInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\ParameterBag;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Serializer\Encoder\DecoderInterface;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
+
+use function call_user_func;
+use function count;
+use function in_array;
+use function is_array;
+use function is_callable;
+use function is_string;
+use function strtolower;
+use function trim;
 
 readonly class InputParser implements InputParserInterface
 {
@@ -35,17 +44,17 @@ readonly class InputParser implements InputParserInterface
         // Initialize the data source
         $inputData = new ParameterBag($defaultData);
 
-        $format = \strtolower($request->getContentTypeFormat() ?? '');
+        $format = strtolower($request->getContentTypeFormat() ?? '');
 
         // Content-Type: multipart/form-data
-        if (\in_array($format, ['form'])) {
+        if (in_array($format, ['form'])) {
             $requestData = $request->request->all();
         } else {
-            $content = \trim($request->getContent());
+            $content = trim($request->getContent());
 
             if (!$format) {
                 if (!empty($content)) {
-                    throw new \RuntimeException('no content-type header'); //ResolutionFailedContentTypeHeaderNotFoundException();
+                    throw new \RuntimeException('no content-type header'); // ResolutionFailedContentTypeHeaderNotFoundException();
                 }
             }
 
@@ -54,8 +63,8 @@ readonly class InputParser implements InputParserInterface
             } catch (SerializerExceptionInterface $e) {
             }
 
-            if (!\is_array($requestData ?? null) || (($e ?? null) instanceof \Throwable)) {
-                throw new \RuntimeException('no data', previous: ($e ?? null)); //ResolutionFailedDecodingContentFailedException($format, $e ?? null);
+            if (!is_array($requestData ?? null) || (($e ?? null) instanceof \Throwable)) {
+                throw new \RuntimeException('no data', previous: ($e ?? null)); // ResolutionFailedDecodingContentFailedException($format, $e ?? null);
             }
         }
 
@@ -118,7 +127,7 @@ readonly class InputParser implements InputParserInterface
                 }
 
                 if ($source instanceof SourceRoute) {
-                    if (true === \is_array($request->attributes->get('_route_params'))) {
+                    if (true === is_array($request->attributes->get('_route_params'))) {
                         $value = $request->attributes->get('_route_params')[$name] ?? null;
                     }
                 }
@@ -131,20 +140,20 @@ readonly class InputParser implements InputParserInterface
                     $value = $this->tokenStorage->getToken()?->getUser();
                 }
 
-                if (\is_callable($callback = $source->callback)) {
-                    $value = \call_user_func($callback, $value);
+                if (is_callable($callback = $source->callback)) {
+                    $value = call_user_func($callback, $value);
                 }
 
                 // Trim the value if the source indicates to and it is a string
-                $value = $source->trim && \is_string($value) ? \trim($value) : $value;
+                $value = $source->trim && is_string($value) ? trim($value) : $value;
 
                 // Ensure nullified sources support null property values
                 if ($source->nullify && !$property->getType()?->allowsNull()) {
-                    throw new \RuntimeException('property not nullable'); //ResolutionFailedPropertyNotNullableException($property->name);
+                    throw new \RuntimeException('property not nullable'); // ResolutionFailedPropertyNotNullableException($property->name);
                 }
 
                 // Nullify empty string values, leave other types alone
-                $inputData->set($property->getName(), ($source->nullify && \is_string($value) && empty($value)) ? null : $value);
+                $inputData->set($property->getName(), ($source->nullify && is_string($value) && empty($value)) ? null : $value);
             }
         }
 
@@ -153,7 +162,7 @@ readonly class InputParser implements InputParserInterface
 
     private function isPropertyIgnored(\ReflectionProperty $property): bool
     {
-        return 0 !== \count($property->getAttributes(PropertyIgnored::class));
+        return 0 !== count($property->getAttributes(PropertyIgnored::class));
     }
 
     /**
