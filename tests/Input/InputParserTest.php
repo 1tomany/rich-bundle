@@ -214,6 +214,28 @@ final class InputParserTest extends TestCase
         $this->assertEquals($class->name, $input->name);
     }
 
+    public function testParsingRequestAllowsSourceToUseDifferentNameThanPropertyName(): void
+    {
+        $class = new class implements InputInterface {
+            #[SourceQuery(name: 'userId')]
+            public int $id;
+
+            public function toCommand(): CommandInterface
+            {
+                throw new \Exception('Not implemented!');
+            }
+        };
+
+        $query = [
+            'userId' => random_int(1, 100),
+        ];
+
+        $input = $this->createInputParser()->parse(new Request($query), $class::class);
+
+        $this->assertInstanceOf($class::class, $input);
+        $this->assertEquals($query['userId'], $input->id);
+    }
+
     public function testParsingRequestTrimsNonNullScalarValues(): void
     {
         $class = new class implements InputInterface {
@@ -266,7 +288,7 @@ final class InputParserTest extends TestCase
         $this->assertEquals($query['notes'], $input->notes);
     }
 
-    public function testParsingRequestRequiresPropertiesToAllowNullsIfNullable(): void
+    public function testParsingRequestRequiresPropertiesToAllowNullsIfNullified(): void
     {
         $this->expectExceptionObject(HttpException::create(400, 'Parsing the request failed because the property "name" is not nullable.'));
 
@@ -287,7 +309,7 @@ final class InputParserTest extends TestCase
     {
         $class = new class implements InputInterface {
             #[SourceQuery(nullify: true)]
-            public ?int $id;
+            public ?int $uId;
 
             public function toCommand(): CommandInterface
             {
@@ -295,9 +317,11 @@ final class InputParserTest extends TestCase
             }
         };
 
-        $input = $this->createInputParser()->parse(new Request(['id' => 0]), $class::class);
+        $query = ['uId' => 0];
+        $input = $this->createInputParser()->parse(new Request($query), $class::class);
 
-        $this->assertSame(0, $input->id);
+        $this->assertInstanceOf($class::class, $input);
+        $this->assertSame($query['uId'], $input->uId);
     }
 
     public function testParsingRequestNullifiesNullablePropertiesIfValueIsEmptyString(): void
@@ -373,8 +397,8 @@ final class InputParserTest extends TestCase
             #[SourceHeader(name: 'content-type')]
             public ?string $type;
 
-            #[SourceHeader(name: 'X-Custom-Id')]
-            public ?string $customId;
+            #[SourceHeader(name: 'x-user')]
+            public ?string $userId;
 
             public function toCommand(): CommandInterface
             {
@@ -382,20 +406,18 @@ final class InputParserTest extends TestCase
             }
         };
 
-        $request = new Request(server: [
+        $server = [
             'HTTP_ACCEPT' => $faker->mimeType(),
             'CONTENT_TYPE' => $faker->mimeType(),
-            'HTTP_X_CUSTOM_ID' => $faker->sha256(),
-        ]);
+            'HTTP_X_USER' => $faker->sha256(),
+        ];
 
-        $input = $this->createInputParser()->parse($request, $class::class);
+        $input = $this->createInputParser()->parse(new Request(server: $server), $class::class);
 
         $this->assertInstanceOf($class::class, $input);
-
-        $headers = $request->headers->all();
-        $this->assertEquals($headers['accept'][0], $input->accept);
-        $this->assertEquals($headers['content-type'][0], $input->type);
-        $this->assertEquals($headers['x-custom-id'][0], $input->customId);
+        $this->assertEquals($server['HTTP_ACCEPT'], $input->accept);
+        $this->assertEquals($server['CONTENT_TYPE'], $input->type);
+        $this->assertEquals($server['HTTP_X_USER'], $input->userId);
     }
 
     public function testParsingSourceUserRequiresSymfonySecurityBundle(): void
@@ -419,7 +441,7 @@ final class InputParserTest extends TestCase
         $this->createInputParser()->parse(new Request(), $class::class);
     }
 
-    public function testParsingSourceRequest(): void
+    public function testParsingSourceRequestUsingFormData(): void
     {
         $class = new class implements InputInterface {
             #[SourceRequest]
@@ -442,6 +464,36 @@ final class InputParserTest extends TestCase
         $request = new Request(request: $data, server: [
             'CONTENT_TYPE' => 'multipart/form-data',
         ]);
+
+        $input = $this->createInputParser()->parse($request, $class::class);
+
+        $this->assertInstanceOf($class::class, $input);
+        $this->assertEquals($data['name'], $input->name);
+        $this->assertEquals($data['email'], $input->email);
+    }
+
+    public function testParsingSourceRequestUsingJsonData(): void
+    {
+        $class = new class implements InputInterface {
+            #[SourceRequest]
+            public string $name;
+
+            #[SourceRequest]
+            public string $email;
+
+            public function toCommand(): CommandInterface
+            {
+                throw new \Exception('Not implemented!');
+            }
+        };
+
+        $data = [
+            'name' => 'Vic Cherubini',
+            'email' => 'vcherubini@gmail.com',
+        ];
+
+        $request = new Request(content: (string) json_encode($data));
+        $request->headers->set('Content-Type', 'application/json');
 
         $input = $this->createInputParser()->parse($request, $class::class);
 

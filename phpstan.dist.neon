@@ -4,7 +4,4 @@ parameters:
         - ./src/
         - ./tests/
 
-    excludePaths:
-        - ./tests/ValueResolver/
-
     treatPhpDocTypesAsCertain: false
