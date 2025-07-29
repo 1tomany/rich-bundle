@@ -67,112 +67,11 @@ final class InputValueResolverTest extends TestCase
 
 
 
-    public function testTrimmingNonNullScalarValues(): void
-    {
-        $input = new class implements InputInterface {
-            #[SourceQuery(trim: true)]
-            public int $id;
 
-            #[SourceQuery(trim: true)]
-            public string $name;
 
-            #[SourceQuery(trim: true)]
-            public \DateTimeImmutable $dob;
 
-            #[PropertyIgnored]
-            public string $birthday {
-                get => $this->dob->format('Y-m-d');
-            }
 
-            public function toCommand(): CommandInterface
-            {
-                return new class implements CommandInterface {};
-            }
-        };
 
-        $id = random_int(1, 100);
-        $name = 'Vic Cherubini';
-        $dob = '1984-08-25';
-
-        $request = new Request(query: [
-            'id' => " {$id} ",
-            'name' => " {$name} ",
-            'dob' => " {$dob} ",
-        ]);
-
-        $inputs = $this->createValueResolver()->resolve(
-            $request, $this->createArgument($input::class)
-        );
-
-        $this->assertInstanceOf($input::class, $inputs[0]);
-
-        $this->assertEquals($id, $inputs[0]->id);
-        $this->assertEquals($name, $inputs[0]->name);
-        $this->assertEquals($dob, $inputs[0]->birthday);
-    }
-
-    public function testResolvingPropertiesRequiresThemToAllowNullsIfNullable(): void
-    {
-        $this->expectException(ResolutionFailedPropertyNotNullableException::class);
-
-        $input = new class implements InputInterface {
-            #[SourceQuery(nullify: true)]
-            public string $name;
-
-            public function toCommand(): CommandInterface
-            {
-                return new class implements CommandInterface {};
-            }
-        };
-
-        $request = new Request(query: ['name' => ' ']);
-
-        $this->createValueResolver()->resolve(
-            $request, $this->createArgument($input::class)
-        );
-    }
-
-    public function testResolvingNullablePropertiesNullifiesThemIfValueIsEmptyString(): void
-    {
-        $input = new class implements InputInterface {
-            #[SourceQuery]
-            public int $id;
-
-            #[SourceQuery(nullify: true)]
-            public ?int $age;
-
-            #[SourceQuery(nullify: true)]
-            public ?string $name;
-
-            #[SourceQuery(nullify: true)]
-            public ?string $color;
-
-            public function toCommand(): CommandInterface
-            {
-                return new class implements CommandInterface {};
-            }
-        };
-
-        $id = random_int(1, 100);
-
-        $request = new Request(query: [
-            'id' => $id,
-            'age' => null,
-            'name' => '',
-            'color' => '  ',
-        ]);
-
-        $inputs = $this->createValueResolver()->resolve(
-            $request, $this->createArgument($input::class)
-        );
-
-        $this->assertInstanceOf($input::class, $inputs[0]);
-
-        $this->assertEquals($id, $inputs[0]->id);
-        $this->assertNull($inputs[0]->age);
-        $this->assertNull($inputs[0]->name);
-        $this->assertNull($inputs[0]->color);
-    }
 
     public function testResolvingSourceContent(): void
     {

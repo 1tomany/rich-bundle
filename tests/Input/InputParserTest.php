@@ -4,10 +4,12 @@ namespace OneToMany\RichBundle\Tests\Input;
 
 use OneToMany\RichBundle\Attribute\PropertyIgnored;
 use OneToMany\RichBundle\Attribute\SourceQuery;
+use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
 use OneToMany\RichBundle\Contract\Input\InputParserInterface;
 use OneToMany\RichBundle\Exception\HttpException;
+use OneToMany\RichBundle\Exception\LogicException;
 use OneToMany\RichBundle\Input\InputParser;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -20,9 +22,6 @@ use Symfony\Component\PropertyInfo\Extractor\ConstructorExtractor;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
-use Symfony\Component\Serializer\Encoder\ChainDecoder;
-use Symfony\Component\Serializer\Encoder\JsonDecode;
-use Symfony\Component\Serializer\Encoder\JsonEncode;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Encoder\XmlEncoder;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
@@ -77,11 +76,25 @@ final class InputParserTest extends TestCase
         $this->createInputParser()->parse($request, InputInterface::class);
     }
 
+    /**
+     * @return list<list<non-empty-string>>
+     */
+    public static function providerContentTypeAndMalformedContent(): array
+    {
+        $provider = [
+            ['text/xml', '<?xml version="1.0" encoding="UTF-8"?><root><id>10</id>'],
+            ['application/xml', '<?xml><root><id>10</root>'],
+            ['application/json', '{"id": 10, "name: "Marcus Wolffe"}'],
+        ];
+
+        return $provider;
+    }
+
     public function testParsingRequestRequiresDefaultValueIfValueNotMapped(): void
     {
         $this->expectException(ValidationFailedException::class);
 
-        $input = new class implements InputInterface {
+        $class = new class implements InputInterface {
             #[SourceQuery]
             public string $name;
 
@@ -94,12 +107,12 @@ final class InputParserTest extends TestCase
         $request = new Request(query: []);
         $this->assertFalse($request->query->has('name'));
 
-        $this->createInputParser()->parse($request, $input::class);
+        $this->createInputParser()->parse($request, $class::class);
     }
 
     public function testParsingInputUsesDefaultValueIfNotMapped(): void
     {
-        $input = new class implements InputInterface {
+        $class = new class implements InputInterface {
             #[SourceQuery]
             public int $id;
 
@@ -118,16 +131,16 @@ final class InputParserTest extends TestCase
         $this->assertTrue($request->query->has('id'));
         $this->assertFalse($request->query->has('name'));
 
-        $result = $this->createInputParser()->parse($request, $input::class);
+        $input = $this->createInputParser()->parse($request, $class::class);
 
-        $this->assertInstanceOf($input::class, $result);
-        $this->assertEquals($query['id'], $result->id);
-        $this->assertEquals($input->name, $result->name);
+        $this->assertInstanceOf($class::class, $input);
+        $this->assertEquals($query['id'], $input->id);
+        $this->assertEquals($class->name, $input->name);
     }
 
     public function testParsingRequestOverwritesDefaultValueIfMapped(): void
     {
-        $input = new class implements InputInterface {
+        $class = new class implements InputInterface {
             #[SourceQuery]
             public int $id;
 
@@ -149,18 +162,18 @@ final class InputParserTest extends TestCase
 
         $this->assertTrue($request->query->has('id'));
         $this->assertTrue($request->query->has('name'));
-        $this->assertNotEquals($input->name, $query['name']);
+        $this->assertNotEquals($class->name, $query['name']);
 
-        $result = $this->createInputParser()->parse($request, $input::class);
+        $input = $this->createInputParser()->parse($request, $class::class);
 
-        $this->assertInstanceOf($input::class, $result);
-        $this->assertEquals($query['id'], $result->id);
-        $this->assertEquals($query['name'], $result->name);
+        $this->assertInstanceOf($class::class, $input);
+        $this->assertEquals($query['id'], $input->id);
+        $this->assertEquals($query['name'], $input->name);
     }
 
     public function testParsingRequestDoesNotOverwriteIgnoredPropertyDefaultValue(): void
     {
-        $input = new class implements InputInterface {
+        $class = new class implements InputInterface {
             #[PropertyIgnored]
             public string $name = 'Modesto';
 
@@ -173,25 +186,119 @@ final class InputParserTest extends TestCase
         $request = new Request(query: ['name' => 'Vic']);
         $this->assertTrue($request->query->has('name'));
 
-        $result = $this->createInputParser()->parse($request, $input::class);
+        $input = $this->createInputParser()->parse($request, $class::class);
 
-        $this->assertInstanceOf($input::class, $result);
-        $this->assertEquals($input->name, $result->name);
+        $this->assertInstanceOf($class::class, $input);
+        $this->assertEquals($class->name, $input->name);
     }
 
-
-    /**
-     * @return list<list<non-empty-string>>
-     */
-    public static function providerContentTypeAndMalformedContent(): array
+    public function testParsingRequestTrimsNonNullScalarValues(): void
     {
-        $provider = [
-            ['text/xml', '<?xml version="1.0" encoding="UTF-8"?><root><id>10</id>'],
-            ['application/xml', '<?xml><root><id>10</root>'],
-            ['application/json', '{"id": 10, "name: "Marcus Wolffe"}'],
+        $class = new class implements InputInterface {
+            #[SourceQuery(trim: true)]
+            public int $id;
+
+            #[SourceQuery(trim: true)]
+            public string $name;
+
+            #[SourceQuery(trim: true)]
+            public \DateTimeImmutable $dob;
+
+            #[SourceQuery(trim: false)]
+            public string $notes;
+
+            #[PropertyIgnored]
+            public string $birthday {
+                get => $this->dob->format('F d, Y');
+            }
+
+            public function toCommand(): CommandInterface
+            {
+                throw new \Exception('Not implemented!');
+            }
+        };
+
+        $query = [
+            'id' => random_int(1, 100),
+            'name' => 'Vic Cherubini',
+            'dob' => 'August 25, 1984',
+            'notes' => ' Great programmer ',
         ];
 
-        return $provider;
+        $this->assertStringStartsWith(' ', $query['notes']);
+        $this->assertStringEndsWith(' ', $query['notes']);
+
+        $request = new Request(query: [
+            'id' => " {$query['id']} ",
+            'name' => " {$query['name']} ",
+            'dob' => " {$query['dob']} ",
+            'notes' => $query['notes'],
+        ]);
+
+        $input = $this->createInputParser()->parse($request, $class::class);
+
+        $this->assertInstanceOf($class::class, $input);
+        $this->assertEquals($query['id'], $input->id);
+        $this->assertEquals($query['name'], $input->name);
+        $this->assertEquals($query['dob'], $input->birthday);
+        $this->assertEquals($query['notes'], $input->notes);
+    }
+
+    public function testParsingRequestRequiresPropertiesToAllowNullsIfNullable(): void
+    {
+        $this->expectExceptionObject(HttpException::create(400, 'Parsing the request failed because the property "name" is not nullable.'));
+
+        $class = new class implements InputInterface {
+            #[SourceQuery(trim: true, nullify: true)]
+            public string $name;
+
+            public function toCommand(): CommandInterface
+            {
+                throw new \Exception('Not implemented!');
+            }
+        };
+
+        $this->createInputParser()->parse(new Request(query: ['name' => ' ']), $class::class);
+    }
+
+    public function testParsingRequestNullifiesNullablePropertiesIfValueIsEmptyString(): void
+    {
+        $class = new class implements InputInterface {
+            #[SourceQuery]
+            public int $id;
+
+            #[SourceQuery(nullify: true)]
+            public ?int $age;
+
+            #[SourceQuery(nullify: true)]
+            public ?string $name;
+
+            #[SourceQuery(nullify: true)]
+            public ?string $color;
+
+            public function toCommand(): CommandInterface
+            {
+                throw new \Exception('Not implemented!');
+            }
+        };
+
+        $query = [
+            'id' => random_int(1, 100),
+            'age' => null,
+            'name' => '',
+            'color' => ' ',
+        ];
+
+        $request = new Request(query: $query);
+
+        $input = $this->createInputParser()->parse($request, $class::class);
+
+        $this->assertInstanceOf($class::class, $input);
+        $this->assertEquals($query['id'], $input->id);
+
+        $this->assertNull($input->age);
+        $this->assertNull($input->name);
+        $this->assertNull($input->color);
     }
 
     /**

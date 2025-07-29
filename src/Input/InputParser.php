@@ -202,7 +202,7 @@ readonly class InputParser implements InputParserInterface
 
         // Ensure nullified sources support null property values
         if ($source->nullify && !$property->getType()?->allowsNull()) {
-            throw new HttpException(400, sprintf('Parsing the request failed because the property "%s" is not nullable.', $property->getName()));
+            throw HttpException::create(400, sprintf('Parsing the request failed because the property "%s" is not nullable.', $property->getName()));
         }
 
         // Nullify empty string values, leave other types alone
