@@ -2,8 +2,12 @@
 <container xmlns="http://symfony.com/schema/dic/services" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://symfony.com/schema/dic/services https://symfony.com/schema/dic/services/services-1.0.xsd">
   <services>
     <defaults autowire="true" autoconfigure="true"/>
+    <service id="OneToMany\RichBundle\Contract\Input\InputParserInterface" alias="OneToMany\RichBundle\Input\InputParser"/>
     <service id="OneToMany\RichBundle\EventListener\RequestListener">
       <tag name="kernel.event_listener" event="kernel.request" priority="192"/>
+    </service>
+    <service id="OneToMany\RichBundle\Input\InputParser">
+      <argument key="$tokenStorage" type="service" id="Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface" on-invalid="null"/>
     </service>
     <service id="OneToMany\RichBundle\Serializer\HttpErrorNormalizer">
       <tag>serializer.normalizer</tag>
@@ -13,7 +17,6 @@
       <tag>serializer.denormalizer</tag>
     </service>
     <service id="OneToMany\RichBundle\ValueResolver\InputValueResolver">
-      <argument key="$tokenStorage" type="service" id="Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface" on-invalid="null"/>
       <tag>controller.argument_value_resolver</tag>
     </service>
   </services>

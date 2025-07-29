@@ -26,8 +26,8 @@ readonly class InputValueResolver implements ValueResolverInterface
      */
     public function resolve(Request $request, ArgumentMetadata $argument): iterable
     {
-        // Ensure the type can be resolved
-        $type = $this->getResolvableType($argument->getType());
+        // Ensure the argument type can be resolved
+        $type = $this->getType($argument->getType());
 
         if (!$type) {
             return [];
@@ -49,7 +49,7 @@ readonly class InputValueResolver implements ValueResolverInterface
     /**
      * @return ?class-string<InputInterface<CommandInterface>>
      */
-    private function getResolvableType(?string $type): ?string
+    private function getType(?string $type): ?string
     {
         if (null === $type) {
             return null;

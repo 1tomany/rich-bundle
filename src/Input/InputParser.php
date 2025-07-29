@@ -91,7 +91,7 @@ readonly class InputParser implements InputParserInterface
             }
 
             foreach ($this->findSources($property) as $source) {
-                $name = $source->getName($property->name);
+                $name = $source->getName($property->getName());
 
                 if ($inputData->has($name)) {
                     continue;
@@ -160,7 +160,7 @@ readonly class InputParser implements InputParserInterface
 
                 // Ensure nullified sources support null property values
                 if ($source->nullify && !$property->getType()?->allowsNull()) {
-                    throw new HttpException(400, sprintf('Resolving the request failed because the property "%s" is not nullable.', $property->getName()));
+                    throw new HttpException(400, sprintf('Parsing the request failed because the property "%s" is not nullable.', $property->getName()));
                 }
 
                 // Nullify empty string values, leave other types alone
@@ -170,11 +170,11 @@ readonly class InputParser implements InputParserInterface
 
         try {
             /** @var InputInterface<CommandInterface> $input */
-            $input = $this->denormalizer->denormalize($inputData, $type, null, [
+            $input = $this->denormalizer->denormalize($inputData->all(), $type, null, [
                 'filter_bool' => true, 'disable_type_enforcement' => true,
             ]);
         } catch (\Throwable $e) {
-            throw new \RuntimeException('mapping failed', previous: $e); // ResolutionFailedMappingRequestFailedException($e);
+            throw new HttpException(400, 'Parsing the request failed because it is is malformed and could not be mapped correctly.');
         }
 
         // Ensure all input class properties are mapped
