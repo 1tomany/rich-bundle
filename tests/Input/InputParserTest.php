@@ -71,6 +71,20 @@ final class InputParserTest extends TestCase
         $this->createInputParser()->parse($request, InputInterface::class);
     }
 
+    public function testParsingRequestDoesNotAttemptToDeserializeEmptyRequestContent(): void
+    {
+        $this->expectNotToPerformAssertions();
+
+        $class = new class implements InputInterface {
+            public function toCommand(): CommandInterface
+            {
+                throw new \Exception('Not implemented!');
+            }
+        };
+
+        $this->createInputParser()->parse(new Request(), $class::class);
+    }
+
     #[DataProvider('providerContentTypeAndMalformedContent')]
     public function testParsingRequestRequiresNonMalformedContent(string $contentType, string $content): void
     {
@@ -403,19 +417,37 @@ final class InputParserTest extends TestCase
         };
 
         $this->createInputParser()->parse(new Request(), $class::class);
+    }
 
-        /*
-        $valueResolver = new InputValueResolver(new ContainerBag(new Container(null)), new Serializer([], [], []), Validation::createValidator());
+    public function testParsingSourceRequest(): void
+    {
+        $class = new class implements InputInterface {
+            #[SourceRequest]
+            public string $name;
 
-        // Assert: $tokenStorage Property Is Null
-        $refProperty = new \ReflectionProperty($valueResolver, 'tokenStorage');
-        $refProperty->setAccessible(true);
+            #[SourceRequest]
+            public string $email;
 
-        $this->assertNull($refProperty->getValue($valueResolver));
+            public function toCommand(): CommandInterface
+            {
+                throw new \Exception('Not implemented!');
+            }
+        };
 
-        // Assert: Resolving SourceUser Property Requires TokenStorage
-        $valueResolver->resolve(new Request(), $this->createArgument($input::class));
-        */
+        $data = [
+            'name' => 'Vic Cherubini',
+            'email' => 'vcherubini@gmail.com',
+        ];
+
+        $request = new Request(request: $data, server: [
+            'CONTENT_TYPE' => 'multipart/form-data',
+        ]);
+
+        $input = $this->createInputParser()->parse($request, $class::class);
+
+        $this->assertInstanceOf($class::class, $input);
+        $this->assertEquals($data['name'], $input->name);
+        $this->assertEquals($data['email'], $input->email);
     }
 
     /**

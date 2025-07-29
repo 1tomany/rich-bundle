@@ -77,68 +77,9 @@ final class InputValueResolverTest extends TestCase
 
 
 
-    public function testResolverDoesNotAttemptToDeserializeEmptyRequestContent(): void
-    {
-        $input = new class implements InputInterface {
-            public function toCommand(): CommandInterface
-            {
-                return new class implements CommandInterface {};
-            }
-        };
 
-        $request = new Request(...[
-            'server' => [
-                'HTTP_CONTENT_TYPE' => 'text/javascript',
-            ],
-        ]);
 
-        $this->assertEmpty($request->getContent());
-        $this->assertNotNull($request->getContentTypeFormat());
 
-        $inputs = $this->createValueResolver()->resolve(
-            $request, $this->createArgument($input::class)
-        );
-
-        $this->assertInstanceOf($input::class, $inputs[0]);
-    }
-
-    public function testResolvingPropertiesFromMultipartFormDataRequest(): void
-    {
-        $faker = \Faker\Factory::create();
-
-        $input = new class implements InputInterface {
-            #[SourceRequest]
-            public string $name;
-
-            #[SourceRequest]
-            public string $email;
-
-            public function toCommand(): CommandInterface
-            {
-                return new class implements CommandInterface {};
-            }
-        };
-
-        $request = new Request(...[
-            'request' => [
-                'name' => $faker->name(),
-                'email' => $faker->email(),
-            ],
-            'server' => [
-                'CONTENT_TYPE' => 'multipart/form-data',
-            ],
-        ]);
-
-        $inputs = $this->createValueResolver()->resolve(
-            $request, $this->createArgument($input::class)
-        );
-
-        $this->assertInstanceOf($input::class, $inputs[0]);
-
-        $request = $request->request->all();
-        $this->assertEquals($request['name'], $inputs[0]->name);
-        $this->assertEquals($request['email'], $inputs[0]->email);
-    }
 
     private function createArgument(?string $type = null): ArgumentMetadata
     {
