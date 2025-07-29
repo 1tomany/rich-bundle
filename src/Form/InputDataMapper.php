@@ -11,6 +11,9 @@ use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\RequestStack;
 
+use function is_string;
+use function is_subclass_of;
+
 /**
  * @template C of CommandInterface
  */
@@ -19,8 +22,7 @@ readonly class InputDataMapper implements DataMapperInterface
     public function __construct(
         private RequestStack $requestStack,
         private InputParserInterface $inputParser,
-    )
-    {
+    ) {
     }
 
     /**
@@ -39,17 +41,21 @@ readonly class InputDataMapper implements DataMapperInterface
             throw new RuntimeException('Mapping the form failed because the data mapper requires an HTTP request.');
         }
 
-        $formData = new ParameterBag([]);
+        $formData = [];
 
         foreach ($forms as $key => $form) {
-            $formData->set($key, $form->getData());
+            if (!is_string($key)) {
+                continue;
+            }
+
+            $formData[$key] = $form->getData();
         }
 
         if (!isset($form) || (null === $type = $this->getDataClass($form))) {
             throw new RuntimeException('Mapping the form failed because the "data_class" option was not set.');
         }
 
-        $viewData = $this->inputParser->parse($request, $type, $formData->all());
+        $viewData = $this->inputParser->parse($request, $type, $formData);
     }
 
     /**
@@ -65,10 +71,10 @@ readonly class InputDataMapper implements DataMapperInterface
             }
         } while ($form = $form->getParent());
 
-        if (!\is_string($dataClass)) {
+        if (!is_string($dataClass)) {
             return null;
         }
 
-        return \is_subclass_of($dataClass, InputInterface::class, true) ? $dataClass : null;
+        return is_subclass_of($dataClass, InputInterface::class, true) ? $dataClass : null;
     }
 }
