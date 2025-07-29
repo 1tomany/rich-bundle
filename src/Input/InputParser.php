@@ -13,8 +13,11 @@ use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceRoute;
 use OneToMany\RichBundle\Attribute\SourceUser;
+use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
 use OneToMany\RichBundle\Contract\Input\InputParserInterface;
+use OneToMany\RichBundle\Exception\HttpException;
+use OneToMany\RichBundle\Exception\LogicException;
 use OneToMany\RichBundle\Validator\UninitializedProperties;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\HttpFoundation\ParameterBag;
@@ -44,6 +47,9 @@ readonly class InputParser implements InputParserInterface
     ) {
     }
 
+    /**
+     * @return InputInterface<CommandInterface>
+     */
     public function parse(Request $request, string $type, array $defaultData = []): InputInterface
     {
         // Initialize the data source
@@ -55,25 +61,23 @@ readonly class InputParser implements InputParserInterface
         if (in_array($format, ['form'])) { // application/x-www-form-urlencoded or multipart/form-data
             $requestData = $request->request->all();
         } else {
-            $content = trim($request->getContent());
-
-            if (!$format) {
-                if (!empty($content)) {
-                    throw new \RuntimeException('no content-type header'); // ResolutionFailedContentTypeHeaderNotFoundException();
+            if ($content = trim($request->getContent())) {
+                if (!$format) {
+                    throw new HttpException(422, 'Parsing the request failed because the Content-Type header was missing or malformed.');
                 }
-            }
 
-            try {
-                $requestData = $this->decoder->decode($content, $format);
-            } catch (SerializerExceptionInterface $e) {
-            }
+                try {
+                    $requestData = $this->decoder->decode($content, $format);
+                } catch (SerializerExceptionInterface $e) {
+                }
 
-            if (!is_array($requestData ?? null) || (($e ?? null) instanceof \Throwable)) {
-                throw new \RuntimeException('no data', previous: ($e ?? null)); // ResolutionFailedDecodingContentFailedException($format, $e ?? null);
+                if (!is_array($requestData ?? null) || (($e ?? null) instanceof \Throwable)) {
+                    throw new HttpException(400, \sprintf('Parsing the request failed because the content could not be decoded as "%s".', $format), previous: ($e ?? null));
+                }
             }
         }
 
-        $requestData = new ParameterBag($requestData);
+        $requestData = new ParameterBag($requestData ?? []);
 
         // Read the properties from the class
         $class = new \ReflectionClass($type);
@@ -139,7 +143,7 @@ readonly class InputParser implements InputParserInterface
 
                 if ($source instanceof SourceUser) {
                     if (null === $this->tokenStorage) {
-                        throw new \RuntimeException('no user token'); // ResolutionFailedSecurityBundleMissingException($property->name);
+                        throw new LogicException(\sprintf('Resolving the property "%s" failed because the Symfony Security Bundle is not installed. Try running "composer require symfony/security-bundle".', $property->getName()));
                     }
 
                     $value = $this->tokenStorage->getToken()?->getUser();
@@ -154,7 +158,7 @@ readonly class InputParser implements InputParserInterface
 
                 // Ensure nullified sources support null property values
                 if ($source->nullify && !$property->getType()?->allowsNull()) {
-                    throw new \RuntimeException('property not nullable'); // ResolutionFailedPropertyNotNullableException($property->name);
+                    throw new HttpException(400, \sprintf('Resolving the request failed because the property "%s" is not nullable.', $property->getName()));
                 }
 
                 // Nullify empty string values, leave other types alone

@@ -8,7 +8,6 @@ use OneToMany\RichBundle\Contract\Input\InputParserInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Controller\ValueResolverInterface;
 use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
-use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -18,7 +17,6 @@ readonly class InputValueResolver implements ValueResolverInterface
 {
     public function __construct(
         private InputParserInterface $inputParser,
-        private DenormalizerInterface $serializer,
         private ValidatorInterface $validator,
     ) {
     }
@@ -28,26 +26,20 @@ readonly class InputValueResolver implements ValueResolverInterface
      */
     public function resolve(Request $request, ArgumentMetadata $argument): iterable
     {
-        // Ensure we can resolve this argument
-        $type = $this->getResolvableType(...[
-            'type' => $argument->getType(),
-        ]);
+        if ($type = $this->getResolvableType($argument->getType())) {
+            $input = $this->inputParser->parse($request, $type);
 
-        if (!$type) {
-            return [];
+            // Validate the InputInterface object
+            $violations = $this->validator->validate($input);
+
+            if ($violations->count() > 0) {
+                throw new ValidationFailedException($input, $violations);
+            }
+
+            return [$input];
         }
 
-        //
-        $input = $this->inputParser->parse($request, $type);
-
-        // Validate the InputInterface object
-        $violations = $this->validator->validate($input);
-
-        if ($violations->count() > 0) {
-            throw new ValidationFailedException($input, $violations);
-        }
-
-        return [$input];
+        return [];
     }
 
     /**
