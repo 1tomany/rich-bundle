@@ -61,8 +61,12 @@ readonly class InputParser implements InputParserInterface
      */
     public function parse(Request $request, string $type, array $defaultData = []): InputInterface
     {
-        // Initialize the data source
+        // Initialize the data
         $this->data->replace([]);
+
+        foreach ($defaultData as $key => $value) {
+            $this->appendValue($key, $value);
+        }
 
         // Decode the content based on the format
         $format = $request->getContentTypeFormat();
@@ -99,48 +103,42 @@ readonly class InputParser implements InputParserInterface
                 continue;
             }
 
-            foreach ($defaultData as $key => $value) {
-                if ($property->getName() === $key) {
-                    $this->appendData($property, new SourceDefault(), $value);
-                }
-            }
-
             foreach ($this->findSources($property) as $source) {
                 $name = $source->getName($property->getName());
 
                 if ($source instanceof SourceContainer && $this->containerBag->has($name)) {
-                    $this->appendData($property, $source, $this->containerBag->get($name));
+                    $this->appendProperty($property, $source, $this->containerBag->get($name));
                 }
 
                 if ($source instanceof SourceContent) {
-                    $this->appendData($property, $source, $request->getContent());
+                    $this->appendProperty($property, $source, $request->getContent());
                 }
 
                 if ($source instanceof SourceFile && $request->files->has($name)) {
-                    $this->appendData($property, $source, $request->files->get($name));
+                    $this->appendProperty($property, $source, $request->files->get($name));
                 }
 
                 if ($source instanceof SourceHeader && $request->headers->has($name)) {
-                    $this->appendData($property, $source, $request->headers->get($name));
+                    $this->appendProperty($property, $source, $request->headers->get($name));
                 }
 
                 if ($source instanceof SourceIpAddress) {
-                    $this->appendData($property, $source, $request->getClientIp());
+                    $this->appendProperty($property, $source, $request->getClientIp());
                 }
 
                 if ($source instanceof SourceQuery && $request->query->has($name)) {
-                    $this->appendData($property, $source, $request->query->get($name));
+                    $this->appendProperty($property, $source, $request->query->get($name));
                 }
 
                 if ($source instanceof SourceRequest && $requestData->has($name)) {
-                    $this->appendData($property, $source, $requestData->get($name));
+                    $this->appendProperty($property, $source, $requestData->get($name));
                 }
 
                 if ($source instanceof SourceRoute) {
                     $routeParams ??= $request->attributes->get('_route_params');
 
                     if (is_array($routeParams) && isset($routeParams[$name])) {
-                        $this->appendData($property, $source, $routeParams[$name]);
+                        $this->appendProperty($property, $source, $routeParams[$name]);
                     }
                 }
 
@@ -149,7 +147,7 @@ readonly class InputParser implements InputParserInterface
                         throw new LogicException(sprintf('Resolving the property "%s" failed because the Symfony Security Bundle is not installed. Try running "composer require symfony/security-bundle".', $property->getName()));
                     }
 
-                    $this->appendData($property, $source, $this->tokenStorage->getToken()?->getUser());
+                    $this->appendProperty($property, $source, $this->tokenStorage->getToken()?->getUser());
                 }
             }
         }
@@ -160,11 +158,11 @@ readonly class InputParser implements InputParserInterface
                 'filter_bool' => true, 'disable_type_enforcement' => true,
             ]);
         } catch (\Throwable $e) {
-            // dd($e);
             throw HttpException::create(400, 'Parsing the request failed because it is is malformed and could not be mapped correctly.', previous: $e);
         }
 
-        // Ensure all input class properties are mapped
+        // Ensure all input class properties are initialized so the validator
+        // doesn't complain that it can't validate an uninitialized property
         $violations = $this->validator->validate($input, [
             new UninitializedProperties(),
         ]);
@@ -195,22 +193,11 @@ readonly class InputParser implements InputParserInterface
         return $propertySources ?? [new SourceRequest()];
     }
 
-    private function appendData(\ReflectionProperty $property, PropertySource $source, mixed $value): void
+    private function appendProperty(\ReflectionProperty $property, PropertySource $source, mixed $value): void
     {
-        // Ignore values once they have been mapped
-        if ($this->data->has($property->getName())) {
-            return;
-        }
-
         // Ensure nullified sources support null property values
         if ($source->nullify && !$property->getType()?->allowsNull()) {
             throw HttpException::create(400, sprintf('Parsing the request failed because the property "%s" is not nullable.', $property->getName()));
-        }
-
-        // Convert BackedEnum objects into scalars so
-        // the BackedEnumNormalizer doesn't complain
-        if ($value instanceof \BackedEnum) {
-            $value = $value->value;
         }
 
         // Apply any defined callback to the value first
@@ -222,6 +209,17 @@ readonly class InputParser implements InputParserInterface
         $value = $source->trim && is_string($value) ? trim($value) : $value;
 
         // Finally, convert empty string values to NULL, otherwise leave the value alone
-        $this->data->set($property->getName(), ($source->nullify && is_string($value) && empty($value)) ? null : $value);
+        $this->appendValue($property->getName(), ($source->nullify && is_string($value) && empty($value)) ? null : $value);
+    }
+
+    private function appendValue(string $key, mixed $value): void
+    {
+        // Ignore values once mapped
+        if ($this->data->has($key)) {
+            return;
+        }
+
+        // Convert BackedEnum values into scalars so the enum normalizer doesn't complain
+        $this->data->set($key, ($value instanceof \BackedEnum ? $value->value : $value));
     }
 }
