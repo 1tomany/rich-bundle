@@ -26,6 +26,7 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 use Symfony\Component\Serializer\Encoder\DecoderInterface;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
+use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -38,38 +39,45 @@ use function is_string;
 use function sprintf;
 use function trim;
 
+/**
+ * @template C of CommandInterface
+ */
 readonly class InputParser implements InputParserInterface
 {
+    private ParameterBag $data;
+
     public function __construct(
         private ContainerBagInterface $containerBag,
-        private DecoderInterface $decoder,
-        private DenormalizerInterface $denormalizer,
+        private SerializerInterface&DecoderInterface&DenormalizerInterface $serializer,
         private ValidatorInterface $validator,
         private ?TokenStorageInterface $tokenStorage = null,
     ) {
+        $this->data = new ParameterBag([]);
     }
 
     /**
-     * @return InputInterface<CommandInterface>
+     * @return InputInterface<C>
      */
     public function parse(Request $request, string $type, array $defaultData = []): InputInterface
     {
         // Initialize the data source
-        $inputData = new ParameterBag($defaultData);
+        $this->data->replace($defaultData);
 
         // Decode the content based on the format
         $format = $request->getContentTypeFormat();
 
-        if (in_array($format, ['form'])) { // application/x-www-form-urlencoded or multipart/form-data
+        if (in_array($format, ['form'])) {
+            // application/x-www-form-urlencoded
             $requestData = $request->request->all();
         } else {
+            // application/json, application/xml
             if ($content = trim($request->getContent())) {
                 if (!$format) {
-                    throw new HttpException(422, 'Parsing the request failed because the Content-Type header was missing or malformed.');
+                    throw HttpException::create(422, 'Parsing the request failed because the Content-Type header was missing or malformed.');
                 }
 
                 try {
-                    $requestData = $this->decoder->decode($content, $format);
+                    $requestData = $this->serializer->decode($content, $format);
                 } catch (SerializerExceptionInterface $e) {
                 }
 
@@ -93,53 +101,39 @@ readonly class InputParser implements InputParserInterface
             foreach ($this->findSources($property) as $source) {
                 $name = $source->getName($property->getName());
 
-                if ($inputData->has($name)) {
-                    continue;
-                }
-
-                $value = new ValueNotFound();
-
-                if ($source instanceof SourceContainer) {
-                    if (true === $this->containerBag->has($name)) {
-                        $value = $this->containerBag->get($name);
-                    }
+                if ($source instanceof SourceContainer && $this->containerBag->has($name)) {
+                    $this->appendData($property, $source, $this->containerBag->get($name));
                 }
 
                 if ($source instanceof SourceContent) {
-                    $value = $request->getContent(false);
+                    $this->appendData($property, $source, $request->getContent());
                 }
 
-                if ($source instanceof SourceFile) {
-                    if (true === $request->files->has($name)) {
-                        $value = $request->files->get($name);
-                    }
+                if ($source instanceof SourceFile && $request->files->has($name)) {
+                    $this->appendData($property, $source, $request->files->get($name));
                 }
 
-                if ($source instanceof SourceHeader) {
-                    if (true === $request->headers->has($name)) {
-                        $value = $request->headers->get($name);
-                    }
+                if ($source instanceof SourceHeader && $request->headers->has($name)) {
+                    $this->appendData($property, $source, $request->headers->get($name));
                 }
 
                 if ($source instanceof SourceIpAddress) {
-                    $value = $request->getClientIp();
+                    $this->appendData($property, $source, $request->getClientIp());
                 }
 
-                if ($source instanceof SourceQuery) {
-                    if (true === $request->query->has($name)) {
-                        $value = $request->query->get($name);
-                    }
+                if ($source instanceof SourceQuery && $request->query->has($name)) {
+                    $this->appendData($property, $source, $request->query->get($name));
                 }
 
-                if ($source instanceof SourceRequest) {
-                    if (true === $requestData->has($name)) {
-                        $value = $requestData->get($name);
-                    }
+                if ($source instanceof SourceRequest && $requestData->has($name)) {
+                    $this->appendData($property, $source, $requestData->get($name));
                 }
 
                 if ($source instanceof SourceRoute) {
-                    if (true === is_array($request->attributes->get('_route_params'))) {
-                        $value = $request->attributes->get('_route_params')[$name] ?? null;
+                    $routeParams ??= $request->attributes->get('_route_params');
+
+                    if (is_array($routeParams) && isset($routeParams[$name])) {
+                        $this->appendData($property, $source, $routeParams[$name]);
                     }
                 }
 
@@ -148,33 +142,14 @@ readonly class InputParser implements InputParserInterface
                         throw new LogicException(sprintf('Resolving the property "%s" failed because the Symfony Security Bundle is not installed. Try running "composer require symfony/security-bundle".', $property->getName()));
                     }
 
-                    $value = $this->tokenStorage->getToken()?->getUser();
+                    $this->appendData($property, $source, $this->tokenStorage->getToken()?->getUser());
                 }
-
-                if ($value instanceof ValueNotFound) {
-                    continue;
-                }
-
-                if (is_callable($callback = $source->callback)) {
-                    $value = call_user_func($callback, $value);
-                }
-
-                // Trim the value if the source indicates to and it is a string
-                $value = $source->trim && is_string($value) ? trim($value) : $value;
-
-                // Ensure nullified sources support null property values
-                if ($source->nullify && !$property->getType()?->allowsNull()) {
-                    throw new HttpException(400, sprintf('Parsing the request failed because the property "%s" is not nullable.', $property->getName()));
-                }
-
-                // Nullify empty string values, leave other types alone
-                $inputData->set($property->getName(), ($source->nullify && is_string($value) && empty($value)) ? null : $value);
             }
         }
 
         try {
-            /** @var InputInterface<CommandInterface> $input */
-            $input = $this->denormalizer->denormalize($inputData->all(), $type, null, [
+            /** @var InputInterface<C> $input */
+            $input = $this->serializer->denormalize($this->data->all(), $type, null, [
                 'filter_bool' => true, 'disable_type_enforcement' => true,
             ]);
         } catch (\Throwable $e) {
@@ -210,5 +185,27 @@ readonly class InputParser implements InputParserInterface
         }
 
         return $propertySources ?? [new SourceRequest()];
+    }
+
+    private function appendData(\ReflectionProperty $property, PropertySource $source, mixed $value): void
+    {
+        if ($this->data->has($property->getName())) {
+            return;
+        }
+
+        if (is_callable($callback = $source->callback)) {
+            $value = call_user_func($callback, $value);
+        }
+
+        // Trim the value if the source indicates to and it is a string
+        $value = $source->trim && is_string($value) ? trim($value) : $value;
+
+        // Ensure nullified sources support null property values
+        if ($source->nullify && !$property->getType()?->allowsNull()) {
+            throw new HttpException(400, sprintf('Parsing the request failed because the property "%s" is not nullable.', $property->getName()));
+        }
+
+        // Nullify empty string values, leave other types alone
+        $this->data->set($property->getName(), ($source->nullify && is_string($value) && empty($value)) ? null : $value);
     }
 }

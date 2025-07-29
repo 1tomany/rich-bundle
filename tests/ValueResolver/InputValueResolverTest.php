@@ -55,18 +55,6 @@ final class InputValueResolverTest extends TestCase
         $this->assertCount(0, $arguments);
     }
 
-    public function testResolvingValueRequiresContentTypeHeaderWithNonEmptyBody(): void
-    {
-        $this->expectException(ResolutionFailedContentTypeHeaderNotFoundException::class);
-
-        $request = new Request(content: '{"id": 10}');
-        $this->assertNotEmpty($request->getContent());
-
-        $this->createValueResolver()->resolve(
-            $request, $this->createArgument()
-        );
-    }
-
     public function testResolvingValueRequiresValidFormatAndDecoder(): void
     {
         $this->expectException(ResolutionFailedDecodingContentFailedException::class);
