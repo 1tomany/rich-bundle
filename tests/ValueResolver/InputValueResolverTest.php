@@ -10,6 +10,7 @@ use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceUser;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
+use OneToMany\RichBundle\Contract\Input\InputParserInterface;
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedContentTypeHeaderNotFoundException;
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedDecodingContentFailedException;
 use OneToMany\RichBundle\ValueResolver\Exception\ResolutionFailedPropertyNotNullableException;
@@ -37,8 +38,6 @@ use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validation;
-
-
 
 #[Group('UnitTests')]
 #[Group('ValueResolverTests')]
@@ -91,39 +90,14 @@ final class InputValueResolverTest extends TestCase
      */
     private function createValueResolver(array $parameters = []): InputValueResolver
     {
-        $parameters = new ParameterBag(...[
-            'parameters' => $parameters,
-        ]);
+        $inputParser = new class implements InputParserInterface
+        {
+            public function parse(Request $request, string $type, array $defaultData = []): InputInterface
+            {
+                throw new \Exception('Not implemented!');
+            }
+        };
 
-        // Default encoders
-        $encoders = [
-            new JsonEncoder(),
-            new XmlEncoder(),
-        ];
-
-        // Default normalizers
-        $normalizers = [
-            new BackedEnumNormalizer(),
-            new DateTimeNormalizer(),
-            new ArrayDenormalizer(),
-        ];
-
-        // Property type extractors
-        $propertyTypeExtractors = [
-            new ReflectionExtractor(),
-            new ConstructorExtractor([
-                new PhpDocExtractor(),
-            ]),
-        ];
-
-        $typeExtractor = new PropertyInfoExtractor(...[
-            'typeExtractors' => $propertyTypeExtractors,
-        ]);
-
-        $normalizers[] = new ObjectNormalizer(...[
-            'propertyTypeExtractor' => $typeExtractor,
-        ]);
-
-        return new InputValueResolver(new ContainerBag(new Container($parameters)), new Serializer($normalizers, $encoders), Validation::createValidatorBuilder()->enableAttributeMapping()->getValidator());
+        return new InputValueResolver($inputParser, Validation::createValidatorBuilder()->enableAttributeMapping()->getValidator());
     }
 }
