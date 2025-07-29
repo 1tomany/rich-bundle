@@ -29,6 +29,18 @@ readonly class InputDataMapper implements DataMapperInterface
      */
     public function mapDataToForms(mixed $viewData, \Traversable $forms): void
     {
+        if (null === $viewData) {
+            return;
+        }
+
+        if ($viewData instanceof InputInterface) {
+            /** @var FormInterface[] $forms */
+            $forms = \iterator_to_array($forms);
+
+            foreach (new \ReflectionClass($viewData)->getProperties() as $property) {
+                $forms[$property->getName()] = $property->getValue($viewData);
+            }
+        }
     }
 
     /**
