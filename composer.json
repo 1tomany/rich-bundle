@@ -11,6 +11,7 @@
         "psr/log": "^3.0",
         "symfony/dependency-injection": "^7.2",
         "symfony/event-dispatcher": "^7.2",
+        "symfony/form": "^7.2",
         "symfony/http-foundation": "^7.2",
         "symfony/http-kernel": "^7.2",
         "symfony/security-core": "^7.2",
