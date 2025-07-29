@@ -38,6 +38,7 @@ use Symfony\Component\Validator\Validation;
 
 use function json_encode;
 use function random_int;
+use function str_rot13;
 use function time;
 
 #[Group('UnitTests')]
@@ -249,7 +250,7 @@ final class InputParserTest extends TestCase
         };
 
         $name = 'Vic Cherubini';
-        $nameRot13 = \str_rot13($name);
+        $nameRot13 = str_rot13($name);
 
         $input = $this->createInputParser()->parse(new Request(['name' => $name]), $class::class);
 
@@ -409,8 +410,6 @@ final class InputParserTest extends TestCase
 
     public function testParsingSourceHeader(): void
     {
-        $faker = \Faker\Factory::create();
-
         $class = new class implements InputInterface {
             #[SourceHeader(name: 'ACCEPT')]
             public ?string $accept;
@@ -428,9 +427,9 @@ final class InputParserTest extends TestCase
         };
 
         $server = [
-            'HTTP_ACCEPT' => $faker->mimeType(),
-            'CONTENT_TYPE' => $faker->mimeType(),
-            'HTTP_X_USER' => $faker->sha256(),
+            'HTTP_ACCEPT' => 'application/json',
+            'CONTENT_TYPE' => 'application/xml',
+            'HTTP_X_USER' => random_int(1, 100),
         ];
 
         $input = $this->createInputParser()->parse(new Request(server: $server), $class::class);
