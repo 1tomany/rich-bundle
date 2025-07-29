@@ -54,7 +54,7 @@ abstract readonly class AbstractListener
 
         if (null !== $format) {
             if (!in_array($format, $this->getAcceptFormats(), true)) {
-                throw new HttpException(406, sprintf('The server cannot respond with a media type the client will find acceptable. Acceptable media types are: "%s".', $this->flattenFormats($this->getAcceptFormats())));
+                throw HttpException::create(406, sprintf('The server cannot respond with a media type the client will find acceptable. Acceptable media types are: "%s".', $this->flattenFormats($this->getAcceptFormats())));
             }
         }
 
@@ -62,7 +62,7 @@ abstract readonly class AbstractListener
 
         if (null !== $format) {
             if (!in_array($format, $this->getContentFormats(), true)) {
-                throw new HttpException(415, sprintf('The server cannot process content with the media type "%s". Supported content media types are: "%s".', $event->getRequest()->getMimeType($format), $this->flattenFormats($this->getContentFormats())));
+                throw HttpException::create(415, sprintf('The server cannot process content with the media type "%s". Supported content media types are: "%s".', $event->getRequest()->getMimeType($format), $this->flattenFormats($this->getContentFormats())));
             }
         }
     }

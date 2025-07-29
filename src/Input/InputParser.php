@@ -153,7 +153,7 @@ readonly class InputParser implements InputParserInterface
                 'filter_bool' => true, 'disable_type_enforcement' => true,
             ]);
         } catch (\Throwable $e) {
-            throw new HttpException(400, 'Parsing the request failed because it is is malformed and could not be mapped correctly.', previous: $e);
+            throw HttpException::create(400, 'Parsing the request failed because it is is malformed and could not be mapped correctly.', previous: $e);
         }
 
         // Ensure all input class properties are mapped
