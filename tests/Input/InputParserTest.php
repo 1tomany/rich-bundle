@@ -71,7 +71,9 @@ final class InputParserTest extends TestCase
             ]),
         ];
 
-        $normalizers[] = new ObjectNormalizer(null, null, null, new PropertyInfoExtractor([], $typeExtractors));
+        $normalizers[] = new ObjectNormalizer(null, null, null, new PropertyInfoExtractor([], [
+            new ReflectionExtractor(), new ConstructorExtractor([new PhpDocExtractor()]),
+        ]));
 
         $serializer = new Serializer($normalizers, [
             new JsonEncoder(), new XmlEncoder(),
