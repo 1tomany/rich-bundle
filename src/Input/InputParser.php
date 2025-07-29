@@ -26,6 +26,7 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 use Symfony\Component\Serializer\Encoder\DecoderInterface;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
+use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 use function call_user_func;
@@ -34,6 +35,7 @@ use function in_array;
 use function is_array;
 use function is_callable;
 use function is_string;
+use function sprintf;
 use function trim;
 
 readonly class InputParser implements InputParserInterface
@@ -72,7 +74,7 @@ readonly class InputParser implements InputParserInterface
                 }
 
                 if (!is_array($requestData ?? null) || (($e ?? null) instanceof \Throwable)) {
-                    throw new HttpException(400, \sprintf('Parsing the request failed because the content could not be decoded as "%s".', $format), previous: ($e ?? null));
+                    throw new HttpException(400, sprintf('Parsing the request failed because the content could not be decoded as "%s".', $format), previous: ($e ?? null));
                 }
             }
         }
@@ -143,7 +145,7 @@ readonly class InputParser implements InputParserInterface
 
                 if ($source instanceof SourceUser) {
                     if (null === $this->tokenStorage) {
-                        throw new LogicException(\sprintf('Resolving the property "%s" failed because the Symfony Security Bundle is not installed. Try running "composer require symfony/security-bundle".', $property->getName()));
+                        throw new LogicException(sprintf('Resolving the property "%s" failed because the Symfony Security Bundle is not installed. Try running "composer require symfony/security-bundle".', $property->getName()));
                     }
 
                     $value = $this->tokenStorage->getToken()?->getUser();
@@ -158,7 +160,7 @@ readonly class InputParser implements InputParserInterface
 
                 // Ensure nullified sources support null property values
                 if ($source->nullify && !$property->getType()?->allowsNull()) {
-                    throw new HttpException(400, \sprintf('Resolving the request failed because the property "%s" is not nullable.', $property->getName()));
+                    throw new HttpException(400, sprintf('Resolving the request failed because the property "%s" is not nullable.', $property->getName()));
                 }
 
                 // Nullify empty string values, leave other types alone
@@ -172,7 +174,7 @@ readonly class InputParser implements InputParserInterface
                 'filter_bool' => true, 'disable_type_enforcement' => true,
             ]);
         } catch (\Throwable $e) {
-            throw new \RuntimeException('mapping failed', previous: $e); //ResolutionFailedMappingRequestFailedException($e);
+            throw new \RuntimeException('mapping failed', previous: $e); // ResolutionFailedMappingRequestFailedException($e);
         }
 
         // Ensure all input class properties are mapped
@@ -180,10 +182,8 @@ readonly class InputParser implements InputParserInterface
             new UninitializedProperties(),
         ]);
 
-        // Validate the input class itself
         if ($violations->count() > 0) {
-            throw new \RuntimeException('some properties not mapped');
-            // throw new ValidationFailedException($input, $violations);
+            throw new ValidationFailedException($input, $violations);
         }
 
         return $input;

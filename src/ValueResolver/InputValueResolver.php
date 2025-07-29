@@ -26,20 +26,24 @@ readonly class InputValueResolver implements ValueResolverInterface
      */
     public function resolve(Request $request, ArgumentMetadata $argument): iterable
     {
-        if ($type = $this->getResolvableType($argument->getType())) {
-            $input = $this->inputParser->parse($request, $type);
+        // Ensure the type can be resolved
+        $type = $this->getResolvableType($argument->getType());
 
-            // Validate the InputInterface object
-            $violations = $this->validator->validate($input);
-
-            if ($violations->count() > 0) {
-                throw new ValidationFailedException($input, $violations);
-            }
-
-            return [$input];
+        if (!$type) {
+            return [];
         }
 
-        return [];
+        // Extract and hydrate the InputInterface object
+        $input = $this->inputParser->parse($request, $type);
+
+        // Validate the InputInterface object
+        $violations = $this->validator->validate($input);
+
+        if ($violations->count() > 0) {
+            throw new ValidationFailedException($input, $violations);
+        }
+
+        return [$input];
     }
 
     /**
