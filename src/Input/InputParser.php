@@ -33,8 +33,9 @@ readonly class InputParser implements InputParserInterface
     public function parse(Request $request, string $type, array $defaultData = []): ParameterBag
     {
         // Initialize the data source
+        $inputData = new ParameterBag($defaultData);
+
         $format = \strtolower($request->getContentTypeFormat() ?? '');
-        // $parsedData = new ParameterBag([]);
 
         // Content-Type: multipart/form-data
         if (\in_array($format, ['form'])) {
@@ -56,11 +57,9 @@ readonly class InputParser implements InputParserInterface
             if (!\is_array($requestData ?? null) || (($e ?? null) instanceof \Throwable)) {
                 throw new \RuntimeException('no data', previous: ($e ?? null)); //ResolutionFailedDecodingContentFailedException($format, $e ?? null);
             }
-
-            // $parsedData = new ParameterBag($parsedData);
         }
 
-        $parsedData = new ParameterBag($requestData + $defaultData); //->replace($defaultData);
+        $requestData = new ParameterBag($requestData);
 
         // Read the properties from the class
         $class = new \ReflectionClass($type);
@@ -74,7 +73,7 @@ readonly class InputParser implements InputParserInterface
             foreach ($this->findSources($property) as $source) {
                 $name = $source->getName($property->name);
 
-                if ($parsedData->has($name)) {
+                if ($inputData->has($name)) {
                     continue;
                 }
 
@@ -113,8 +112,8 @@ readonly class InputParser implements InputParserInterface
                 }
 
                 if ($source instanceof SourceRequest) {
-                    if (true === $parsedData->has($name)) {
-                        $value = $parsedData->get($name);
+                    if (true === $requestData->has($name)) {
+                        $value = $requestData->get($name);
                     }
                 }
 
@@ -145,16 +144,16 @@ readonly class InputParser implements InputParserInterface
                 }
 
                 // Nullify empty string values, leave other types alone
-                $parsedData->set($property->getName(), ($source->nullify && \is_string($value) && empty($value)) ? null : $value);
+                $inputData->set($property->getName(), ($source->nullify && \is_string($value) && empty($value)) ? null : $value);
             }
         }
 
-        return $parsedData;
+        return $inputData;
     }
 
     private function isPropertyIgnored(\ReflectionProperty $property): bool
     {
-        return 0 !== count($property->getAttributes(PropertyIgnored::class));
+        return 0 !== \count($property->getAttributes(PropertyIgnored::class));
     }
 
     /**
