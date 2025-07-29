@@ -5,7 +5,6 @@ namespace OneToMany\RichBundle\Form;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
 use OneToMany\RichBundle\Contract\Input\InputParserInterface;
-use OneToMany\RichBundle\Input\InputParser;
 use Symfony\Component\Form\DataMapperInterface;
 use Symfony\Component\HttpFoundation\Request;
 

@@ -6,7 +6,6 @@ use OneToMany\RichBundle\Attribute\PropertyIgnored;
 use OneToMany\RichBundle\Attribute\PropertySource;
 use OneToMany\RichBundle\Attribute\SourceContainer;
 use OneToMany\RichBundle\Attribute\SourceContent;
-use OneToMany\RichBundle\Attribute\SourceDefault;
 use OneToMany\RichBundle\Attribute\SourceFile;
 use OneToMany\RichBundle\Attribute\SourceHeader;
 use OneToMany\RichBundle\Attribute\SourceIpAddress;
@@ -64,6 +63,8 @@ readonly class InputParser implements InputParserInterface
         // Initialize the data
         $this->data->replace([]);
 
+        // Immediately append all default values so
+        // they aren't overwritten during parsing
         foreach ($defaultData as $key => $value) {
             $this->appendValue($key, $value);
         }
@@ -161,8 +162,9 @@ readonly class InputParser implements InputParserInterface
             throw HttpException::create(400, 'Parsing the request failed because it is is malformed and could not be mapped correctly.', previous: $e);
         }
 
-        // Ensure all input class properties are initialized so the validator
-        // doesn't complain that it can't validate an uninitialized property
+        // Validate that all class properties are initialized.
+        // Without it, validating the class will throw an error
+        // because an uninitialized property can't be validated.
         $violations = $this->validator->validate($input, [
             new UninitializedProperties(),
         ]);
@@ -220,6 +222,6 @@ readonly class InputParser implements InputParserInterface
         }
 
         // Convert BackedEnum values into scalars so the enum normalizer doesn't complain
-        $this->data->set($key, ($value instanceof \BackedEnum ? $value->value : $value));
+        $this->data->set($key, $value instanceof \BackedEnum ? $value->value : $value);
     }
 }
