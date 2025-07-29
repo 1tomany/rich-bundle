@@ -5,15 +5,21 @@ namespace OneToMany\RichBundle\Form;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
 use OneToMany\RichBundle\Contract\Input\InputParserInterface;
+use OneToMany\RichBundle\Exception\RuntimeException;
 use Symfony\Component\Form\DataMapperInterface;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\HttpFoundation\ParameterBag;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * @template C of CommandInterface
  */
 readonly class InputDataMapper implements DataMapperInterface
 {
-    public function __construct(private InputParserInterface $inputParser)
+    public function __construct(
+        private RequestStack $requestStack,
+        private InputParserInterface $inputParser,
+    )
     {
     }
 
@@ -25,20 +31,44 @@ readonly class InputDataMapper implements DataMapperInterface
     }
 
     /**
-     * @param InputInterface<C> $viewData
+     * @param-out InputInterface<C> $viewData
      */
     public function mapFormsToData(\Traversable $forms, mixed &$viewData): void
     {
-        // $class = null;
-
-        $request = new Request(server: [
-            'CONTENT_TYPE' => 'multipart/form-data',
-        ]);
-
-        foreach ($forms as $field => $form) {
-            $class = $form->getRoot()->getConfig()->getOption('data_class');
-
-            // $request->request->set($field, $form->getData());
+        if (!$request = $this->requestStack->getMainRequest()) {
+            throw new RuntimeException('Mapping the form failed because the data mapper requires an HTTP request.');
         }
+
+        $formData = new ParameterBag([]);
+
+        foreach ($forms as $key => $form) {
+            $formData->set($key, $form->getData());
+        }
+
+        if (!isset($form) || (null === $type = $this->getDataClass($form))) {
+            throw new RuntimeException('Mapping the form failed because the "data_class" option was not set.');
+        }
+
+        $viewData = $this->inputParser->parse($request, $type, $formData->all());
+    }
+
+    /**
+     * @return ?class-string<InputInterface<C>>
+     */
+    private function getDataClass(FormInterface $form): ?string
+    {
+        do {
+            $dataClass = $form->getConfig()->getOption('data_class');
+
+            if ($dataClass) {
+                break;
+            }
+        } while ($form = $form->getParent());
+
+        if (!\is_string($dataClass)) {
+            return null;
+        }
+
+        return \is_subclass_of($dataClass, InputInterface::class, true) ? $dataClass : null;
     }
 }

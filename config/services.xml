@@ -6,6 +6,7 @@
     <service id="OneToMany\RichBundle\EventListener\RequestListener">
       <tag name="kernel.event_listener" event="kernel.request" priority="192"/>
     </service>
+    <service id="OneToMany\RichBundle\Form\InputDataMapper" />
     <service id="OneToMany\RichBundle\Input\InputParser">
       <argument key="$tokenStorage" type="service" id="Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface" on-invalid="null"/>
     </service>
