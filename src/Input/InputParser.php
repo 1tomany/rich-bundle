@@ -6,6 +6,7 @@ use OneToMany\RichBundle\Attribute\PropertyIgnored;
 use OneToMany\RichBundle\Attribute\PropertySource;
 use OneToMany\RichBundle\Attribute\SourceContainer;
 use OneToMany\RichBundle\Attribute\SourceContent;
+use OneToMany\RichBundle\Attribute\SourceDefault;
 use OneToMany\RichBundle\Attribute\SourceFile;
 use OneToMany\RichBundle\Attribute\SourceHeader;
 use OneToMany\RichBundle\Attribute\SourceIpAddress;
@@ -61,7 +62,7 @@ readonly class InputParser implements InputParserInterface
     public function parse(Request $request, string $type, array $defaultData = []): InputInterface
     {
         // Initialize the data source
-        $this->data->replace($defaultData);
+        $this->data->replace([]);
 
         // Decode the content based on the format
         $format = $request->getContentTypeFormat();
@@ -96,6 +97,12 @@ readonly class InputParser implements InputParserInterface
             // Skip explicitly ignored properties
             if ($this->isPropertyIgnored($property)) {
                 continue;
+            }
+
+            foreach ($defaultData as $key => $value) {
+                if ($property->getName() === $key) {
+                    $this->appendData($property, new SourceDefault(), $value);
+                }
             }
 
             foreach ($this->findSources($property) as $source) {
@@ -153,6 +160,7 @@ readonly class InputParser implements InputParserInterface
                 'filter_bool' => true, 'disable_type_enforcement' => true,
             ]);
         } catch (\Throwable $e) {
+            // dd($e);
             throw HttpException::create(400, 'Parsing the request failed because it is is malformed and could not be mapped correctly.', previous: $e);
         }
 
@@ -189,10 +197,23 @@ readonly class InputParser implements InputParserInterface
 
     private function appendData(\ReflectionProperty $property, PropertySource $source, mixed $value): void
     {
+        // Ignore values once they have been mapped
         if ($this->data->has($property->getName())) {
             return;
         }
 
+        // Ensure nullified sources support null property values
+        if ($source->nullify && !$property->getType()?->allowsNull()) {
+            throw HttpException::create(400, sprintf('Parsing the request failed because the property "%s" is not nullable.', $property->getName()));
+        }
+
+        // Convert BackedEnum objects into scalars so
+        // the BackedEnumNormalizer doesn't complain
+        if ($value instanceof \BackedEnum) {
+            $value = $value->value;
+        }
+
+        // Apply any defined callback to the value first
         if (is_callable($callback = $source->callback)) {
             $value = call_user_func($callback, $value);
         }
@@ -200,12 +221,7 @@ readonly class InputParser implements InputParserInterface
         // Trim the value if the source indicates to and it is a string
         $value = $source->trim && is_string($value) ? trim($value) : $value;
 
-        // Ensure nullified sources support null property values
-        if ($source->nullify && !$property->getType()?->allowsNull()) {
-            throw HttpException::create(400, sprintf('Parsing the request failed because the property "%s" is not nullable.', $property->getName()));
-        }
-
-        // Nullify empty string values, leave other types alone
+        // Finally, convert empty string values to NULL, otherwise leave the value alone
         $this->data->set($property->getName(), ($source->nullify && is_string($value) && empty($value)) ? null : $value);
     }
 }
