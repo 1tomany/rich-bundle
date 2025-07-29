@@ -2,6 +2,7 @@
 
 namespace OneToMany\RichBundle\Tests\Input;
 
+use OneToMany\RichBundle\Attribute\PropertyIgnored;
 use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
@@ -139,7 +140,10 @@ final class InputParserTest extends TestCase
             }
         };
 
-        $query = ['id' => random_int(1, 100), 'name' => 'Vic'];
+        $query = [
+            'id' => random_int(1, 100),
+            'name' => 'Vic Cherubini',
+        ];
 
         $request = new Request(query: $query);
 
@@ -154,6 +158,26 @@ final class InputParserTest extends TestCase
         $this->assertEquals($query['name'], $result->name);
     }
 
+    public function testParsingRequestDoesNotOverwriteIgnoredPropertyDefaultValue(): void
+    {
+        $input = new class implements InputInterface {
+            #[PropertyIgnored]
+            public string $name = 'Modesto';
+
+            public function toCommand(): CommandInterface
+            {
+                return new class implements CommandInterface {};
+            }
+        };
+
+        $request = new Request(query: ['name' => 'Vic']);
+        $this->assertTrue($request->query->has('name'));
+
+        $result = $this->createInputParser()->parse($request, $input::class);
+
+        $this->assertInstanceOf($input::class, $result);
+        $this->assertEquals($input->name, $result->name);
+    }
 
 
     /**

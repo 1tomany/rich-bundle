@@ -65,31 +65,7 @@ final class InputValueResolverTest extends TestCase
 
 
 
-    public function testResolvingIgnoredPropertiesDoesNotOverwriteDefaultPropertyValue(): void
-    {
-        $input = new class implements InputInterface {
-            #[PropertyIgnored]
-            public string $name = 'Modesto';
 
-            public function toCommand(): CommandInterface
-            {
-                return new class implements CommandInterface {};
-            }
-        };
-
-        $request = new Request(query: [
-            'name' => 'Modesto Herman',
-        ]);
-
-        $this->assertTrue($request->query->has('name'));
-
-        $inputs = $this->createValueResolver()->resolve(
-            $request, $this->createArgument($input::class)
-        );
-
-        $this->assertInstanceOf($input::class, $inputs[0]);
-        $this->assertEquals($input->name, $inputs[0]->name);
-    }
 
     public function testTrimmingNonNullScalarValues(): void
     {
