@@ -236,6 +236,27 @@ final class InputParserTest extends TestCase
         $this->assertEquals($query['userId'], $input->id);
     }
 
+    public function testParsingRequestCallsDefinedCallbackFunction(): void
+    {
+        $class = new class implements InputInterface {
+            #[SourceQuery(callback: 'str_rot13')]
+            public string $name;
+
+            public function toCommand(): CommandInterface
+            {
+                throw new \Exception('Not implemented!');
+            }
+        };
+
+        $name = 'Vic Cherubini';
+        $nameRot13 = \str_rot13($name);
+
+        $input = $this->createInputParser()->parse(new Request(['name' => $name]), $class::class);
+
+        $this->assertInstanceOf($class::class, $input);
+        $this->assertEquals($nameRot13, $input->name);
+    }
+
     public function testParsingRequestTrimsNonNullScalarValues(): void
     {
         $class = new class implements InputInterface {
