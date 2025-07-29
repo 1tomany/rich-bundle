@@ -97,7 +97,7 @@ readonly class InputParser implements InputParserInterface
                     continue;
                 }
 
-                $value = null;
+                $value = new ValueNotFound();
 
                 if ($source instanceof SourceContainer) {
                     if (true === $this->containerBag->has($name)) {
@@ -151,6 +151,10 @@ readonly class InputParser implements InputParserInterface
                     $value = $this->tokenStorage->getToken()?->getUser();
                 }
 
+                if ($value instanceof ValueNotFound) {
+                    continue;
+                }
+
                 if (is_callable($callback = $source->callback)) {
                     $value = call_user_func($callback, $value);
                 }
@@ -174,7 +178,7 @@ readonly class InputParser implements InputParserInterface
                 'filter_bool' => true, 'disable_type_enforcement' => true,
             ]);
         } catch (\Throwable $e) {
-            throw new HttpException(400, 'Parsing the request failed because it is is malformed and could not be mapped correctly.');
+            throw new HttpException(400, 'Parsing the request failed because it is is malformed and could not be mapped correctly.', previous: $e);
         }
 
         // Ensure all input class properties are mapped
