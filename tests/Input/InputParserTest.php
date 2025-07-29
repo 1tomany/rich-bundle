@@ -258,7 +258,7 @@ final class InputParserTest extends TestCase
             }
         };
 
-        $this->createInputParser()->parse(new Request(query: ['name' => ' ']), $class::class);
+        $this->createInputParser()->parse(new Request(['name' => ' ']), $class::class);
     }
 
     public function testParsingRequestDoesNotNullifyEmptyIntegerProperties(): void
@@ -273,11 +273,8 @@ final class InputParserTest extends TestCase
             }
         };
 
-        $request = new Request(query: ['id' => 0]);
+        $input = $this->createInputParser()->parse(new Request(['id' => 0]), $class::class);
 
-        $input = $this->createInputParser()->parse($request, $class::class);
-
-        $this->assertInstanceOf($class::class, $input);
         $this->assertSame(0, $input->id);
     }
 
