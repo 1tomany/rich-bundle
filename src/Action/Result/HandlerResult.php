@@ -13,7 +13,7 @@ use function array_key_exists;
  *
  * @implements ResultInterface<R>
  */
-class Result implements ResultInterface
+class HandlerResult implements ResultInterface
 {
     /** @var int<100, 599> */
     private int $status = Response::HTTP_OK;

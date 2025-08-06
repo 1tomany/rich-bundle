@@ -2,7 +2,7 @@
 
 namespace OneToMany\RichBundle\Tests\Action\Result;
 
-use OneToMany\RichBundle\Action\Result\Result;
+use OneToMany\RichBundle\Action\Result\HandlerResult;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,16 +15,16 @@ use function time;
 #[Group('UnitTests')]
 #[Group('ActionTests')]
 #[Group('ResultTests')]
-final class ResultTest extends TestCase
+final class HandlerResultTest extends TestCase
 {
     public function testOkSets200HttpStatus(): void
     {
-        $this->assertEquals(Response::HTTP_OK, Result::ok(true)->getStatus());
+        $this->assertEquals(Response::HTTP_OK, HandlerResult::ok(true)->getStatus());
     }
 
     public function testCreatedSets201HttpStatus(): void
     {
-        $this->assertEquals(Response::HTTP_CREATED, Result::created(true)->getStatus());
+        $this->assertEquals(Response::HTTP_CREATED, HandlerResult::created(true)->getStatus());
     }
 
     public function testInvokeReturnsResultData(): void
@@ -33,7 +33,7 @@ final class ResultTest extends TestCase
             'time' => time(),
         ];
 
-        $this->assertSame($resultData, new Result($resultData)());
+        $this->assertSame($resultData, new HandlerResult($resultData)());
     }
 
     public function testGettingContextUsesGroupsSpecificallySetInTheContext(): void
@@ -49,7 +49,7 @@ final class ResultTest extends TestCase
         $this->assertArrayHasKey(AbstractNormalizer::GROUPS, $context);
         $this->assertNotSame($groups, $context[AbstractNormalizer::GROUPS]);
 
-        $result = new Result(true)
+        $result = new HandlerResult(true)
             ->withContext($context)
             ->withGroups($groups);
 
@@ -68,7 +68,7 @@ final class ResultTest extends TestCase
 
         $this->assertArrayNotHasKey(AbstractNormalizer::GROUPS, $context);
 
-        $result = new Result(true)
+        $result = new HandlerResult(true)
             ->withContext($context)
             ->withGroups($groups);
 
@@ -85,6 +85,6 @@ final class ResultTest extends TestCase
         $httpStatus = random_int($lastHttpStatus + 1, $lastHttpStatus * 2);
         $this->assertArrayNotHasKey($httpStatus, Response::$statusTexts);
 
-        $this->assertEquals(Response::HTTP_INTERNAL_SERVER_ERROR, new Result(true)->withStatus($httpStatus)->getStatus()); // @phpstan-ignore-line
+        $this->assertEquals(Response::HTTP_INTERNAL_SERVER_ERROR, new HandlerResult(true)->withStatus($httpStatus)->getStatus()); // @phpstan-ignore-line
     }
 }
