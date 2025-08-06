@@ -66,10 +66,16 @@ src/
         Web/
 ```
 
-We'll get into the purpose of each of these soon. You can use the following command to quickly create this structure. Replace `<Module>` with the actual name of your module (e.g. `Account` or `Invoice`).
+We'll get into the purpose of each of these soon. You can use the following commands to quickly create this structure. Replace the value of the `$RICH_MODULE` environment variable with the actual name of your module (e.g. `Account` or `Invoice`).
 
 ```shell
-mkdir -p src/<Module>/{Action/{Command,Handler/Exception,Input},Contract/{Exception,Repository},Framework/Controller/{API,Web}}
+RICH_MODULE="Tenant"
+mkdir -p src/$RICH_MODULE/{Action/{Command,Event,Handler/Exception,Input},Contract/{Enum,Exception,Repository},Framework/Controller/{API,Web},Exception}
+
+echo "<?php\n\nnamespace App\\${RICH_MODULE}\\Contract\\Exception;\n\ninterface ExceptionInterface extends \\Throwable\n{\n}" > src/$RICH_MODULE/Contract/Exception/ExceptionInterface.php
+echo "<?php\n\nnamespace App\\${RICH_MODULE}\\Contract\\Repository;\n\ninterface ${RICH_MODULE}RepositoryInterface\n{\n}" > src/$RICH_MODULE/Contract/Repository/${RICH_MODULE}RepositoryInterface.php
+echo "<?php\n\nnamespace App\\${RICH_MODULE}\\Exception;\n\nuse App\\${RICH_MODULE}\\Contract\\Exception\\ExceptionInterface;\n\nclass DomainException extends \\DomainException implements ExceptionInterface\n{\n}" > src/$RICH_MODULE/Exception/DomainException.php
+echo "<?php\n\nnamespace App\\${RICH_MODULE}\\Exception;\n\nuse App\\${RICH_MODULE}\\Contract\\Exception\\ExceptionInterface;\n\nclass RuntimeException extends \\RuntimeException implements ExceptionInterface\n{\n}" > src/$RICH_MODULE/Exception/RuntimeException.php
 ```
 
 Moving forward, lets assume we're working on a module named `Account` for a Doctrine entity also named `Account` which uses a repository (shockingly) named `AccountRepository`.
