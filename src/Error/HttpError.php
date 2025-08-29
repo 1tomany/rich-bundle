@@ -62,6 +62,14 @@ class HttpError implements HttpErrorInterface
         $this->resolveType();
     }
 
+    /**
+     * @return non-empty-string
+     */
+    public function __toString(): string
+    {
+        return sprintf('[%s] %s', $this->getDescription(), $this->getMessage());
+    }
+
     public function getThrowable(): \Throwable
     {
         return $this->throwable;

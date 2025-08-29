@@ -219,9 +219,15 @@ final class HttpErrorTest extends TestCase
     public function testConstructorResolvesType(): void
     {
         $exception = new \RuntimeException('Error');
-        $errorType = ErrorType::create($exception);
 
-        $this->assertSame($errorType, new HttpError($exception)->getType());
+        $this->assertSame(ErrorType::create($exception), new HttpError($exception)->getType());
+    }
+
+    public function testToString(): void
+    {
+        $httpError = new HttpError(new \RuntimeException('File not found.', 404));
+
+        $this->assertSame("[{$httpError->getDescription()}] {$httpError->getMessage()}", (string) $httpError);
     }
 
     public function testGettingThrowable(): void
@@ -257,13 +263,10 @@ final class HttpErrorTest extends TestCase
     public function testGettingTitleFromInvalidHttpStatus(): void
     {
         /** @var non-empty-string $title */
-        $title = Response::$statusTexts[
-            Response::HTTP_INTERNAL_SERVER_ERROR
-        ];
+        $title = Response::$statusTexts[Response::HTTP_INTERNAL_SERVER_ERROR];
 
-        $lastHttpStatus = array_key_last(
-            Response::$statusTexts
-        );
+        /** @var int $lastHttpStatus */
+        $lastHttpStatus = array_key_last(Response::$statusTexts);
 
         $httpStatus = random_int($lastHttpStatus + 1, $lastHttpStatus * 2);
         $this->assertArrayNotHasKey($httpStatus, Response::$statusTexts);
