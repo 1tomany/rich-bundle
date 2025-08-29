@@ -228,7 +228,7 @@ final class HttpErrorTest extends TestCase
     {
         $httpError = new HttpError(new \RuntimeException('File not found.', 404));
 
-        $this->assertSame("({$httpError->getDescription()}) {$httpError->getMessage()}", (string) $httpError);
+        $this->assertSame("[{$httpError->getDescription()}] {$httpError->getMessage()}", (string) $httpError);
     }
 
     public function testGettingThrowable(): void

@@ -67,7 +67,7 @@ class HttpError implements HttpErrorInterface
      */
     public function __toString(): string
     {
-        return sprintf('(%s) %s', $this->getDescription(), $this->getMessage());
+        return sprintf('[%s] %s', $this->getDescription(), $this->getMessage());
     }
 
     public function getThrowable(): \Throwable
