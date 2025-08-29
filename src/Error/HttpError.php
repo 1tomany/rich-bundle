@@ -120,9 +120,21 @@ class HttpError implements HttpErrorInterface
         return $this->trace;
     }
 
-    public function getLevel(): string
+    public function getLogLevel(): string
     {
-        return $this->getStatus() >= 500 ? LogLevel::CRITICAL : LogLevel::ERROR;
+        if ($this->getStatus() < 300) {
+            return LogLevel::INFO;
+        }
+
+        if ($this->getStatus() < 400) {
+            return LogLevel::NOTICE;
+        }
+
+        if ($this->getStatus() < 500) {
+            return LogLevel::ERROR;
+        }
+
+        return LogLevel::CRITICAL;
     }
 
     public function hasUserMessage(): bool

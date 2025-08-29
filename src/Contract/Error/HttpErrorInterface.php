@@ -55,5 +55,5 @@ interface HttpErrorInterface extends \Stringable
      */
     public function getTrace(): array;
 
-    public function getLevel(): string;
+    public function getLogLevel(): string;
 }
