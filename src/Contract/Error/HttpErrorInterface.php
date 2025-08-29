@@ -9,7 +9,7 @@ use OneToMany\RichBundle\Contract\Enum\ErrorType;
  * @phpstan-type Trace array{class: ?string, function: ?string, file: ?string, line: ?int}
  * @phpstan-type Violation array{property: string, message: string}
  */
-interface HttpErrorInterface
+interface HttpErrorInterface extends \Stringable
 {
     public function getThrowable(): \Throwable;
 
@@ -55,5 +55,5 @@ interface HttpErrorInterface
      */
     public function getTrace(): array;
 
-    public function getLevel(): string;
+    public function getLogLevel(): string;
 }

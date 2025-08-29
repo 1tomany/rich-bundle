@@ -9,6 +9,7 @@ use OneToMany\RichBundle\Error\HttpError;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LogLevel;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -114,7 +115,7 @@ final class HttpErrorTest extends TestCase
     {
         $exception = new #[HasUserMessage] class('Error') extends \Exception {};
 
-        $this->assertEquals($exception->getMessage(), (new HttpError($exception))->getMessage());
+        $this->assertEquals($exception->getMessage(), new HttpError($exception)->getMessage());
     }
 
     public function testConstructorGeneralizesMessageWithAllOtherExceptions(): void
@@ -219,9 +220,15 @@ final class HttpErrorTest extends TestCase
     public function testConstructorResolvesType(): void
     {
         $exception = new \RuntimeException('Error');
-        $errorType = ErrorType::create($exception);
 
-        $this->assertSame($errorType, new HttpError($exception)->getType());
+        $this->assertSame(ErrorType::create($exception), new HttpError($exception)->getType());
+    }
+
+    public function testToString(): void
+    {
+        $httpError = new HttpError(new \RuntimeException('File not found.', 404));
+
+        $this->assertSame("[{$httpError->getDescription()}] {$httpError->getMessage()}", (string) $httpError);
     }
 
     public function testGettingThrowable(): void
@@ -247,23 +254,16 @@ final class HttpErrorTest extends TestCase
         /** @var non-empty-string $title */
         $title = Response::$statusTexts[$status];
 
-        // Arrange: Create Error Description
-        $description = "{$status} {$title}";
-
-        // Assert: Descriptions Match
-        $this->assertEquals($description, new HttpError(new HttpException($status))->getDescription());
+        $this->assertEquals("{$status} {$title}", new HttpError(new HttpException($status))->getDescription());
     }
 
     public function testGettingTitleFromInvalidHttpStatus(): void
     {
         /** @var non-empty-string $title */
-        $title = Response::$statusTexts[
-            Response::HTTP_INTERNAL_SERVER_ERROR
-        ];
+        $title = Response::$statusTexts[Response::HTTP_INTERNAL_SERVER_ERROR];
 
-        $lastHttpStatus = array_key_last(
-            Response::$statusTexts
-        );
+        /** @var int $lastHttpStatus */
+        $lastHttpStatus = array_key_last(Response::$statusTexts);
 
         $httpStatus = random_int($lastHttpStatus + 1, $lastHttpStatus * 2);
         $this->assertArrayNotHasKey($httpStatus, Response::$statusTexts);
@@ -287,5 +287,45 @@ final class HttpErrorTest extends TestCase
 
         $this->assertEquals($status, $exception->getCode());
         $this->assertEquals($title, new HttpError($exception)->getTitle());
+    }
+
+    #[DataProvider('providerStatusAndLogLevel')]
+    public function testGettingLogLevel(int $status, string $logLevel): void
+    {
+        $exception = new \RuntimeException('Error', $status);
+        $this->assertSame($logLevel, new HttpError($exception)->getLogLevel());
+    }
+
+    /**
+     * @return list<list<int|string>>
+     */
+    public static function providerStatusAndLogLevel(): array
+    {
+        $provider = [
+            [0, LogLevel::CRITICAL],
+            [100, LogLevel::INFO],
+            [301, LogLevel::NOTICE],
+            [302, LogLevel::NOTICE],
+            [308, LogLevel::NOTICE],
+            [400, LogLevel::ERROR],
+            [404, LogLevel::ERROR],
+            [405, LogLevel::ERROR],
+            [418, LogLevel::ERROR],
+            [422, LogLevel::ERROR],
+            [500, LogLevel::CRITICAL],
+            [501, LogLevel::CRITICAL],
+            [510, LogLevel::CRITICAL],
+        ];
+
+        return $provider;
+    }
+
+    public function testHasUserMessage(): void
+    {
+        $exception = new \RuntimeException('Error');
+        $this->assertFalse(new HttpError($exception)->hasUserMessage());
+
+        $exception = new #[HasUserMessage] class('Error') extends \RuntimeException {};
+        $this->assertTrue(new HttpError($exception)->hasUserMessage());
     }
 }

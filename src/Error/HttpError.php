@@ -27,30 +27,30 @@ use function trim;
  */
 class HttpError implements HttpErrorInterface
 {
-    private ErrorType $type;
+    protected ErrorType $type;
 
     /** @var int<100, 599> */
-    private int $status = 500;
+    protected int $status = 500;
 
     /** @var non-empty-string */
-    private string $title = 'Internal Server Error';
+    protected string $title = 'Internal Server Error';
 
     /** @var array<string, string> */
-    private array $headers = [];
+    protected array $headers = [];
 
     /** @var non-empty-string */
-    private string $message = 'An unexpected error occurred.';
+    protected string $message = 'An unexpected error occurred.';
 
     /** @var list<Violation> */
-    private array $violations = [];
+    protected array $violations = [];
 
     /** @var list<Stack> */
-    private array $stack = [];
+    protected array $stack = [];
 
     /** @var list<Trace> */
-    private array $trace = [];
+    protected array $trace = [];
 
-    public function __construct(private readonly \Throwable $throwable)
+    public function __construct(protected readonly \Throwable $throwable)
     {
         $this->resolveStatus();
         $this->resolveTitle();
@@ -60,6 +60,14 @@ class HttpError implements HttpErrorInterface
         $this->flattenStack();
         $this->flattenTrace();
         $this->resolveType();
+    }
+
+    /**
+     * @return non-empty-string
+     */
+    public function __toString(): string
+    {
+        return sprintf('[%s] %s', $this->getDescription(), $this->getMessage());
     }
 
     public function getThrowable(): \Throwable
@@ -112,12 +120,29 @@ class HttpError implements HttpErrorInterface
         return $this->trace;
     }
 
-    public function getLevel(): string
+    public function getLogLevel(): string
     {
-        return $this->getStatus() >= 500 ? LogLevel::CRITICAL : LogLevel::ERROR;
+        if ($this->getStatus() < 300) {
+            return LogLevel::INFO;
+        }
+
+        if ($this->getStatus() < 400) {
+            return LogLevel::NOTICE;
+        }
+
+        if ($this->getStatus() < 500) {
+            return LogLevel::ERROR;
+        }
+
+        return LogLevel::CRITICAL;
     }
 
-    private function resolveStatus(): void
+    public function hasUserMessage(): bool
+    {
+        return $this->hasAttribute(HasUserMessage::class);
+    }
+
+    protected function resolveStatus(): void
     {
         $status = (int) $this->throwable->getCode();
 
@@ -136,12 +161,12 @@ class HttpError implements HttpErrorInterface
         $this->status = max(100, min($status, 599));
     }
 
-    private function resolveTitle(): void
+    protected function resolveTitle(): void
     {
         $this->title = (Response::$statusTexts[$this->status] ?? null) ?: $this->title;
     }
 
-    private function resolveType(): void
+    protected function resolveType(): void
     {
         $hasErrorType = $this->getAttribute(...[
             'attributeClass' => HasErrorType::class,
@@ -157,7 +182,7 @@ class HttpError implements HttpErrorInterface
         }
     }
 
-    private function resolveHeaders(): void
+    protected function resolveHeaders(): void
     {
         $headers = null;
 
@@ -178,7 +203,7 @@ class HttpError implements HttpErrorInterface
         }
     }
 
-    private function resolveMessage(): void
+    protected function resolveMessage(): void
     {
         $message = null;
 
@@ -198,7 +223,7 @@ class HttpError implements HttpErrorInterface
         $this->message = trim($message ?? '') ?: $this->message;
     }
 
-    private function expandViolations(): void
+    protected function expandViolations(): void
     {
         $exception = $this->throwable;
 
@@ -216,7 +241,7 @@ class HttpError implements HttpErrorInterface
         }
     }
 
-    private function flattenStack(): void
+    protected function flattenStack(): void
     {
         $exception = $this->throwable;
 
@@ -232,7 +257,7 @@ class HttpError implements HttpErrorInterface
         }
     }
 
-    private function flattenTrace(): void
+    protected function flattenTrace(): void
     {
         foreach ($this->throwable->getTrace() as $trace) {
             $this->trace[] = [
@@ -251,7 +276,7 @@ class HttpError implements HttpErrorInterface
      *
      * @return ?T
      */
-    private function getAttribute(string $attributeClass): ?object
+    protected function getAttribute(string $attributeClass): ?object
     {
         $class = new \ReflectionClass($this->throwable);
 
@@ -267,7 +292,7 @@ class HttpError implements HttpErrorInterface
     /**
      * @param class-string $attributeClass
      */
-    private function hasAttribute(string $attributeClass): bool
+    protected function hasAttribute(string $attributeClass): bool
     {
         return null !== $this->getAttribute($attributeClass);
     }
