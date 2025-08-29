@@ -142,6 +142,11 @@ class HttpError implements HttpErrorInterface
         return $this->hasAttribute(HasUserMessage::class);
     }
 
+    public function isCritical(): bool
+    {
+        return LogLevel::CRITICAL === $this->getLogLevel();
+    }
+
     protected function resolveStatus(): void
     {
         $status = (int) $this->throwable->getCode();
@@ -168,17 +173,12 @@ class HttpError implements HttpErrorInterface
 
     protected function resolveType(): void
     {
-        $hasErrorType = $this->getAttribute(...[
-            'attributeClass' => HasErrorType::class,
-        ]);
+        $hasErrorType = $this->getAttribute(HasErrorType::class);
 
         if ($hasErrorType instanceof HasErrorType) {
             $this->type = $hasErrorType->type;
         } else {
-            $this->type = ErrorType::create(...[
-                'throwable' => $this->throwable,
-                'httpStatus' => $this->status,
-            ]);
+            $this->type = ErrorType::create($this->throwable, $this->status);
         }
     }
 

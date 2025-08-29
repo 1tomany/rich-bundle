@@ -81,12 +81,8 @@ final class HttpErrorTest extends TestCase
     {
         $message = 'The data provided is not valid.';
 
-        $constraintViolation = new ConstraintViolation(
-            'Required', null, [], null, null, null,
-        );
-
-        $violations = new ConstraintViolationList(...[
-            'violations' => [$constraintViolation],
+        $violations = new ConstraintViolationList([
+            new ConstraintViolation('Required', null, [], null, null, null),
         ]);
 
         $exception = new ValidationFailedException(null, $violations);
@@ -121,7 +117,7 @@ final class HttpErrorTest extends TestCase
     public function testConstructorGeneralizesMessageWithAllOtherExceptions(): void
     {
         $message = 'An unexpected error occurred.';
-        $exception = new \RuntimeException('Unrecoverable error');
+        $exception = new \Exception('Unrecoverable error');
 
         $this->assertNotEquals($message, $exception->getMessage());
         $this->assertEquals($message, new HttpError($exception)->getMessage());
@@ -129,17 +125,13 @@ final class HttpErrorTest extends TestCase
 
     public function testConstructorResolvesHeadersWhenExceptionImplementsHttpExceptionInterface(): void
     {
-        $headers = [
+        $exception = new NotFoundHttpException('Not Found', null, 404, [
             'X-Token' => 'token',
             'X-Title' => 'Title',
-        ];
-
-        $exception = new NotFoundHttpException(...[
-            'headers' => $headers,
         ]);
 
         $this->assertInstanceOf(HttpExceptionInterface::class, $exception);
-        $this->assertSame($headers, new HttpError($exception)->getHeaders());
+        $this->assertSame($exception->getHeaders(), new HttpError($exception)->getHeaders());
     }
 
     public function testConstructorResolvesHeadersWhenWithHttpStatusAttributeIsPresent(): void
@@ -170,28 +162,14 @@ final class HttpErrorTest extends TestCase
             return new ConstraintViolation($e['message'], null, [], null, $e['property'], null);
         }, $errors);
 
-        $exception = new ValidationFailedException(
-            null, new ConstraintViolationList($violations)
-        );
-
-        $this->assertSame($errors, new HttpError($exception)->getViolations());
+        $this->assertSame($errors, new HttpError(new ValidationFailedException(null, new ConstraintViolationList($violations)))->getViolations());
     }
 
     public function testConstructorFlattensStack(): void
     {
-        $exception1 = new \Exception(...[
-            'message' => 'Exception 1',
-        ]);
-
-        $exception2 = new \Exception(...[
-            'message' => 'Exception 2',
-            'previous' => $exception1,
-        ]);
-
-        $exception3 = new \Exception(...[
-            'message' => 'Exception 3',
-            'previous' => $exception2,
-        ]);
+        $exception1 = new \Exception('Exception 1', 0, null);
+        $exception2 = new \Exception('Exception 2', 0, $exception1);
+        $exception3 = new \Exception('Exception 3', 0, $exception2);
 
         $stackTrace = [
             [
@@ -219,21 +197,22 @@ final class HttpErrorTest extends TestCase
 
     public function testConstructorResolvesType(): void
     {
-        $exception = new \RuntimeException('Error');
+        $exception = new \Exception('Error');
+        $httpError = new HttpError($exception);
 
-        $this->assertSame(ErrorType::create($exception), new HttpError($exception)->getType());
+        $this->assertSame(ErrorType::create($exception), $httpError->getType());
     }
 
     public function testToString(): void
     {
-        $httpError = new HttpError(new \RuntimeException('File not found.', 404));
+        $httpError = new HttpError(new \Exception('File Not Found', 404));
 
         $this->assertSame("[{$httpError->getDescription()}] {$httpError->getMessage()}", (string) $httpError);
     }
 
     public function testGettingThrowable(): void
     {
-        $exception = new \RuntimeException('Error');
+        $exception = new \Exception('Error');
 
         $this->assertSame($exception, new HttpError($exception)->getThrowable());
     }
@@ -262,16 +241,17 @@ final class HttpErrorTest extends TestCase
         /** @var non-empty-string $title */
         $title = Response::$statusTexts[Response::HTTP_INTERNAL_SERVER_ERROR];
 
-        /** @var int $lastHttpStatus */
-        $lastHttpStatus = array_key_last(Response::$statusTexts);
+        /** @var int $lastStatus */
+        $lastStatus = array_key_last(Response::$statusTexts);
 
-        $httpStatus = random_int($lastHttpStatus + 1, $lastHttpStatus * 2);
-        $this->assertArrayNotHasKey($httpStatus, Response::$statusTexts);
+        $status = random_int($lastStatus + 1, $lastStatus * 2);
+        $this->assertArrayNotHasKey($status, Response::$statusTexts);
 
-        $exception = new \RuntimeException($title, $httpStatus);
+        $exception = new \Exception($title, $status);
+        $httpError = new HttpError($exception);
 
-        $this->assertEquals($httpStatus, $exception->getCode());
-        $this->assertEquals($title, new HttpError($exception)->getTitle());
+        $this->assertEquals($status, $exception->getCode());
+        $this->assertEquals($title, $httpError->getTitle());
     }
 
     public function testGettingTitleFromValidHttpStatus(): void
@@ -283,17 +263,17 @@ final class HttpErrorTest extends TestCase
         /** @var non-empty-string $title */
         $title = Response::$statusTexts[$status];
 
-        $exception = new \RuntimeException($title, $status);
+        $exception = new \Exception($title, $status);
+        $httpError = new HttpError($exception);
 
         $this->assertEquals($status, $exception->getCode());
-        $this->assertEquals($title, new HttpError($exception)->getTitle());
+        $this->assertEquals($title, $httpError->getTitle());
     }
 
     #[DataProvider('providerStatusAndLogLevel')]
     public function testGettingLogLevel(int $status, string $logLevel): void
     {
-        $exception = new \RuntimeException('Error', $status);
-        $this->assertSame($logLevel, new HttpError($exception)->getLogLevel());
+        $this->assertSame($logLevel, new HttpError(new \Exception('Error', $status))->getLogLevel());
     }
 
     /**
@@ -322,10 +302,15 @@ final class HttpErrorTest extends TestCase
 
     public function testHasUserMessage(): void
     {
-        $exception = new \RuntimeException('Error');
+        $exception = new \Exception('Error');
         $this->assertFalse(new HttpError($exception)->hasUserMessage());
 
-        $exception = new #[HasUserMessage] class('Error') extends \RuntimeException {};
+        $exception = new #[HasUserMessage] class('Error') extends \Exception {};
         $this->assertTrue(new HttpError($exception)->hasUserMessage());
+    }
+
+    public function testIsNotCriticalWhenLogLevelIsNotCritical(): void
+    {
+        $this->assertFalse(new HttpError(new \Exception('Not Found', 404))->isCritical());
     }
 }
