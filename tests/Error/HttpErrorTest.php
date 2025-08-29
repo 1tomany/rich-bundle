@@ -254,11 +254,7 @@ final class HttpErrorTest extends TestCase
         /** @var non-empty-string $title */
         $title = Response::$statusTexts[$status];
 
-        // Arrange: Create Error Description
-        $description = "{$status} {$title}";
-
-        // Assert: Descriptions Match
-        $this->assertEquals($description, new HttpError(new HttpException($status))->getDescription());
+        $this->assertEquals("{$status} {$title}", new HttpError(new HttpException($status))->getDescription());
     }
 
     public function testGettingTitleFromInvalidHttpStatus(): void
