@@ -114,7 +114,7 @@ final class HttpErrorTest extends TestCase
     {
         $exception = new #[HasUserMessage] class('Error') extends \Exception {};
 
-        $this->assertEquals($exception->getMessage(), (new HttpError($exception))->getMessage());
+        $this->assertEquals($exception->getMessage(), new HttpError($exception)->getMessage());
     }
 
     public function testConstructorGeneralizesMessageWithAllOtherExceptions(): void
