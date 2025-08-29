@@ -296,6 +296,9 @@ final class HttpErrorTest extends TestCase
         $this->assertSame($logLevel, new HttpError($exception)->getLogLevel());
     }
 
+    /**
+     * @return list<list<int|string>>
+     */
     public static function providerStatusAndLogLevel(): array
     {
         $provider = [
