@@ -3,6 +3,7 @@
 namespace OneToMany\RichBundle\Security;
 
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\Security\Core\Exception\AuthenticationException;
@@ -20,6 +21,6 @@ trait FailureHandlerTrait
      */
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): never
     {
-        throw HttpException::fromStatusCode(401, $exception->getMessage(), $exception, code: 401);
+        throw HttpException::fromStatusCode(Response::HTTP_UNAUTHORIZED, $exception->getMessage(), $exception, code: Response::HTTP_UNAUTHORIZED);
     }
 }
