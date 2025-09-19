@@ -30,6 +30,7 @@ use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Symfony\Component\HttpKernel\Exception\UnsupportedMediaTypeHttpException;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Validator\ConstraintViolation;
 use Symfony\Component\Validator\ConstraintViolationInterface;
 use Symfony\Component\Validator\ConstraintViolationList;
@@ -86,9 +87,21 @@ final class HttpErrorTest extends TestCase
         ]);
 
         $exception = new ValidationFailedException(null, $violations);
-
         $this->assertNotEquals($message, $exception->getMessage());
-        $this->assertEquals($message, new HttpError($exception)->getMessage());
+
+        $httpError = new HttpError($exception);
+        $this->assertEquals($message, $httpError->getMessage());
+    }
+
+    public function testConstructorGeneralizesMessageWhenExceptionIsAccessDeniedException(): void
+    {
+        $message = 'Access to this resource is denied.';
+
+        $exception = new AccessDeniedException();
+        $this->assertNotEquals($message, $exception->getMessage());
+
+        $httpError = new HttpError($exception);
+        $this->assertEquals($message, $httpError->getMessage());
     }
 
     public function testConstructorMaintainsMessageWhenExceptionImplementsHttpExceptionInterface(): void
@@ -276,6 +289,11 @@ final class HttpErrorTest extends TestCase
         $this->assertSame($logLevel, new HttpError(new \Exception('Error', $status))->getLogLevel());
     }
 
+    public function testGettingLogLevelWithAccessDeniedExceptionIsCritical(): void
+    {
+        $this->assertSame(LogLevel::CRITICAL, new HttpError(new AccessDeniedException())->getLogLevel());
+    }
+
     /**
      * @return list<list<int|string>>
      */
@@ -284,17 +302,59 @@ final class HttpErrorTest extends TestCase
         $provider = [
             [0, LogLevel::CRITICAL],
             [100, LogLevel::INFO],
+            [101, LogLevel::INFO],
+            [102, LogLevel::INFO],
+            [103, LogLevel::INFO],
+            [200, LogLevel::INFO],
+            [300, LogLevel::NOTICE],
             [301, LogLevel::NOTICE],
             [302, LogLevel::NOTICE],
+            [302, LogLevel::NOTICE],
+            [303, LogLevel::NOTICE],
+            [304, LogLevel::NOTICE],
+            [305, LogLevel::NOTICE],
+            [307, LogLevel::NOTICE],
             [308, LogLevel::NOTICE],
             [400, LogLevel::ERROR],
+            [401, LogLevel::ERROR],
+            [402, LogLevel::ERROR],
+            [403, LogLevel::CRITICAL],
             [404, LogLevel::ERROR],
             [405, LogLevel::ERROR],
+            [406, LogLevel::ERROR],
+            [407, LogLevel::ERROR],
+            [408, LogLevel::ERROR],
+            [409, LogLevel::ERROR],
+            [410, LogLevel::ERROR],
+            [411, LogLevel::ERROR],
+            [412, LogLevel::ERROR],
+            [413, LogLevel::ERROR],
+            [414, LogLevel::ERROR],
+            [415, LogLevel::ERROR],
+            [416, LogLevel::ERROR],
+            [417, LogLevel::ERROR],
             [418, LogLevel::ERROR],
+            [421, LogLevel::ERROR],
             [422, LogLevel::ERROR],
+            [423, LogLevel::ERROR],
+            [424, LogLevel::ERROR],
+            [425, LogLevel::ERROR],
+            [426, LogLevel::ERROR],
+            [428, LogLevel::ERROR],
+            [429, LogLevel::ERROR],
+            [431, LogLevel::ERROR],
+            [451, LogLevel::ERROR],
             [500, LogLevel::CRITICAL],
             [501, LogLevel::CRITICAL],
+            [502, LogLevel::CRITICAL],
+            [503, LogLevel::CRITICAL],
+            [504, LogLevel::CRITICAL],
+            [505, LogLevel::CRITICAL],
+            [506, LogLevel::CRITICAL],
+            [507, LogLevel::CRITICAL],
+            [508, LogLevel::CRITICAL],
             [510, LogLevel::CRITICAL],
+            [511, LogLevel::CRITICAL],
         ];
 
         return $provider;

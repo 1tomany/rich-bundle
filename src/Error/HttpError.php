@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 use function array_key_exists;
@@ -130,6 +131,11 @@ class HttpError implements HttpErrorInterface
             return LogLevel::NOTICE;
         }
 
+        // @see https://github.com/1tomany/rich-bundle/issues/61
+        if (403 === $this->getStatus() || $this->throwable instanceof AccessDeniedException) {
+            return LogLevel::CRITICAL;
+        }
+
         if ($this->getStatus() < 500) {
             return LogLevel::ERROR;
         }
@@ -212,6 +218,8 @@ class HttpError implements HttpErrorInterface
             || $this->throwable instanceof BadRequestHttpException
         ) {
             $message = 'The data provided is not valid.';
+        } elseif ($this->throwable instanceof AccessDeniedException) {
+            $message = 'Access to this resource is denied.';
         } elseif (
             $this->throwable instanceof HttpExceptionInterface
             || $this->hasAttribute(WithHttpStatus::class)
