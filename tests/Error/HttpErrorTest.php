@@ -30,6 +30,7 @@ use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Symfony\Component\HttpKernel\Exception\UnsupportedMediaTypeHttpException;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Validator\ConstraintViolation;
 use Symfony\Component\Validator\ConstraintViolationInterface;
 use Symfony\Component\Validator\ConstraintViolationList;
@@ -274,6 +275,11 @@ final class HttpErrorTest extends TestCase
     public function testGettingLogLevel(int $status, string $logLevel): void
     {
         $this->assertSame($logLevel, new HttpError(new \Exception('Error', $status))->getLogLevel());
+    }
+
+    public function testGettingLogLevelWithAccessDeniedExceptionIsCritical(): void
+    {
+        $this->assertSame(LogLevel::CRITICAL, new HttpError(new AccessDeniedException())->getLogLevel());
     }
 
     /**
