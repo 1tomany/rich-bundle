@@ -132,7 +132,7 @@ class HttpError implements HttpErrorInterface
         }
 
         // @see https://github.com/1tomany/rich-bundle/issues/61
-        if (403 === $this->getStatus() || $this->getThrowable() instanceof AccessDeniedException) {
+        if (403 === $this->getStatus() || $this->throwable instanceof AccessDeniedException) {
             return LogLevel::CRITICAL;
         }
 
