@@ -87,9 +87,21 @@ final class HttpErrorTest extends TestCase
         ]);
 
         $exception = new ValidationFailedException(null, $violations);
-
         $this->assertNotEquals($message, $exception->getMessage());
-        $this->assertEquals($message, new HttpError($exception)->getMessage());
+
+        $httpError = new HttpError($exception);
+        $this->assertEquals($message, $httpError->getMessage());
+    }
+
+    public function testConstructorGeneralizesMessageWhenExceptionIsAccessDeniedException(): void
+    {
+        $message = 'Access is denied.';
+
+        $exception = new AccessDeniedException();
+        $this->assertNotEquals($message, $exception->getMessage());
+
+        $httpError = new HttpError($exception);
+        $this->assertEquals($message, $httpError->getMessage());
     }
 
     public function testConstructorMaintainsMessageWhenExceptionImplementsHttpExceptionInterface(): void

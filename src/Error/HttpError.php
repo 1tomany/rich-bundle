@@ -218,6 +218,8 @@ class HttpError implements HttpErrorInterface
             || $this->throwable instanceof BadRequestHttpException
         ) {
             $message = 'The data provided is not valid.';
+        } elseif ($this->throwable instanceof AccessDeniedException) {
+            $message = 'Access is denied.';
         } elseif (
             $this->throwable instanceof HttpExceptionInterface
             || $this->hasAttribute(WithHttpStatus::class)
