@@ -283,14 +283,11 @@ final class HttpErrorTest extends TestCase
     {
         $provider = [
             [0, LogLevel::CRITICAL],
-
             [100, LogLevel::INFO],
             [101, LogLevel::INFO],
             [102, LogLevel::INFO],
             [103, LogLevel::INFO],
-
             [200, LogLevel::INFO],
-
             [300, LogLevel::NOTICE],
             [301, LogLevel::NOTICE],
             [302, LogLevel::NOTICE],
@@ -300,7 +297,6 @@ final class HttpErrorTest extends TestCase
             [305, LogLevel::NOTICE],
             [307, LogLevel::NOTICE],
             [308, LogLevel::NOTICE],
-
             [400, LogLevel::ERROR],
             [401, LogLevel::ERROR],
             [402, LogLevel::ERROR],
