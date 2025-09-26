@@ -1,0 +1,42 @@
+#!/usr/bin/env php
+<?php
+
+if (!isset($argv[1])) {
+    error(sprintf('Usage: %s <module-name>', $argv[0]));
+}
+
+$moduleName = ucfirst((string) $argv[1]);
+
+// Assume the "src" directory is one directory up
+$srcDir = sprintf('%s/src', dirname(__DIR__));
+
+if (!is_dir($srcDir)) {
+    error(sprintf('[ERROR] Source directory not found at "%s", aborting.', $srcDir));
+}
+
+$srcDir = $srcDir.'/'.$moduleName;
+
+$directories = [
+    $srcDir.'/Action/Command',
+    $srcDir.'/Action/Event',
+    $srcDir.'/Action/Handler/Exception',
+    $srcDir.'/Action/Input',
+    $srcDir.'/Contract/Enum',
+    $srcDir.'/Contract/Exception',
+    $srcDir.'/Contract/Repository',
+    $srcDir.'/Framework/Controller',
+    $srcDir.'/Framework/Controller/API',
+    $srcDir.'/Framework/Controller/Web',
+    $srcDir.'/Exception',
+];
+
+foreach ($directories as $directory) {
+    var_dump($directory);
+    // mkdir($directory, 0755, true);
+}
+
+function error(string $message): never
+{
+    fwrite(STDERR, sprintf("%s\n", trim($message)));
+    exit(1);
+}
