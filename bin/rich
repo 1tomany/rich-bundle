@@ -5,7 +5,7 @@ if (!isset($argv[1])) {
     error(sprintf('Usage: %s <module-name>', $argv[0]));
 }
 
-$moduleName = ucfirst((string) $argv[1]);
+$module = ucfirst((string) $argv[1]);
 
 // Assume the "src" directory is one directory up
 $srcDir = sprintf('%s/src', dirname(__DIR__));
@@ -14,7 +14,7 @@ if (!is_dir($srcDir)) {
     error(sprintf('[ERROR] Source directory not found at "%s", aborting.', $srcDir));
 }
 
-$srcDir = $srcDir.'/'.$moduleName;
+$srcDir = $srcDir.'/'.$module;
 
 $directories = [
     $srcDir.'/Action/Command',
@@ -37,10 +37,10 @@ foreach ($directories as $directory) {
 }
 
 $files = [
-    "{$srcDir}/Contract/Exception/ExceptionInterface.php" => "<?php\n\nnamespace App\\{$moduleName}\\Contract\\Exception;\n\ninterface ExceptionInterface extends \\Throwable\n{\n}",
-    "{$srcDir}/Contract/Repository/{$moduleName}RepositoryInterface.php" => "<?php\n\nnamespace App\\{$moduleName}\\Contract\\Repository;\n\nuse App\\Entity\\{$moduleName};\n\ninterface {$moduleName}RepositoryInterface\n{\n    public function findOneById(?int \$".strtolower($moduleName)."Id): ?{$moduleName};\n}",
-    "{$srcDir}/Exception/DomainException.php" => "<?php\n\nnamespace App\\{$moduleName}\\Exception;\n\nuse App\\{$moduleName}\\Contract\\Exception\\ExceptionInterface;\n\nclass DomainException extends \\DomainException implements ExceptionInterface\n{\n}",
-    "{$srcDir}/Exception/RuntimeException.php" => "<?php\n\nnamespace App\\{$moduleName}\\Exception;\n\nuse App\\{$moduleName}\\Contract\\Exception\\ExceptionInterface;\n\nclass RuntimeException extends \\RuntimeException implements ExceptionInterface\n{\n}",
+    "{$srcDir}/Contract/Exception/ExceptionInterface.php" => "<?php\n\nnamespace App\\{$module}\\Contract\\Exception;\n\ninterface ExceptionInterface extends \\Throwable\n{\n}",
+    "{$srcDir}/Contract/Repository/{$module}RepositoryInterface.php" => "<?php\n\nnamespace App\\{$module}\\Contract\\Repository;\n\nuse App\\Entity\\{$module};\n\ninterface {$module}RepositoryInterface\n{\n    public function findOneById(?int \$".strtolower($module)."Id): ?{$module};\n}",
+    "{$srcDir}/Exception/DomainException.php" => "<?php\n\nnamespace App\\{$module}\\Exception;\n\nuse App\\{$module}\\Contract\\Exception\\ExceptionInterface;\n\nclass DomainException extends \\DomainException implements ExceptionInterface\n{\n}",
+    "{$srcDir}/Exception/RuntimeException.php" => "<?php\n\nnamespace App\\{$module}\\Exception;\n\nuse App\\{$module}\\Contract\\Exception\\ExceptionInterface;\n\nclass RuntimeException extends \\RuntimeException implements ExceptionInterface\n{\n}",
 ];
 
 foreach ($files as $file => $contents) {
