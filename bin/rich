@@ -7,8 +7,15 @@ if (!isset($argv[1])) {
 
 $module = ucfirst((string) $argv[1]);
 
-// Assume the "src" directory is one directory up
-$srcDir = sprintf('%s/src', dirname(__DIR__));
+// Determine repository root directory
+if (isset($GLOBALS['_composer_bin_dir'])) {
+    $rootDir = dirname(dirname($_composer_bin_dir));
+} else {
+    $rootDir = getcwd();
+}
+
+// Determine source directory
+$srcDir = $rootDir.'/src';
 
 if (!is_dir($srcDir)) {
     error(sprintf('[ERROR] Source directory not found at "%s", aborting.', $srcDir));
