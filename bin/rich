@@ -37,7 +37,10 @@ foreach ($directories as $directory) {
 }
 
 $files = [
-    $srcDir.'/Contract/Exception/ExceptionInterface.php' => "<?php\n\nnamespace App\\{$moduleName}\\Contract\\Exception;\n\ninterface ExceptionInterface extends \\Throwable\n{\n}",
+    "{$srcDir}/Contract/Exception/ExceptionInterface.php" => "<?php\n\nnamespace App\\{$moduleName}\\Contract\\Exception;\n\ninterface ExceptionInterface extends \\Throwable\n{\n}",
+    "{$srcDir}/Contract/Repository/{$moduleName}RepositoryInterface.php" => "<?php\n\nnamespace App\\{$moduleName}\\Contract\\Repository;\n\ninterface {$moduleName}RepositoryInterface\n{\n}",
+    "{$srcDir}/Exception/DomainException.php" => "<?php\n\nnamespace App\\{$moduleName}\\Exception;\n\nuse App\\{$moduleName}\\Contract\\Exception\\ExceptionInterface;\n\nclass DomainException extends \\DomainException implements ExceptionInterface\n{\n}",
+    "{$srcDir}/Exception/RuntimeException.php" => "<?php\n\nnamespace App\\{$moduleName}\\Exception;\n\nuse App\\{$moduleName}\\Contract\\Exception\\ExceptionInterface;\n\nclass RuntimeException extends \\RuntimeException implements ExceptionInterface\n{\n}",
 ];
 
 foreach ($files as $file => $contents) {
