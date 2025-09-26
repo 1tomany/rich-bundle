@@ -37,6 +37,9 @@
             "OneToMany\\RichBundle\\Tests\\": "tests/"
         }
     },
+    "bin": [
+        "bin/rich"
+    ],
     "scripts": {
         "fix": "./vendor/bin/php-cs-fixer fix",
         "stan": "./vendor/bin/phpstan",
