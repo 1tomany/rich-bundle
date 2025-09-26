@@ -1,0 +1,63 @@
+#!/usr/bin/env php
+<?php
+
+if (!isset($argv[1])) {
+    error(sprintf('Usage: %s <module-name>', $argv[0]));
+}
+
+$module = ucfirst((string) $argv[1]);
+
+// Determine repository root directory
+if (isset($GLOBALS['_composer_bin_dir'])) {
+    $rootDir = dirname(dirname($_composer_bin_dir));
+} else {
+    $rootDir = getcwd();
+}
+
+// Determine source directory
+$srcDir = $rootDir.'/src';
+
+if (!is_dir($srcDir)) {
+    error(sprintf('[ERROR] Source directory not found at "%s", aborting.', $srcDir));
+}
+
+$srcDir = $srcDir.'/'.$module;
+
+$directories = [
+    $srcDir.'/Action/Command',
+    $srcDir.'/Action/Event',
+    $srcDir.'/Action/Handler/Exception',
+    $srcDir.'/Action/Input',
+    $srcDir.'/Contract/Enum',
+    $srcDir.'/Contract/Exception',
+    $srcDir.'/Contract/Repository',
+    $srcDir.'/Framework/Controller',
+    $srcDir.'/Framework/Controller/API',
+    $srcDir.'/Framework/Controller/Web',
+    $srcDir.'/Exception',
+];
+
+foreach ($directories as $directory) {
+    if (!is_dir($directory)) {
+        mkdir($directory, 0755, true);
+    }
+}
+
+$files = [
+    "{$srcDir}/Contract/Exception/ExceptionInterface.php" => "<?php\n\nnamespace App\\{$module}\\Contract\\Exception;\n\ninterface ExceptionInterface extends \\Throwable\n{\n}",
+    "{$srcDir}/Contract/Repository/{$module}RepositoryInterface.php" => "<?php\n\nnamespace App\\{$module}\\Contract\\Repository;\n\nuse App\\Entity\\{$module};\n\ninterface {$module}RepositoryInterface\n{\n    public function findOneById(?int \$".strtolower($module)."Id): ?{$module};\n}",
+    "{$srcDir}/Exception/DomainException.php" => "<?php\n\nnamespace App\\{$module}\\Exception;\n\nuse App\\{$module}\\Contract\\Exception\\ExceptionInterface;\n\nclass DomainException extends \\DomainException implements ExceptionInterface\n{\n}",
+    "{$srcDir}/Exception/RuntimeException.php" => "<?php\n\nnamespace App\\{$module}\\Exception;\n\nuse App\\{$module}\\Contract\\Exception\\ExceptionInterface;\n\nclass RuntimeException extends \\RuntimeException implements ExceptionInterface\n{\n}",
+];
+
+foreach ($files as $file => $contents) {
+    if (!is_file($file) && is_dir(dirname($file))) {
+        file_put_contents($file, trim($contents)."\n");
+    }
+}
+
+function error(string $message): never
+{
+    fwrite(STDERR, trim($message).PHP_EOL);
+    exit(1);
+}
