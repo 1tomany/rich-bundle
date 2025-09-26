@@ -31,8 +31,9 @@ $directories = [
 ];
 
 foreach ($directories as $directory) {
-    var_dump($directory);
-    // mkdir($directory, 0755, true);
+    if (!is_dir($directory)) {
+        mkdir($directory, 0755, true);
+    }
 }
 
 function error(string $message): never
