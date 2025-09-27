@@ -28,8 +28,12 @@ final readonly class SmartFileDenormalizer implements DenormalizerInterface
             }
 
             $name = $data->getClientOriginalName();
-        } else {
-            if (is_string($data) && !str_starts_with($data, 'data:')) {
+        }
+
+        if (is_string($data)) {
+            $isHttpUrl = \filter_var($data, \FILTER_VALIDATE_URL) && 0 === \stripos($data, 'http');
+
+            if (!$isHttpUrl && !str_starts_with($data, 'data:')) {
                 return \OneToMany\DataUri\parse_text_data($data, null); // @phpstan-ignore-line
             }
         }
