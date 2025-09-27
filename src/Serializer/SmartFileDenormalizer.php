@@ -10,9 +10,13 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
 use function class_exists;
+use function filter_var;
 use function is_a;
 use function is_string;
 use function str_starts_with;
+use function stripos;
+
+use const FILTER_VALIDATE_URL;
 
 final readonly class SmartFileDenormalizer implements DenormalizerInterface
 {
@@ -28,8 +32,14 @@ final readonly class SmartFileDenormalizer implements DenormalizerInterface
             }
 
             $name = $data->getClientOriginalName();
-        } else {
-            if (is_string($data) && !str_starts_with($data, 'data:')) {
+        }
+
+        if (is_string($data)) {
+            // @see https://github.com/1tomany/rich-bundle/issues/66
+            $isHttpUrl = false !== filter_var($data, FILTER_VALIDATE_URL) && 0 === stripos($data, 'http');
+
+            // The data is not an HTTP URL or a "data:" URI
+            if (!$isHttpUrl && !str_starts_with($data, 'data:')) {
                 return \OneToMany\DataUri\parse_text_data($data, null); // @phpstan-ignore-line
             }
         }
