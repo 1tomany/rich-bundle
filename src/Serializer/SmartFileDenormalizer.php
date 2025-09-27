@@ -31,6 +31,7 @@ final readonly class SmartFileDenormalizer implements DenormalizerInterface
         }
 
         if (is_string($data)) {
+            // @see https://github.com/1tomany/rich-bundle/issues/66
             $isHttpUrl = \filter_var($data, \FILTER_VALIDATE_URL) && 0 === \stripos($data, 'http');
 
             if (!$isHttpUrl && !str_starts_with($data, 'data:')) {
