@@ -2,15 +2,15 @@
 
 namespace OneToMany\RichBundle\Serializer;
 
-use OneToMany\DataUri\SmartFile;
+use OneToMany\DataUri\Contract\Record\SmartFileInterface;
 use OneToMany\RichBundle\Exception\InvalidArgumentException;
 use OneToMany\RichBundle\Exception\LogicException;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
-use function class_exists;
 use function filter_var;
+use function interface_exists;
 use function is_a;
 use function is_string;
 use function str_starts_with;
@@ -24,7 +24,7 @@ final readonly class SmartFileDenormalizer implements DenormalizerInterface
      * @param string|File $data
      * @param array<string, mixed> $context
      */
-    public function denormalize(mixed $data, string $type, ?string $format = null, array $context = []): SmartFile // @phpstan-ignore-line
+    public function denormalize(mixed $data, string $type, ?string $format = null, array $context = []): SmartFileInterface // @phpstan-ignore-line
     {
         if ($data instanceof UploadedFile) {
             if (!$data->isValid()) {
@@ -52,17 +52,17 @@ final readonly class SmartFileDenormalizer implements DenormalizerInterface
      */
     public function supportsDenormalization(mixed $data, string $type, ?string $format = null, array $context = []): bool
     {
-        if (!class_exists(SmartFile::class)) {
-            throw new LogicException('The SmartFile can not be denormalized because the Data URI library is not installed. Try running "composer require 1tomany/data-uri".');
+        if (!interface_exists(SmartFileInterface::class)) {
+            throw new LogicException('The data can not be denormalized because the 1tomany/data-uri library is not installed. Try running "composer require 1tomany/data-uri".');
         }
 
-        return (is_string($data) || $data instanceof File) && is_a($type, SmartFile::class, true);
+        return (is_string($data) || $data instanceof File) && is_a($type, SmartFileInterface::class, true);
     }
 
     public function getSupportedTypes(?string $format): array
     {
         return [
-            SmartFile::class => true, // @phpstan-ignore-line
+            SmartFileInterface::class => true, // @phpstan-ignore-line
         ];
     }
 }
