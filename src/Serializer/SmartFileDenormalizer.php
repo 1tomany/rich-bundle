@@ -9,8 +9,8 @@ use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
-use function class_exists;
 use function filter_var;
+use function interface_exists;
 use function is_a;
 use function is_string;
 use function str_starts_with;
@@ -52,7 +52,7 @@ final readonly class SmartFileDenormalizer implements DenormalizerInterface
      */
     public function supportsDenormalization(mixed $data, string $type, ?string $format = null, array $context = []): bool
     {
-        if (!class_exists(SmartFileInterface::class)) {
+        if (!interface_exists(SmartFileInterface::class)) {
             throw new LogicException('The data can not be denormalized because the 1tomany/data-uri library is not installed. Try running "composer require 1tomany/data-uri".');
         }
 
