@@ -237,6 +237,27 @@ final class InputParserTest extends TestCase
         $this->assertEquals($query['userId'], $input->id);
     }
 
+    public function testParsingRequestAllowsSourceQueryToReturnArrays(): void
+    {
+        $class = new class implements InputInterface {
+            /**
+             * @var ?list<non-empty-string>
+             */
+            #[SourceQuery]
+            public ?array $tags;
+
+            public function toCommand(): CommandInterface
+            {
+                throw new \Exception('Not implemented!');
+            }
+        };
+
+        $input = $this->createInputParser()->parse(new Request(['tags' => ['a', 'b', 'c']]), $class::class);
+
+        $this->assertInstanceOf($class::class, $input);
+        $this->assertSame(['a', 'b', 'c'], $input->tags);
+    }
+
     public function testParsingRequestCallsDefinedCallbackFunction(): void
     {
         $class = new class implements InputInterface {
