@@ -14,7 +14,6 @@ use OneToMany\RichBundle\Contract\Input\InputParserInterface;
 use OneToMany\RichBundle\Exception\HttpException;
 use OneToMany\RichBundle\Exception\LogicException;
 use OneToMany\RichBundle\Input\InputParser;
-use PhpParser\Builder\Class_;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
