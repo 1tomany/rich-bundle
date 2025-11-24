@@ -252,12 +252,10 @@ final class InputParserTest extends TestCase
             }
         };
 
-        $tags = ['a', 'b', 'c'];
-
-        $input = $this->createInputParser()->parse(new Request(['tags' => $tags]), $class::class);
+        $input = $this->createInputParser()->parse(new Request(['tags' => ['a', 'b', 'c']]), $class::class);
 
         $this->assertInstanceOf($class::class, $input);
-        $this->assertSame($tags, $input->tags);
+        $this->assertSame(['a', 'b', 'c'], $input->tags);
     }
 
     public function testParsingRequestCallsDefinedCallbackFunction(): void
