@@ -14,6 +14,7 @@ use OneToMany\RichBundle\Contract\Input\InputParserInterface;
 use OneToMany\RichBundle\Exception\HttpException;
 use OneToMany\RichBundle\Exception\LogicException;
 use OneToMany\RichBundle\Input\InputParser;
+use PhpParser\Builder\Class_;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
@@ -235,6 +236,29 @@ final class InputParserTest extends TestCase
 
         $this->assertInstanceOf($class::class, $input);
         $this->assertEquals($query['userId'], $input->id);
+    }
+
+    public function testParsingRequestAllowsSourceQueryToReturnArrays(): void
+    {
+        $class = new class implements InputInterface {
+            /**
+             * @var ?list<non-empty-string>
+             */
+            #[SourceQuery]
+            public ?array $tags;
+
+            public function toCommand(): CommandInterface
+            {
+                throw new \Exception('Not implemented!');
+            }
+        };
+
+        $tags = ['a', 'b', 'c'];
+
+        $input = $this->createInputParser()->parse(new Request(['tags' => $tags]), $class::class);
+
+        $this->assertInstanceOf($class::class, $input);
+        $this->assertSame($tags, $input->tags);
     }
 
     public function testParsingRequestCallsDefinedCallbackFunction(): void
