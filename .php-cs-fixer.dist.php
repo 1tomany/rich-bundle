@@ -8,11 +8,14 @@ $finder = new Finder();
 
 $finder->in([
     './',
+    './bin/',
     './src/',
     './tests/',
 ]);
 
-$finder->append(['./bin/rich']);
+$finder->append([
+    './bin/rich',
+]);
 
 $finder->exclude([
     'config',
