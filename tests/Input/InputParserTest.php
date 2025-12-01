@@ -515,7 +515,7 @@ final class InputParserTest extends TestCase
         $this->createInputParser()->parse(new Request(), $class::class);
     }
 
-    public function testParsingSourceRequestUsingFormData(): void
+    public function testParsingSourcePayloadUsingFormData(): void
     {
         $class = new class implements InputInterface {
             #[SourcePayload]
@@ -546,7 +546,7 @@ final class InputParserTest extends TestCase
         $this->assertEquals($data['email'], $input->email);
     }
 
-    public function testParsingSourceRequestUsingJsonData(): void
+    public function testParsingSourcePayloadUsingJsonData(): void
     {
         $class = new class implements InputInterface {
             #[SourcePayload]
