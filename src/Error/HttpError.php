@@ -26,7 +26,7 @@ use function trim;
  * @phpstan-import-type Trace from HttpErrorInterface
  * @phpstan-import-type Violation from HttpErrorInterface
  */
-class HttpError implements HttpErrorInterface
+class HttpError implements \Stringable, HttpErrorInterface
 {
     protected ErrorType $type;
 
