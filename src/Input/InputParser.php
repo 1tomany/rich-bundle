@@ -126,12 +126,12 @@ readonly class InputParser implements InputParserInterface
                     $this->appendProperty($property, $source, $request->getClientIp());
                 }
 
-                if ($source instanceof SourceQuery && $request->query->has($name)) {
-                    $this->appendProperty($property, $source, $request->query->all()[$name]);
-                }
-
                 if ($source instanceof SourcePayload && $payload->has($name)) {
                     $this->appendProperty($property, $source, $payload->get($name));
+                }
+
+                if ($source instanceof SourceQuery && $request->query->has($name)) {
+                    $this->appendProperty($property, $source, $request->query->all()[$name]);
                 }
 
                 if ($source instanceof SourceRoute) {
