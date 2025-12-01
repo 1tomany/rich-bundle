@@ -1,16 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="./vendor/phpunit/phpunit/phpunit.xsd" backupGlobals="false" bootstrap="./vendor/autoload.php" cacheDirectory="./.phpunit.cache" colors="true" beStrictAboutOutputDuringTests="true" displayDetailsOnPhpunitDeprecations="true" failOnDeprecation="true" failOnPhpunitDeprecation="true" failOnRisky="true" failOnWarning="true">
-  <testsuites>
-    <testsuite name="RICH Bundle Test Suite">
-      <directory>./tests/</directory>
-    </testsuite>
-  </testsuites>
-  <source ignoreSuppressionOfDeprecations="true">
-    <include>
-      <directory>./src/</directory>
-    </include>
-    <deprecationTrigger>
-      <function>trigger_deprecation</function>
-    </deprecationTrigger>
-  </source>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="./vendor/phpunit/phpunit/phpunit.xsd" bootstrap="./vendor/autoload.php" cacheDirectory="./.phpunit.cache/" colors="true" beStrictAboutOutputDuringTests="true" displayDetailsOnPhpunitDeprecations="true" displayDetailsOnTestsThatTriggerDeprecations="true" displayDetailsOnTestsThatTriggerNotices="true" displayDetailsOnTestsThatTriggerWarnings="true" failOnDeprecation="true" failOnNotice="true" failOnPhpunitDeprecation="true" failOnRisky="true" failOnWarning="true">
+    <php>
+        <ini name="error_reporting" value="-1"/>
+    </php>
+    <testsuites>
+        <testsuite name="RICH Bundle Test Suite">
+            <directory>./tests/</directory>
+        </testsuite>
+    </testsuites>
+    <source ignoreSuppressionOfDeprecations="true">
+        <include>
+            <directory>./src/</directory>
+        </include>
+        <deprecationTrigger>
+            <function>trigger_deprecation</function>
+        </deprecationTrigger>
+    </source>
 </phpunit>
