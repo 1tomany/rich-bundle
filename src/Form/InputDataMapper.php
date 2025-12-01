@@ -32,7 +32,7 @@ readonly class InputDataMapper implements DataMapperInterface
             return;
         }
 
-        if (!$viewData instanceof InputInterface) {
+        if (!$viewData instanceof InputInterface) { // @phpstan-ignore-line
             throw new RuntimeException(sprintf('Mapping the data failed because the data mapper requires an object of type "%s".', InputInterface::class));
         }
 

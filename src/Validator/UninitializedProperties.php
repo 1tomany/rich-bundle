@@ -10,7 +10,7 @@ final class UninitializedProperties extends Constraint
 
     public function __construct(?array $groups = null, $payload = null)
     {
-        parent::__construct([], $groups, $payload);
+        parent::__construct(null, $groups, $payload);
 
         $this->message = 'This property could not be mapped because it was not found in the request and has no default value.';
     }

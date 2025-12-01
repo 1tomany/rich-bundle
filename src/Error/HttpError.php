@@ -26,7 +26,7 @@ use function trim;
  * @phpstan-import-type Trace from HttpErrorInterface
  * @phpstan-import-type Violation from HttpErrorInterface
  */
-class HttpError implements HttpErrorInterface
+class HttpError implements \Stringable, HttpErrorInterface
 {
     protected ErrorType $type;
 
@@ -270,7 +270,7 @@ class HttpError implements HttpErrorInterface
         foreach ($this->throwable->getTrace() as $trace) {
             $this->trace[] = [
                 'class' => $trace['class'] ?? null,
-                'function' => $trace['function'] ?? null,
+                'function' => $trace['function'],
                 'file' => $trace['file'] ?? null,
                 'line' => $trace['line'] ?? null,
             ];
