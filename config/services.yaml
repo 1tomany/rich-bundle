@@ -1,0 +1,31 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    OneToMany\RichBundle\:
+        resource: '../src/'
+
+    OneToMany\RichBundle\Contract\Input\InputParserInterface: '@OneToMany\RichBundle\Input\InputParser'
+
+    OneToMany\RichBundle\EventListener\RequestListener:
+        tags:
+            - { name: kernel.event_listener, event: kernel.request, priority: 192 }
+
+    OneToMany\RichBundle\Input\InputParser:
+        arguments:
+            $tokenStorage: '@?Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface'
+
+    OneToMany\RichBundle\Serializer\HttpErrorNormalizer:
+        tags:
+            - { name: serializer.normalizer }
+        arguments:
+            $debug: '%kernel.debug%'
+
+    OneToMany\RichBundle\Serializer\SmartFileDenormalizer:
+        tags:
+            - { name: serializer.denormalizer }
+
+    OneToMany\RichBundle\ValueResolver\InputValueResolver:
+        tags:
+            - { name: controller.argument_value_resolver }
