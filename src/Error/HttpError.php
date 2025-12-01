@@ -270,7 +270,7 @@ class HttpError implements \Stringable, HttpErrorInterface
         foreach ($this->throwable->getTrace() as $trace) {
             $this->trace[] = [
                 'class' => $trace['class'] ?? null,
-                'function' => $trace['function'] ?? null,
+                'function' => $trace['function'],
                 'file' => $trace['file'] ?? null,
                 'line' => $trace['line'] ?? null,
             ];
