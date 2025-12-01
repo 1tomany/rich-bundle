@@ -5,8 +5,10 @@ namespace OneToMany\RichBundle\Tests\Input;
 use OneToMany\RichBundle\Attribute\PropertyIgnored;
 use OneToMany\RichBundle\Attribute\SourceContent;
 use OneToMany\RichBundle\Attribute\SourceHeader;
+use OneToMany\RichBundle\Attribute\SourceLocale;
 use OneToMany\RichBundle\Attribute\SourcePayload;
 use OneToMany\RichBundle\Attribute\SourceQuery;
+use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceUser;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
@@ -494,27 +496,6 @@ final class InputParserTest extends TestCase
         $this->assertEquals($server['HTTP_X_USER'], $input->userId);
     }
 
-    public function testParsingSourceUserRequiresSymfonySecurityBundle(): void
-    {
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessageMatches('/Symfony Security Bundle is not installed/');
-
-        $class = new class implements InputInterface {
-            public function __construct(
-                #[SourceUser]
-                public ?UserInterface $user = null,
-            ) {
-            }
-
-            public function toCommand(): CommandInterface
-            {
-                return new class implements CommandInterface {};
-            }
-        };
-
-        $this->createInputParser()->parse(new Request(), $class::class);
-    }
-
     public function testParsingSourcePayloadUsingFormData(): void
     {
         $class = new class implements InputInterface {
@@ -574,6 +555,47 @@ final class InputParserTest extends TestCase
         $this->assertInstanceOf($class::class, $input);
         $this->assertEquals($data['name'], $input->name);
         $this->assertEquals($data['email'], $input->email);
+    }
+
+    public function testParsingSourceRequest(): void
+    {
+        $class = new class implements InputInterface {
+            #[SourceLocale]
+            public string $locale;
+
+            public function toCommand(): CommandInterface
+            {
+                throw new \Exception('Not implemented!');
+            }
+        };
+
+        $request = new Request(['id' => random_int(1, 100)], ['name' => 'Modesto Herman'], [], [], [], ['REQUEST_METHOD' => 'POST']);
+
+        $input = $this->createInputParser()->parse($request, $class::class);
+
+        $this->assertInstanceOf($class::class, $input);
+        $this->assertEquals($request->getLocale(), $input->locale);
+    }
+
+    public function testParsingSourceUserRequiresSymfonySecurityBundle(): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessageMatches('/Symfony Security Bundle is not installed/');
+
+        $class = new class implements InputInterface {
+            public function __construct(
+                #[SourceUser]
+                public ?UserInterface $user = null,
+            ) {
+            }
+
+            public function toCommand(): CommandInterface
+            {
+                return new class implements CommandInterface {};
+            }
+        };
+
+        $this->createInputParser()->parse(new Request(), $class::class);
     }
 
     /**
