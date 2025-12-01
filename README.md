@@ -192,7 +192,7 @@ namespace App\Account\Action\Input;
 use App\Account\Action\Command\CreateAccountCommand;
 use App\Entity\User;
 use OneToMany\RichBundle\Attribute\SourceIpAddress;
-use OneToMany\RichBundle\Attribute\SourceRequest;
+use OneToMany\RichBundle\Attribute\SourcePayload;
 use OneToMany\RichBundle\Attribute\SourceUser;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
@@ -210,26 +210,26 @@ final readonly class CreateAccountInput implements InputInterface
         #[Assert\Length(max: 128)]
         public ?UserInterface $user,
 
-        #[SourceRequest]
+        #[SourcePayload]
         #[Assert\NotBlank]
         #[Assert\Length(min: 4, max: 128)]
         public ?string $name,
 
-        #[SourceRequest]
+        #[SourcePayload]
         #[Assert\Length(min: 4, max: 48)]
         public ?string $company,
 
-        #[SourceRequest]
+        #[SourcePayload]
         #[Assert\NotBlank]
         #[Assert\Email]
         #[Assert\Length(max: 128)]
         public ?string $email,
 
-        #[SourceRequest(nullify: true)]
+        #[SourcePayload(nullify: true)]
         #[Assert\Length(max: 1024)]
         public ?string $notes,
 
-        #[SourceRequest(nullify: true)]
+        #[SourcePayload(nullify: true)]
         #[Assert\Range(
             min: '1900-01-01',
             max: 'today',
@@ -254,20 +254,20 @@ While the input class is also fairly simple in nature, it accomplishes a lot.
 Classes that implement the `OneToMany\RichBundle\Contract\Action\InputInterface` interface should use the `@implements` annotation to indicate the type of command the `toCommand()` method creates.
 
 #### Property sources
-You'll also notice some new attributes: `#[SourceUser]`, `#[SourceRequest]`, and `#[SourceIpAddress]`. These allow you to indicate where in the request the data should come from. The `#[MapRequestPayload]` attribute that was announced in Symfony 6.3 is powerful, but limiting in that it assumes everything comes from the request content. There are nine attributes provided by this bundle that allow you to specify the source of the data from the request.
+You'll also notice some new attributes: `#[SourceUser]`, `#[SourcePayload]`, and `#[SourceIpAddress]`. These allow you to indicate where in the request the data should come from. The `#[MapRequestPayload]` attribute that was announced in Symfony 6.3 is powerful, but limiting in that it assumes everything comes from the request content. There are nine attributes provided by this bundle that allow you to specify the source of the data from the request.
 
 - `#[SourceContainer(name: 'app.config_setting')]` Fetches a parameter named `app.config_setting` from the container bag. While the `$name` argument is not strictly required, unless the container property is named identically to the class property, you'll need to supply it.
 - `#[SourceContent]` Fetches the entire request contents as a string using the method `Symfony\Component\HttpFoundation\Request::getContent()`.
 - `#[SourceFile(name: 'file')]` Fetches a parameter named `file` from the `Symfony\Component\HttpFoundation\Request::$files` bag. The property should be type hinted with the `Symfony\Component\HttpFoundation\File\UploadedFile` class.
 - `#[SourceHeader(name: 'Content-Type')]` Fetches the `Content-Type` header from the `Symfony\Component\HttpFoundation\Request::$headers` bag. The name is not case-sensitive, and underscores and dashes can be swapped: `CONTENT_TYPE` would result in the same value.
 - `#[SourceIpAddress]` Fetches the value returned by the `Symfony\Component\HttpFoundation\Request::getClientIp()` method.
+- `#[SourcePayload(name: 'user')]` Fetches a parameter named `user` from the request payload. This bundle uses HTTP content negotiation via the `Content-Type` request header to attempt to determine the type of content submitted. A standard Symfony installation allows you to use `form`, `json`, and `xml` formats by default.
 - `#[SourceQuery(name: 'query')]` Fetches a parameter named `query` from the `Symfony\Component\HttpFoundation\Request::$query` bag.
-- `#[SourceRequest(name: 'user')]` Fetches a parameter named `user` from the request content. This bundle uses HTTP content negotiation via the `Content-Type` request header to attempt to determine the type of content submitted. A standard Symfony installation allows you to use `form`, `json`, and `xml` formats by default.
 - `#[SourceRoute(name: 'productId')]` Fetches a parameter named `productId` from the route.
 - `#[SourceUser]` Fetches the authenticated user and returns `null` or an instance of the `Symfony\Component\Security\Core\User\UserInterface` interface.
 - `#[PropertyIgnored]` Indicates that the value resolver should ignore this property.
 
-If a property is not explicitly ignored or sourced, the value resolver will assume it uses the `#[SourceRequest]` attribute.
+If a property is not explicitly ignored or sourced, the value resolver will assume it uses the `#[SourcePayload]` attribute.
 
 The `$name` argument for each attribute is optional. The value resolver will use the name of the property if a `$name` is not given. The `name` property is ignored in the `#[SourceIpAddress]` and `#[SourceUser]` attributes because their values are the results of a method call.
 
@@ -284,7 +284,7 @@ In the example below, the `$username` property could be mapped from either of th
 namespace App\Account\Action\Input;
 
 use App\Account\Action\Command\ReadAccountCommand;
-use OneToMany\RichBundle\Attribute\SourceRequest;
+use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -315,7 +315,7 @@ The value resolver will attempt to extract a value from all configured sources u
 
 For instance, given the query string `email=&username=vic@1tomany.com`, the resolver would map an empty string to the `$username` property because the key `email` is present and comes before the `username` key.
 
-You can also combine chained sources. For example, you can have both a `#[SourceRequest]` and `#[SourceContainer]` attribute on a property: if the value wasn't found in the request content, then it would be retrieved from the container parameters.
+You can also combine chained sources. For example, you can have both a `#[SourcePayload]` and `#[SourceContainer]` attribute on a property: if the value wasn't found in the request payload, then it would be retrieved from the container parameters.
 
 #### Additional property source arguments
 Each source attribute has boolean `$trim` and `$nullify` arguments as well. By default, `$trim` is `true` and `$nullify` is `false`. When `$trim` is `true`, the resolver will convert any scalar value to a string and run the `\trim()` function in it. The value will then be coerced back to the type specified by the property of the input class during denormalization.
@@ -329,25 +329,25 @@ Take the following input class as an example:
 
 namespace App\Account\Action\Input;
 
-use OneToMany\RichBundle\Attribute\SourceRequest;
+use OneToMany\RichBundle\Attribute\SourcePayload;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
 
 final readonly class UpdateAccountInput implements InputInterface
 {
     public function __construct(
-        #[SourceRequest(trim: true, nullify: true)]
+        #[SourcePayload(trim: true, nullify: true)]
         public string $name,
 
-        #[SourceRequest(trim: true, nullify: true)]
+        #[SourcePayload(trim: true, nullify: true)]
         public ?string $email,
 
-        #[SourceRequest(trim: false, nullify: false)]
+        #[SourcePayload(trim: false, nullify: false)]
         public string $notes,
 
-        #[SourceRequest(trim: true, nullify: false)]
+        #[SourcePayload(trim: true, nullify: false)]
         public int $pin,
 
-        #[SourceRequest(trim: true, nullify: true)]
+        #[SourcePayload(trim: true, nullify: true)]
         public ?\DateTimeImmutable $birth,
     ) {
     }
