@@ -5,8 +5,8 @@ namespace OneToMany\RichBundle\Tests\Input;
 use OneToMany\RichBundle\Attribute\PropertyIgnored;
 use OneToMany\RichBundle\Attribute\SourceContent;
 use OneToMany\RichBundle\Attribute\SourceHeader;
+use OneToMany\RichBundle\Attribute\SourcePayload;
 use OneToMany\RichBundle\Attribute\SourceQuery;
-use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceUser;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
@@ -410,10 +410,10 @@ final class InputParserTest extends TestCase
         ];
 
         $class = new class implements InputInterface {
-            #[SourceRequest]
+            #[SourcePayload]
             public string $name;
 
-            #[SourceRequest]
+            #[SourcePayload]
             public int $age;
 
             public function toCommand(): CommandInterface
@@ -518,10 +518,10 @@ final class InputParserTest extends TestCase
     public function testParsingSourceRequestUsingFormData(): void
     {
         $class = new class implements InputInterface {
-            #[SourceRequest]
+            #[SourcePayload]
             public string $name;
 
-            #[SourceRequest]
+            #[SourcePayload]
             public string $email;
 
             public function toCommand(): CommandInterface
@@ -549,10 +549,10 @@ final class InputParserTest extends TestCase
     public function testParsingSourceRequestUsingJsonData(): void
     {
         $class = new class implements InputInterface {
-            #[SourceRequest]
+            #[SourcePayload]
             public string $name;
 
-            #[SourceRequest]
+            #[SourcePayload]
             public string $email;
 
             public function toCommand(): CommandInterface

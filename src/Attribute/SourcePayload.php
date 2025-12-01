@@ -3,6 +3,6 @@
 namespace OneToMany\RichBundle\Attribute;
 
 #[\Attribute(\Attribute::TARGET_PROPERTY | \Attribute::IS_REPEATABLE)]
-readonly class SourceRequest extends PropertySource
+readonly class SourcePayload extends PropertySource
 {
 }

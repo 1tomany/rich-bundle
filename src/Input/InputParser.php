@@ -9,8 +9,8 @@ use OneToMany\RichBundle\Attribute\SourceContent;
 use OneToMany\RichBundle\Attribute\SourceFile;
 use OneToMany\RichBundle\Attribute\SourceHeader;
 use OneToMany\RichBundle\Attribute\SourceIpAddress;
+use OneToMany\RichBundle\Attribute\SourcePayload;
 use OneToMany\RichBundle\Attribute\SourceQuery;
-use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceRoute;
 use OneToMany\RichBundle\Attribute\SourceUser;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
@@ -73,7 +73,7 @@ readonly class InputParser implements InputParserInterface
 
         if (in_array($format, ['form'])) {
             // application/x-www-form-urlencoded
-            $requestData = $request->request->all();
+            $payload = $request->request->all();
         } else {
             // application/json, application/xml
             if ($content = trim($request->getContent())) {
@@ -82,17 +82,17 @@ readonly class InputParser implements InputParserInterface
                 }
 
                 try {
-                    $requestData = $this->serializer->decode($content, $format);
+                    $payload = $this->serializer->decode($content, $format);
                 } catch (SerializerExceptionInterface $e) {
                 }
 
-                if (!is_array($requestData ?? null) || (($e ?? null) instanceof \Throwable)) {
+                if (!is_array($payload ?? null) || (($e ?? null) instanceof \Throwable)) {
                     throw HttpException::create(400, sprintf('Parsing the request failed because the content could not be decoded as "%s".', $format), previous: ($e ?? null));
                 }
             }
         }
 
-        $requestData = new ParameterBag($requestData ?? []);
+        $payload = new ParameterBag($payload ?? []);
 
         // Read the properties from the class
         $class = new \ReflectionClass($type);
@@ -130,8 +130,8 @@ readonly class InputParser implements InputParserInterface
                     $this->appendProperty($property, $source, $request->query->all()[$name]);
                 }
 
-                if ($source instanceof SourceRequest && $requestData->has($name)) {
-                    $this->appendProperty($property, $source, $requestData->get($name));
+                if ($source instanceof SourcePayload && $payload->has($name)) {
+                    $this->appendProperty($property, $source, $payload->get($name));
                 }
 
                 if ($source instanceof SourceRoute) {
@@ -191,7 +191,7 @@ readonly class InputParser implements InputParserInterface
             $propertySources[] = $attribute->newInstance();
         }
 
-        return $propertySources ?? [new SourceRequest()];
+        return $propertySources ?? [new SourcePayload()];
     }
 
     private function appendProperty(\ReflectionProperty $property, PropertySource $source, mixed $value): void
