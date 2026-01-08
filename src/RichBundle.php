@@ -13,8 +13,10 @@ class RichBundle extends AbstractBundle
     {
         parent::build($container);
 
-        // Register HandlerInterface objects as Symfony Messenger handlers
-        $container->addCompilerPass(new RegisterHandlersPass(), priority: 1);
+        // Register handler objects with their commands and the
+        // Symfony Messenger (if installed), and remove command,
+        // input, and result objects from the compiled container
+        $container->addCompilerPass(new RegisterHandlersPass());
     }
 
     /**

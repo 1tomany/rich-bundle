@@ -72,10 +72,10 @@ readonly class InputParser implements InputParserInterface
         $format = $request->getContentTypeFormat();
 
         if (in_array($format, ['form'])) {
-            // application/x-www-form-urlencoded
+            // Content types: application/x-www-form-urlencoded, multipart/form-data
             $requestData = $request->request->all();
         } else {
-            // application/json, application/xml
+            // Content types: application/json, application/xml
             if ($content = trim($request->getContent())) {
                 if (!$format) {
                     throw HttpException::create(422, 'Parsing the request failed because the Content-Type header was missing or malformed.');
@@ -89,10 +89,12 @@ readonly class InputParser implements InputParserInterface
                 if (!is_array($requestData ?? null) || (($e ?? null) instanceof \Throwable)) {
                     throw HttpException::create(400, sprintf('Parsing the request failed because the content could not be decoded as "%s".', $format), previous: ($e ?? null));
                 }
+            } else {
+                $requestData = [];
             }
         }
 
-        $requestData = new ParameterBag($requestData ?? []);
+        $requestData = new ParameterBag($requestData); // @phpstan-ignore-line
 
         // Read the properties from the class
         $class = new \ReflectionClass($type);

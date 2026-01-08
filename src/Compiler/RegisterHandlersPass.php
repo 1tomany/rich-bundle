@@ -36,7 +36,8 @@ class RegisterHandlersPass implements CompilerPassInterface
 
                 if (!$definition->hasTag('messenger.message_handler')) {
                     $definition->addTag('messenger.message_handler', [
-                        'method' => 'handle', 'handles' => $command,
+                        'method' => 'handle',
+                        'handles' => $command,
                     ]);
 
                     $container->setDefinition($class, $definition);
@@ -46,7 +47,12 @@ class RegisterHandlersPass implements CompilerPassInterface
             // Remove input, command, and result classes from the
             // container because they'll be instantiated elsewhere
             if ($this->isNonHandlerRichModuleClass($class)) {
-                $container->removeDefinition($id);
+                if (!$container->has($class)) {
+                    continue;
+                }
+
+                // @see https://github.com/1tomany/rich-bundle/issues/81
+                $container->removeDefinition($class);
             }
         }
     }
