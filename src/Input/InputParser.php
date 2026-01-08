@@ -72,10 +72,10 @@ readonly class InputParser implements InputParserInterface
         $format = $request->getContentTypeFormat();
 
         if (in_array($format, ['form'])) {
-            // Content-Type header is "application/x-www-form-urlencoded"
+            // Content types: application/x-www-form-urlencoded, multipart/form-data
             $requestData = $request->request->all();
         } else {
-            // Content-Type header is "application/json" or "application/xml"
+            // Content types: application/json, application/xml
             if ($content = trim($request->getContent())) {
                 if (!$format) {
                     throw HttpException::create(422, 'Parsing the request failed because the Content-Type header was missing or malformed.');
