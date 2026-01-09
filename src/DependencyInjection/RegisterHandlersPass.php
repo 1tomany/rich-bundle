@@ -1,6 +1,6 @@
 <?php
 
-namespace OneToMany\RichBundle\Compiler;
+namespace OneToMany\RichBundle\DependencyInjection;
 
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\HandlerInterface;

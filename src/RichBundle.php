@@ -2,7 +2,7 @@
 
 namespace OneToMany\RichBundle;
 
-use OneToMany\RichBundle\Compiler\RegisterHandlersPass;
+use OneToMany\RichBundle\DependencyInjection\RegisterHandlersPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
