@@ -18,13 +18,11 @@ class RemovePass implements CompilerPassInterface
     public function process(ContainerBuilder $container): void
     {
         foreach ($container->getDefinitions() as $id => $definition) {
-            $class = $definition->getClass();
-
-            // Remove command, input, and result classes from the
-            // container because they'll be instantiated elsewhere
-            if ($class && $this->isNonServiceClass($class)) {
-                if ($container->hasDefinition($class)) {
-                    $container->removeDefinition($class); // @see https://github.com/1tomany/rich-bundle/issues/81
+            if ($class = $definition->getClass()) {
+                if ($this->isNonServiceClass($class)) {
+                    if ($container->hasDefinition($class)) {
+                        $container->removeDefinition($class); // @see https://github.com/1tomany/rich-bundle/issues/81
+                    }
                 }
             }
         }
