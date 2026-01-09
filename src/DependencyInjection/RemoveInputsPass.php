@@ -11,7 +11,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use function class_exists;
 use function is_subclass_of;
 
-class RemovePass implements CompilerPassInterface
+class RemoveInputsPass implements CompilerPassInterface
 {
     public const int PRIORITY = 0;
 

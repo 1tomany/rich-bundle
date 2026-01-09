@@ -13,7 +13,7 @@ use function interface_exists;
 use function is_subclass_of;
 use function str_replace;
 
-class MessengerPass implements CompilerPassInterface
+class RegisterHandlersPass implements CompilerPassInterface
 {
     public const int PRIORITY = 2;
 
