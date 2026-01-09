@@ -22,26 +22,17 @@ class RemovePass implements CompilerPassInterface
 
             // Remove command, input, and result classes from the
             // container because they'll be instantiated elsewhere
-            if ($class && $this->isCommandInputOrResultClass($class)) {
-                if (!$container->has($class)) {
-                    continue;
+            if ($class && $this->isNonServiceClass($class)) {
+                if ($container->hasDefinition($class)) {
+                    $container->removeDefinition($class); // @see https://github.com/1tomany/rich-bundle/issues/81
                 }
-
-                $container->removeDefinition($class); // @see https://github.com/1tomany/rich-bundle/issues/81
             }
         }
     }
 
-    private function isCommandInputOrResultClass(string $class): bool
+    private function isNonServiceClass(string $class): bool
     {
         // @see https://github.com/1tomany/rich-bundle/issues/11
-        if (!class_exists($class, false)) {
-            return false;
-        }
-
-        return
-            is_subclass_of($class, CommandInterface::class)
-            || is_subclass_of($class, InputInterface::class)
-            || is_subclass_of($class, ResultInterface::class);
+        return class_exists($class, false) && (is_subclass_of($class, CommandInterface::class) || is_subclass_of($class, InputInterface::class) || is_subclass_of($class, ResultInterface::class));
     }
 }

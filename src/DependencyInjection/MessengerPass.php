@@ -26,19 +26,16 @@ class MessengerPass implements CompilerPassInterface
 
                 // Tag handlers to be used by Symfony Messenger
                 if ($class && $this->isClassMessageHandler($class)) {
-                    $command = $this->getHandlerCommandClass($class);
-
-                    if (!$command) {
-                        continue;
-                    }
-
                     if (!$definition->hasTag('messenger.message_handler')) {
-                        $definition->addTag('messenger.message_handler', [
-                            'method' => 'handle', 'handles' => $command,
-                        ]);
+                        if ($command = $this->getHandlerCommandClass($class)) {
+                            // Tag the handler for the Symfony Messenger
+                            $definition->addTag('messenger.message_handler', [
+                                'method' => 'handle', 'handles' => $command,
+                            ]);
 
-                        // Update the definition with the new tag
-                        $container->setDefinition($class, $definition);
+                            // Update the definition with the new tag
+                            $container->setDefinition($class, $definition);
+                        }
                     }
                 }
             }
@@ -66,14 +63,6 @@ class MessengerPass implements CompilerPassInterface
         $command = str_replace('Handler', 'Command', $class);
 
         // @see https://github.com/1tomany/rich-bundle/issues/11
-        if (!class_exists($command, false)) {
-            return null;
-        }
-
-        if (!is_subclass_of($command, CommandInterface::class)) {
-            return null;
-        }
-
-        return $command;
+        return class_exists($command, false) && is_subclass_of($command, CommandInterface::class) ? $command : null;
     }
 }
