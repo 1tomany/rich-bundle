@@ -4,8 +4,6 @@ namespace OneToMany\RichBundle\DependencyInjection;
 
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\HandlerInterface;
-use OneToMany\RichBundle\Contract\Action\InputInterface;
-use OneToMany\RichBundle\Contract\Action\ResultInterface;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -21,8 +19,6 @@ class MessengerPass implements CompilerPassInterface
 
     public function process(ContainerBuilder $container): void
     {
-        $tag = 'messenger.message_handler';
-
         /** @disregard P1009 Undefined type */
         if (interface_exists(MessageBusInterface::class, false)) {
             foreach ($container->getDefinitions() as $definition) {
@@ -32,11 +28,18 @@ class MessengerPass implements CompilerPassInterface
                 if ($class && $this->isClassMessageHandler($class)) {
                     $command = $this->getHandlerCommandClass($class);
 
-                    if (null !== $command && !$definition->hasTag($tag)) {
-                        $definition->addTag($tag, ['method' => 'handle', 'handles' => $command]);
+                    if (!$command) {
+                        continue;
                     }
 
-                    $container->setDefinition($class, $definition);
+                    if (!$definition->hasTag('messenger.message_handler')) {
+                        $definition->addTag('messenger.message_handler', [
+                            'method' => 'handle', 'handles' => $command,
+                        ]);
+
+                        // Update the definition with the new tag
+                        $container->setDefinition($class, $definition);
+                    }
                 }
             }
         }
