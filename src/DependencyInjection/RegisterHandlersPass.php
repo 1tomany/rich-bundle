@@ -15,6 +15,12 @@ use function str_replace;
 
 class RegisterHandlersPass implements CompilerPassInterface
 {
+    /**
+     * This MUST be greater than zero so that it is executed
+     * before the pass from the Symfony Messenger component.
+     *
+     * @see https://github.com/1tomany/rich-bundle/issues/83
+     */
     public const int PRIORITY = 2;
 
     public function process(ContainerBuilder $container): void
