@@ -8,6 +8,8 @@ namespace OneToMany\RichBundle\Contract\Action;
  */
 interface HandlerInterface
 {
+    public const string METHOD = 'handle';
+
     /**
      * @param C $command
      *

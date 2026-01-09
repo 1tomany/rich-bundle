@@ -1,0 +1,47 @@
+<?php
+
+namespace OneToMany\RichBundle\DependencyInjection;
+
+use OneToMany\RichBundle\Contract\Action\CommandInterface;
+use OneToMany\RichBundle\Contract\Action\InputInterface;
+use OneToMany\RichBundle\Contract\Action\ResultInterface;
+use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+
+use function class_exists;
+use function is_subclass_of;
+
+class RemovePass implements CompilerPassInterface
+{
+    public const int PRIORITY = 0;
+
+    public function process(ContainerBuilder $container): void
+    {
+        foreach ($container->getDefinitions() as $id => $definition) {
+            $class = $definition->getClass();
+
+            // Remove command, input, and result classes from the
+            // container because they'll be instantiated elsewhere
+            if ($class && $this->isCommandInputOrResultClass($class)) {
+                if (!$container->has($class)) {
+                    continue;
+                }
+
+                $container->removeDefinition($class); // @see https://github.com/1tomany/rich-bundle/issues/81
+            }
+        }
+    }
+
+    private function isCommandInputOrResultClass(string $class): bool
+    {
+        // @see https://github.com/1tomany/rich-bundle/issues/11
+        if (!class_exists($class, false)) {
+            return false;
+        }
+
+        return
+            is_subclass_of($class, CommandInterface::class)
+            || is_subclass_of($class, InputInterface::class)
+            || is_subclass_of($class, ResultInterface::class);
+    }
+}

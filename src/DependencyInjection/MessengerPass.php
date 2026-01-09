@@ -1,0 +1,76 @@
+<?php
+
+namespace OneToMany\RichBundle\DependencyInjection;
+
+use OneToMany\RichBundle\Contract\Action\CommandInterface;
+use OneToMany\RichBundle\Contract\Action\HandlerInterface;
+use OneToMany\RichBundle\Contract\Action\InputInterface;
+use OneToMany\RichBundle\Contract\Action\ResultInterface;
+use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\Messenger\MessageBusInterface;
+
+use function class_exists;
+use function interface_exists;
+use function is_subclass_of;
+use function str_replace;
+
+class MessengerPass implements CompilerPassInterface
+{
+    public const int PRIORITY = 2;
+
+    public function process(ContainerBuilder $container): void
+    {
+        $tag = 'messenger.message_handler';
+
+        /** @disregard P1009 Undefined type */
+        if (interface_exists(MessageBusInterface::class, false)) {
+            foreach ($container->getDefinitions() as $definition) {
+                $class = $definition->getClass();
+
+                // Tag handlers to be used by Symfony Messenger
+                if ($class && $this->isClassMessageHandler($class)) {
+                    $command = $this->getHandlerCommandClass($class);
+
+                    if (null !== $command && !$definition->hasTag($tag)) {
+                        $definition->addTag($tag, ['method' => 'handle', 'handles' => $command]);
+                    }
+
+                    $container->setDefinition($class, $definition);
+                }
+            }
+        }
+    }
+
+    private function isClassMessageHandler(string $class): bool
+    {
+        return class_exists($class, false) && is_subclass_of($class, HandlerInterface::class); // @see https://github.com/1tomany/rich-bundle/issues/11
+    }
+
+    /**
+     * This attempts to generate the command class name based off
+     * the handler class name. It takes the FQCN of the handler and
+     * replaces the string Handler with Command. If the resulting
+     * class exists and implements the CommandInterface interface,
+     * it assumes that class is the command class for that handler.
+     *
+     * @return ?class-string<CommandInterface>
+     */
+    private function getHandlerCommandClass(string $class): ?string
+    {
+        // This is a quick-and-dirty way to generate the FQCN
+        // for the command given the FQCN of the handler class
+        $command = str_replace('Handler', 'Command', $class);
+
+        // @see https://github.com/1tomany/rich-bundle/issues/11
+        if (!class_exists($command, false)) {
+            return null;
+        }
+
+        if (!is_subclass_of($command, CommandInterface::class)) {
+            return null;
+        }
+
+        return $command;
+    }
+}
