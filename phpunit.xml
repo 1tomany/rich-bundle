@@ -4,7 +4,7 @@
         <ini name="error_reporting" value="-1"/>
     </php>
     <testsuites>
-        <testsuite name="RICH Bundle Test Suite">
+        <testsuite name="rich-bundle Test Suite">
             <directory>./tests/</directory>
         </testsuite>
     </testsuites>
