@@ -22,10 +22,6 @@ services:
         arguments:
             $debug: '%kernel.debug%'
 
-    OneToMany\RichBundle\Serializer\SmartFileDenormalizer:
-        tags:
-            - { name: serializer.denormalizer }
-
     OneToMany\RichBundle\ValueResolver\InputValueResolver:
         tags:
             - { name: controller.argument_value_resolver }
