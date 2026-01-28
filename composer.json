@@ -8,25 +8,25 @@
     "require": {
         "php": ">=8.4",
         "psr/log": "^3.0",
-        "symfony/dependency-injection": "^7.2",
-        "symfony/event-dispatcher": "^7.2",
-        "symfony/form": "^7.2",
-        "symfony/http-foundation": "^7.2",
-        "symfony/http-kernel": "^7.2",
-        "symfony/security-core": "^7.2",
-        "symfony/serializer": "^7.2",
-        "symfony/validator": "^7.2"
+        "symfony/dependency-injection": "^7.2|^8.0",
+        "symfony/event-dispatcher": "^7.2|^8.0",
+        "symfony/form": "^7.2|^8.0",
+        "symfony/http-foundation": "^7.2|^8.0",
+        "symfony/http-kernel": "^7.2|^8.0",
+        "symfony/security-core": "^7.2|^8.0",
+        "symfony/serializer": "^7.2|^8.0",
+        "symfony/validator": "^7.2|^8.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.24",
-        "friendsofphp/php-cs-fixer": "^3.90",
+        "friendsofphp/php-cs-fixer": "^3.93",
         "phpdocumentor/reflection-docblock": "^6.0",
         "phpstan/phpstan": "^2.1",
-        "phpunit/phpunit": "^12.4"
+        "phpunit/phpunit": "^12.5"
     },
     "suggest": {
-        "1tomany/data-uri": "Provides a data URI parser and file object for handling file uploads",
-        "symfony/security-bundle": "Provides autowired TokenStorageInterface to extract authenticated users"
+        "1tomany/data-uri-bundle": "Provides a decoder to convert data into a self-destroying file object",
+        "symfony/security-bundle": "Provides an autowired TokenStorageInterface to extract authenticated users"
     },
     "autoload": {
         "psr-4": {
