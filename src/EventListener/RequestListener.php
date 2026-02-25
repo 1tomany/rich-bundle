@@ -45,13 +45,13 @@ readonly class RequestListener implements EventSubscriberInterface
     {
         return [
             RequestEvent::class => [
-                ['onKernelRequest', 128],
+                ['validateMediaTypes', 128],
             ],
             ViewEvent::class => [
-                ['onKernelView', 0],
+                ['serializeResult', 0],
             ],
             ResponseEvent::class => [
-                ['onKernelResponse', 0],
+                ['setVaryHeader', 0],
             ],
             ExceptionEvent::class => [
                 ['onKernelException', 2],
@@ -62,18 +62,42 @@ readonly class RequestListener implements EventSubscriberInterface
     public function onKernelRequest(RequestEvent $event): void
     {
         if ($this->isApiRequest($event->getRequest())) {
-            $this->validateMediaTypes($event);
+            $format = $event->getRequest()->getPreferredFormat(null);
+
+            if (null !== $format) {
+                if (!in_array($format, $this->acceptFormats, true)) {
+                    throw HttpException::create(406, sprintf('The server cannot respond with a media type the client will find acceptable. Acceptable media types are: "%s".', $this->flattenFormats($this->acceptFormats)));
+                }
+            }
+
+            $format = $event->getRequest()->getContentTypeFormat();
+
+            if (null !== $format) {
+                if (!in_array($format, $this->contentTypeFormats, true)) {
+                    throw HttpException::create(415, sprintf('The server cannot process content with the media type "%s". Supported content media types are: "%s".', $event->getRequest()->getMimeType($format), $this->flattenFormats($this->contentTypeFormats)));
+                }
+            }
         }
     }
 
-    public function onKernelView(ViewEvent $event): void
+    public function serializeResult(ViewEvent $event): void
     {
-        if (($result = $event->getControllerResult()) instanceof ResultInterface) {
-            $event->setResponse($this->serializeResponse($event->getRequest(), $result(), $result->getContext(), $result->getStatus(), $result->getHeaders()));
+        $result = $event->getControllerResult();
+
+        if ($result instanceof ResultInterface) {
+            $response = $this->serializeResponse(
+                $event->getRequest(),
+                $result(),
+                $result->getContext(),
+                $result->getStatus(),
+                $result->getHeaders(),
+            );
+
+            $event->setResponse($response);
         }
     }
 
-    public function onKernelResponse(ResponseEvent $event): void
+    public function setVaryHeader(ResponseEvent $event): void
     {
         if ($this->isApiRequest($event->getRequest())) {
             $event->getResponse()->setVary(['Accept']);
@@ -86,48 +110,11 @@ readonly class RequestListener implements EventSubscriberInterface
             return;
         }
 
-        // Flatten and normalize the exception
-        $httpError = new HttpError($event->getThrowable());
-
-        // Log important exceptions
-        if ($httpError->hasUserMessage() || $httpError->isCritical()) {
-            $this->logger->log($httpError->getLogLevel(), $httpError->getThrowable()->getMessage(), [
-                'exception' => $httpError->getThrowable(),
-            ]);
-        }
-
-        // Render the exception based on the request type
         if ($this->isApiRequest($event->getRequest())) {
-            $response = $this->serializeResponse($event->getRequest(), $httpError, [], $httpError->getStatus(), $httpError->getHeaders());
-        }
+            // Flatten and normalize the exception
+            $httpError = new HttpError($event->getThrowable());
 
-        $event->setResponse($response);
-    }
-
-    /**
-     * @see OneToMany\RichBundle\EventListener\AbstractListener
-     */
-    protected function getSerializer(): SerializerInterface
-    {
-        return $this->serializer;
-    }
-
-    protected function validateMediaTypes(RequestEvent $event): void
-    {
-        $format = $event->getRequest()->getPreferredFormat(null);
-
-        if (null !== $format) {
-            if (!in_array($format, $this->acceptFormats, true)) {
-                throw HttpException::create(406, sprintf('The server cannot respond with a media type the client will find acceptable. Acceptable media types are: "%s".', $this->flattenFormats($this->getAcceptFormats())));
-            }
-        }
-
-        $format = $event->getRequest()->getContentTypeFormat();
-
-        if (null !== $format) {
-            if (!in_array($format, $this->contentTypeFormats, true)) {
-                throw HttpException::create(415, sprintf('The server cannot process content with the media type "%s". Supported content media types are: "%s".', $event->getRequest()->getMimeType($format), $this->flattenFormats($this->getContentFormats())));
-            }
+            $event->setResponse($this->serializeResponse($event->getRequest(), $httpError, status: $httpError->getStatus(), headers: $httpError->getHeaders()));
         }
     }
 
