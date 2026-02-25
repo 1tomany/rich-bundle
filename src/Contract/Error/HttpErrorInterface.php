@@ -5,9 +5,24 @@ namespace OneToMany\RichBundle\Contract\Error;
 use OneToMany\RichBundle\Contract\Enum\ErrorType;
 
 /**
- * @phpstan-type Stack array{class: string, message: string, file: string, line: int}
- * @phpstan-type Trace array{class: ?string, function: ?string, file: ?string, line: ?int}
- * @phpstan-type Violation array{property: string, message: string}
+ * @phpstan-type Stack array{
+ *   class: string,
+ *   message: string,
+ *   file: string,
+ *   line: int,
+ * }
+ *
+ * @phpstan-type Trace array{
+ *   class: ?string,
+ *   function: ?string,
+ *   file: ?string,
+ *   line: ?int,
+ * }
+ *
+ * @phpstan-type Violation array{
+ *   property: string,
+ *   message: string,
+ * }
  */
 interface HttpErrorInterface extends \Stringable
 {
@@ -56,4 +71,9 @@ interface HttpErrorInterface extends \Stringable
     public function getTrace(): array;
 
     public function getLogLevel(): string;
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getContext(): array;
 }

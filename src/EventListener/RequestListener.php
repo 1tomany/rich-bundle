@@ -6,7 +6,6 @@ use OneToMany\RichBundle\Contract\Action\ResultInterface;
 use OneToMany\RichBundle\Error\HttpError;
 use OneToMany\RichBundle\Exception\HttpException;
 use OneToMany\RichBundle\Exception\RuntimeException;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -29,12 +28,14 @@ readonly class RequestListener implements EventSubscriberInterface
     /**
      * @param non-empty-list<non-empty-lowercase-string> $acceptFormats
      * @param non-empty-list<non-empty-lowercase-string> $contentTypeFormats
+     * @param non-empty-string $serializedApiPrefix
      */
     public function __construct(
-        private LoggerInterface $logger,
+        // private LoggerInterface $logger,
         private SerializerInterface $serializer,
         private array $acceptFormats = ['json', 'xml'],
         private array $contentTypeFormats = ['form', 'json'],
+        private string $serializedApiPrefix = '/api',
     ) {
     }
 
@@ -54,14 +55,14 @@ readonly class RequestListener implements EventSubscriberInterface
                 ['setVaryHeader', 0],
             ],
             ExceptionEvent::class => [
-                ['onKernelException', 2],
+                ['serializeException', 2],
             ],
         ];
     }
 
-    public function onKernelRequest(RequestEvent $event): void
+    public function validateMediaTypes(RequestEvent $event): void
     {
-        if ($this->isApiRequest($event->getRequest())) {
+        if ($this->isSerializableRequest($event->getRequest())) {
             $format = $event->getRequest()->getPreferredFormat(null);
 
             if (null !== $format) {
@@ -99,26 +100,61 @@ readonly class RequestListener implements EventSubscriberInterface
 
     public function setVaryHeader(ResponseEvent $event): void
     {
-        if ($this->isApiRequest($event->getRequest())) {
+        if ($this->isSerializableRequest($event->getRequest())) {
             $event->getResponse()->setVary(['Accept']);
         }
     }
 
-    public function onKernelException(ExceptionEvent $event): void
+    public function serializeException(ExceptionEvent $event): void
     {
         if (!$event->isMainRequest()) {
             return;
         }
 
-        if ($this->isApiRequest($event->getRequest())) {
+        if ($this->isSerializableRequest($event->getRequest())) {
             // Flatten and normalize the exception
             $httpError = new HttpError($event->getThrowable());
 
-            $event->setResponse($this->serializeResponse($event->getRequest(), $httpError, status: $httpError->getStatus(), headers: $httpError->getHeaders()));
+            // Serialize the flattened exception
+            $response = $this->serializeResponse(
+                $event->getRequest(),
+                $httpError,
+                $httpError->getContext(),
+                $httpError->getStatus(),
+                $httpError->getHeaders(),
+            );
+
+            $event->setResponse($response);
         }
     }
 
-    public function getResponseFormat(Request $request): string
+    /**
+     * @param array<string, mixed> $context
+     * @param array<string, string> $headers
+     */
+    protected function serializeResponse(
+        Request $request,
+        mixed $data,
+        array $context = [],
+        int $status = Response::HTTP_OK,
+        array $headers = [],
+    ): Response {
+        $format = $this->resolveResponseFormat($request);
+
+        try {
+            $content = $this->serializer->serialize($data, $format, $context);
+        } catch (SerializerExceptionInterface $e) {
+            throw new RuntimeException(sprintf('Serializing the response failed because data of type "%s" could not be encoded as "%s".', get_debug_type($data), $format), previous: $e);
+        }
+
+        $response = new Response($content, $status, $headers + [
+            'Content-Type' => $request->getMimeType($format),
+        ]);
+
+        return $response;
+    }
+
+    private function resolveResponseFormat(Request $request): string
     {
         foreach ($this->acceptFormats as $acceptFormat) {
             $format = $request->getPreferredFormat(...[
@@ -134,32 +170,6 @@ readonly class RequestListener implements EventSubscriberInterface
     }
 
     /**
-     * @param array<string, mixed> $context
-     * @param array<string, string> $headers
-     */
-    protected function serializeResponse(
-        Request $request,
-        mixed $data,
-        array $context = [],
-        int $status = Response::HTTP_OK,
-        array $headers = [],
-    ): Response {
-        $format = $this->getResponseFormat($request);
-
-        try {
-            $content = $this->serializer->serialize($data, $format, $context);
-        } catch (SerializerExceptionInterface $e) {
-            throw new RuntimeException(sprintf('Serializing the response failed because data of type "%s" could not be encoded.', get_debug_type($data)), previous: $e);
-        }
-
-        $response = new Response($content, $status, $headers + [
-            'Content-Type' => $request->getMimeType($format),
-        ]);
-
-        return $response;
-    }
-
-    /**
      * @param list<non-empty-string> $formats
      */
     private function flattenFormats(array $formats): string
@@ -171,8 +181,8 @@ readonly class RequestListener implements EventSubscriberInterface
         return implode('", "', array_filter($mediaTypes));
     }
 
-    private function isApiRequest(Request $request): bool
+    private function isSerializableRequest(Request $request): bool
     {
-        return 0 === stripos($request->getRequestUri(), '/api');
+        return 0 === stripos($request->getRequestUri(), $this->serializedApiPrefix);
     }
 }

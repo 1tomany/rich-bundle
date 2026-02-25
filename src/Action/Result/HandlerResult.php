@@ -66,6 +66,16 @@ class HandlerResult implements ResultInterface
         return $this->result;
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Action\ResultInterface
+     *
+     * @return R
+     */
+    public function getResult(): mixed
+    {
+        return $this->result;
+    }
+
     public function getStatus(): int
     {
         return $this->status;

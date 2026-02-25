@@ -13,6 +13,11 @@ interface ResultInterface
     public function __invoke(): mixed;
 
     /**
+     * @return R
+     */
+    public function getResult(): mixed;
+
+    /**
      * @return int<100, 599>
      */
     public function getStatus(): int;
