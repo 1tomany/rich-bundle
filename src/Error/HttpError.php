@@ -196,6 +196,11 @@ class HttpError implements HttpErrorInterface
         return LogLevel::CRITICAL === $this->getLogLevel();
     }
 
+    public function shouldBeLogged(): bool
+    {
+        return $this->hasUserMessage() || $this->isCritical();
+    }
+
     protected function resolveStatus(): void
     {
         $status = (int) $this->throwable->getCode();

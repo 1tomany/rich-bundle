@@ -22,18 +22,21 @@ $configurator = static function (DefinitionConfigurator $configurator): void {
                             ->defaultValue(['form', 'json'])
                             ->stringPrototype()->end()
                         ->end()
+                        ->booleanNode('log_critical_exceptions')
+                            ->defaultTrue()
+                        ->end()
                         ->stringNode('serialized_uri_prefix')
                             ->cannotBeEmpty()
                             ->defaultValue('/api')
                             ->validate()
                                 ->ifFalse(static fn(string $v): bool => str_starts_with($v, '/'))
                                 ->thenInvalid('Prefix must start with a forward slash.')
-                            ->end()
                         ->end()
                     ->end()
                 ->end()
             ->end()
-        ->end();
+        ->end()
+    ->end();
 };
 
 return $configurator;
