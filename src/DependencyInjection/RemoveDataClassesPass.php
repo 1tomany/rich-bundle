@@ -18,7 +18,7 @@ class RemoveDataClassesPass implements CompilerPassInterface
         // @see https://github.com/1tomany/rich-bundle/issues/81
         foreach ($container->getDefinitions() as $definition) {
             if ($class = $definition->getClass()) {
-                if ($this->isNonServiceClass($class)) {
+                if ($this->isDataClassDefinition($class)) {
                     if ($container->hasDefinition($class)) {
                         $container->removeDefinition($class);
                     }
@@ -27,7 +27,7 @@ class RemoveDataClassesPass implements CompilerPassInterface
         }
     }
 
-    private function isNonServiceClass(string $class): bool
+    private function isDataClassDefinition(string $class): bool
     {
         $isNonServiceClass = (
             is_subclass_of($class, CommandInterface::class) ||
