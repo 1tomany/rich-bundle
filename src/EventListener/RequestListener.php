@@ -35,7 +35,6 @@ readonly class RequestListener implements EventSubscriberInterface
      * @param non-empty-string $serializedApiPrefix
      */
     public function __construct(
-        // private LoggerInterface $logger,
         private SerializerInterface $serializer,
         private array $acceptFormats = ['json', 'xml'],
         private array $contentTypeFormats = ['form', 'json'],
