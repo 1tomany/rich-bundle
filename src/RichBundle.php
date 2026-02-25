@@ -47,7 +47,7 @@ class RichBundle extends AbstractBundle
             ->getDefinition(RequestListener::class)
             ->setArgument('$acceptFormats', $config['request_listener']['accept_formats'])
             ->setArgument('$contentTypeFormats', $config['request_listener']['content_type_formats'])
-            ->setArgument('$logImportantExceptions', $config['request_listener']['log_important_exceptions'])
-            ->setArgument('$serializedUriPrefix', $config['request_listener']['serialized_uri_prefix']);
+            ->setArgument('$serializedUriPrefix', $config['request_listener']['serialized_uri_prefix'])
+            ->setArgument('$logImportantExceptions', $config['request_listener']['log_important_exceptions']);
     }
 }

@@ -41,8 +41,8 @@ final readonly class RequestListener implements EventSubscriberInterface
         private SerializerInterface $serializer,
         private array $acceptFormats = ['json', 'xml'],
         private array $contentTypeFormats = ['form', 'json'],
-        private bool $logImportantExceptions = true,
         private string $serializedUriPrefix = '/api',
+        private bool $logImportantExceptions = true,
     ) {
     }
 
