@@ -11,14 +11,12 @@ use OneToMany\RichBundle\Contract\Enum\ErrorType;
  *   file: string,
  *   line: int,
  * }
- *
  * @phpstan-type Trace array{
  *   class: ?string,
  *   function: ?string,
  *   file: ?string,
  *   line: ?int,
  * }
- *
  * @phpstan-type Violation array{
  *   property: string,
  *   message: string,
