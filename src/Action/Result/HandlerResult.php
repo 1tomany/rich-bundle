@@ -59,6 +59,8 @@ class HandlerResult implements ResultInterface
     }
 
     /**
+     * @see OneToMany\RichBundle\Contract\Action\ResultInterface
+     *
      * @return R
      */
     public function __invoke(): mixed
@@ -76,11 +78,17 @@ class HandlerResult implements ResultInterface
         return $this->result;
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Action\ResultInterface
+     */
     public function getStatus(): int
     {
         return $this->status;
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Action\ResultInterface
+     */
     public function getContext(): array
     {
         // Merge in the groups if none are explicitly set in the context
@@ -91,11 +99,17 @@ class HandlerResult implements ResultInterface
         return $this->context;
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Action\ResultInterface
+     */
     public function getHeaders(): array
     {
         return $this->headers;
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Action\ResultInterface
+     */
     public function withStatus(int $status): static
     {
         if (!isset(Response::$statusTexts[$status])) {
@@ -107,6 +121,9 @@ class HandlerResult implements ResultInterface
         return $this;
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Action\ResultInterface
+     */
     public function withContext(array $context): static
     {
         $this->context = $context;
@@ -114,6 +131,9 @@ class HandlerResult implements ResultInterface
         return $this;
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Action\ResultInterface
+     */
     public function withGroups(array $groups): static
     {
         $this->groups = $groups;
@@ -121,6 +141,9 @@ class HandlerResult implements ResultInterface
         return $this;
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Action\ResultInterface
+     */
     public function withHeaders(array $headers): static
     {
         $this->headers = $headers;
