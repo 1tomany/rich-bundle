@@ -34,7 +34,7 @@ final readonly class RequestListener implements EventSubscriberInterface
     /**
      * @param non-empty-list<non-empty-lowercase-string> $acceptFormats
      * @param non-empty-list<non-empty-lowercase-string> $contentTypeFormats
-     * @param non-empty-string $serializedApiPrefix
+     * @param non-empty-string $serializedUriPrefix
      */
     public function __construct(
         private LoggerInterface $logger,
@@ -42,7 +42,7 @@ final readonly class RequestListener implements EventSubscriberInterface
         private array $acceptFormats = ['json', 'xml'],
         private array $contentTypeFormats = ['form', 'json'],
         private bool $logCriticalExceptions = true,
-        private string $serializedApiPrefix = '/api',
+        private string $serializedUriPrefix = '/api',
     ) {
     }
 
@@ -141,7 +141,7 @@ final readonly class RequestListener implements EventSubscriberInterface
 
     private function isSerializableRequest(Request $request): bool
     {
-        return 0 === stripos($request->getRequestUri(), $this->serializedApiPrefix);
+        return 0 === stripos($request->getRequestUri(), $this->serializedUriPrefix);
     }
 
     /**

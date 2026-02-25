@@ -31,12 +31,12 @@ $configurator = static function (DefinitionConfigurator $configurator): void {
                             ->validate()
                                 ->ifFalse(static fn(string $v): bool => str_starts_with($v, '/'))
                                 ->thenInvalid('Prefix must start with a forward slash.')
+                            ->end()
                         ->end()
                     ->end()
                 ->end()
             ->end()
-        ->end()
-    ->end();
+        ->end();
 };
 
 return $configurator;
