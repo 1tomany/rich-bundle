@@ -11,14 +11,12 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use function class_exists;
 use function is_subclass_of;
 
-class RemoveInputsPass implements CompilerPassInterface
+class RemoveDataClassesPass implements CompilerPassInterface
 {
-    public const int PRIORITY = 0;
-
     public function process(ContainerBuilder $container): void
     {
         // @see https://github.com/1tomany/rich-bundle/issues/81
-        foreach ($container->getDefinitions() as $id => $definition) {
+        foreach ($container->getDefinitions() as $definition) {
             if ($class = $definition->getClass()) {
                 if ($this->isNonServiceClass($class)) {
                     if ($container->hasDefinition($class)) {

@@ -5,6 +5,7 @@ services:
 
     OneToMany\RichBundle\:
         resource: '../src/'
+        exclude: '../src/{Action,Error,Exception,ValueResolver/Exception}'
 
     OneToMany\RichBundle\Contract\Input\InputParserInterface: '@OneToMany\RichBundle\Input\InputParser'
 

@@ -2,8 +2,7 @@
 
 namespace OneToMany\RichBundle;
 
-use OneToMany\RichBundle\DependencyInjection\RegisterHandlersPass;
-use OneToMany\RichBundle\DependencyInjection\RemoveInputsPass;
+use OneToMany\RichBundle\DependencyInjection\RemoveDataClassesPass;
 use OneToMany\RichBundle\EventListener\RequestListener;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -24,13 +23,8 @@ class RichBundle extends AbstractBundle
 
     public function build(ContainerBuilder $container): void
     {
-        parent::build($container);
-
-        // Remove CommandInterface, InputInterface, and ResultInterface classes
-        $container->addCompilerPass(new RemoveInputsPass(), priority: RemoveInputsPass::PRIORITY);
-
-        // Register HandlerInterface classes as handlers for the Symfony Messenger
-        $container->addCompilerPass(new RegisterHandlersPass(), priority: RegisterHandlersPass::PRIORITY);
+        // Remove Command, Input, and Result classes
+        $container->addCompilerPass(new RemoveDataClassesPass());
     }
 
     /**
