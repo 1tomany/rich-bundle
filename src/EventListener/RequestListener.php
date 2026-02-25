@@ -41,7 +41,7 @@ final readonly class RequestListener implements EventSubscriberInterface
         private SerializerInterface $serializer,
         private array $acceptFormats = ['json', 'xml'],
         private array $contentTypeFormats = ['form', 'json'],
-        private bool $logCriticalExceptions = true,
+        private bool $logImportantExceptions = true,
         private string $serializedUriPrefix = '/api',
     ) {
     }
@@ -128,7 +128,7 @@ final readonly class RequestListener implements EventSubscriberInterface
         // Flatten and normalize the exception
         $error = new HttpError($t = $event->getThrowable());
 
-        if ($this->logCriticalExceptions && $error->shouldBeLogged()) {
+        if ($this->logImportantExceptions && $error->shouldBeLogged()) {
             $this->logger->log($error->getLogLevel(), $t->getMessage(), [
                 'exception' => $error->getThrowable(),
             ]);

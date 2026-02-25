@@ -22,7 +22,7 @@ $configurator = static function (DefinitionConfigurator $configurator): void {
                             ->defaultValue(['form', 'json'])
                             ->stringPrototype()->end()
                         ->end()
-                        ->booleanNode('log_critical_exceptions')
+                        ->booleanNode('log_important_exceptions')
                             ->defaultTrue()
                         ->end()
                         ->stringNode('serialized_uri_prefix')
