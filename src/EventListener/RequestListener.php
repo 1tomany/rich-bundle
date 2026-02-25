@@ -49,32 +49,29 @@ readonly class RequestListener implements EventSubscriberInterface
     {
         return [
             RequestEvent::class => [
-                ['setRequestId', 192],
-                ['validateMediaTypes', 128],
+                ['onKernelRequest', 128],
             ],
             ViewEvent::class => [
-                ['serializeResult', 0],
+                ['onKernelView', 0],
             ],
             ResponseEvent::class => [
-                ['setVaryHeader', 0],
+                ['onKernelResponse', 0],
             ],
             ExceptionEvent::class => [
-                ['serializeException', 2],
+                ['onKernelException', 2],
             ],
         ];
     }
 
-    public function setRequestId(RequestEvent $event): void
+    public function onKernelRequest(RequestEvent $event): void
     {
         if (!$event->isMainRequest()) {
             return;
         }
 
+        // Generate a random request ID for logging
         $event->getRequest()->attributes->set(self::REQUEST_ID_KEY, bin2hex(random_bytes(6)));
-    }
 
-    public function validateMediaTypes(RequestEvent $event): void
-    {
         if ($this->isSerializableRequest($event->getRequest())) {
             $format = $event->getRequest()->getPreferredFormat(null);
 
@@ -94,7 +91,7 @@ readonly class RequestListener implements EventSubscriberInterface
         }
     }
 
-    public function serializeResult(ViewEvent $event): void
+    public function onKernelView(ViewEvent $event): void
     {
         $result = $event->getControllerResult();
 
@@ -111,14 +108,14 @@ readonly class RequestListener implements EventSubscriberInterface
         }
     }
 
-    public function setVaryHeader(ResponseEvent $event): void
+    public function onKernelResponse(ResponseEvent $event): void
     {
         if ($this->isSerializableRequest($event->getRequest())) {
             $event->getResponse()->setVary(['Accept']);
         }
     }
 
-    public function serializeException(ExceptionEvent $event): void
+    public function onKernelException(ExceptionEvent $event): void
     {
         if (!$event->isMainRequest()) {
             return;
@@ -141,11 +138,28 @@ readonly class RequestListener implements EventSubscriberInterface
         }
     }
 
+    private function isSerializableRequest(Request $request): bool
+    {
+        return 0 === stripos($request->getRequestUri(), $this->serializedApiPrefix);
+    }
+
+    /**
+     * @param list<non-empty-string> $formats
+     */
+    private function flattenFormats(array $formats): string
+    {
+        $mediaTypes = array_map(function (string $type): string {
+            return Request::getMimeTypes($type)[0] ?? $type;
+        }, $formats);
+
+        return implode('", "', array_filter($mediaTypes));
+    }
+
     /**
      * @param array<string, mixed> $context
      * @param array<string, string> $headers
      */
-    protected function serializeResponse(
+    private function serializeResponse(
         Request $request,
         mixed $data,
         array $context = [],
@@ -180,22 +194,5 @@ readonly class RequestListener implements EventSubscriberInterface
         }
 
         return $this->acceptFormats[0];
-    }
-
-    /**
-     * @param list<non-empty-string> $formats
-     */
-    private function flattenFormats(array $formats): string
-    {
-        $mediaTypes = array_map(function (string $type): string {
-            return Request::getMimeTypes($type)[0] ?? $type;
-        }, $formats);
-
-        return implode('", "', array_filter($mediaTypes));
-    }
-
-    private function isSerializableRequest(Request $request): bool
-    {
-        return 0 === stripos($request->getRequestUri(), $this->serializedApiPrefix);
     }
 }
