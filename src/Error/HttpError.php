@@ -214,16 +214,16 @@ class HttpError implements \Stringable, HttpErrorInterface
         $message = null;
 
         if (
-            $this->throwable instanceof ValidationFailedException
-            || $this->throwable instanceof BadRequestHttpException
+            $this->throwable instanceof ValidationFailedException ||
+            $this->throwable instanceof BadRequestHttpException
         ) {
             $message = 'The data provided is not valid.';
         } elseif ($this->throwable instanceof AccessDeniedException) {
             $message = 'Access to this resource is denied.';
         } elseif (
-            $this->throwable instanceof HttpExceptionInterface
-            || $this->hasAttribute(WithHttpStatus::class)
-            || $this->hasAttribute(HasUserMessage::class)
+            $this->throwable instanceof HttpExceptionInterface ||
+            $this->hasAttribute(WithHttpStatus::class) ||
+            $this->hasAttribute(HasUserMessage::class)
         ) {
             $message = $this->throwable->getMessage();
         }
