@@ -6,6 +6,7 @@ use OneToMany\RichBundle\Contract\Action\ResultInterface;
 use OneToMany\RichBundle\Error\HttpError;
 use OneToMany\RichBundle\Exception\HttpException;
 use OneToMany\RichBundle\Exception\RuntimeException;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,20 +27,22 @@ use function random_bytes;
 use function sprintf;
 use function stripos;
 
-readonly class RequestListener implements EventSubscriberInterface
+final readonly class RequestListener implements EventSubscriberInterface
 {
     public const string REQUEST_ID_KEY = '_rich_request_id';
 
     /**
      * @param non-empty-list<non-empty-lowercase-string> $acceptFormats
      * @param non-empty-list<non-empty-lowercase-string> $contentTypeFormats
-     * @param non-empty-string $serializedApiPrefix
+     * @param non-empty-string $serializedUriPrefix
      */
     public function __construct(
+        private LoggerInterface $logger,
         private SerializerInterface $serializer,
         private array $acceptFormats = ['json', 'xml'],
         private array $contentTypeFormats = ['form', 'json'],
-        private string $serializedApiPrefix = '/api',
+        private string $serializedUriPrefix = '/api',
+        private bool $logImportantExceptions = true,
     ) {
     }
 
@@ -122,25 +125,23 @@ readonly class RequestListener implements EventSubscriberInterface
             return;
         }
 
+        // Flatten and normalize the exception
+        $error = new HttpError($t = $event->getThrowable());
+
+        if ($this->logImportantExceptions && $error->shouldBeLogged()) {
+            $this->logger->log($error->getLogLevel(), $t->getMessage(), [
+                'exception' => $error->getThrowable(),
+            ]);
+        }
+
         if ($this->isSerializableRequest($event->getRequest())) {
-            $httpError = new HttpError($event->getThrowable());
-
-            // Serialize the flattened exception
-            $response = $this->serializeResponse(
-                $event->getRequest(),
-                $httpError,
-                $httpError->getContext(),
-                $httpError->getStatus(),
-                $httpError->getHeaders(),
-            );
-
-            $event->setResponse($response);
+            $event->setResponse($this->serializeResponse($event->getRequest(), $error, $error->getContext(), $error->getStatus(), $error->getHeaders()));
         }
     }
 
     private function isSerializableRequest(Request $request): bool
     {
-        return 0 === stripos($request->getRequestUri(), $this->serializedApiPrefix);
+        return 0 === stripos($request->getRequestUri(), $this->serializedUriPrefix);
     }
 
     /**
