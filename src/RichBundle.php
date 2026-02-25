@@ -4,6 +4,7 @@ namespace OneToMany\RichBundle;
 
 use OneToMany\RichBundle\DependencyInjection\RegisterHandlersPass;
 use OneToMany\RichBundle\DependencyInjection\RemoveInputsPass;
+use OneToMany\RichBundle\EventListener\RequestListener;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -36,16 +37,21 @@ class RichBundle extends AbstractBundle
      * @see Symfony\Component\DependencyInjection\Extension\ConfigurableExtensionInterface
      *
      * @param array{
-     *   advisory_lock_manager?: array{
-     *     connection: non-empty-string,
-     *   },
-     *   middleware?: array{
-     *     time_zone: non-empty-string,
+     *   request_listener: array{
+     *     accept_formats: non-empty-list<non-empty-lowercase-string>,
+     *     content_type_formats: non-empty-list<non-empty-lowercase-string>,
+     *     serialized_uri_prefix: non-empty-string,
      *   },
      * } $config
      */
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
         $container->import('../config/services.yaml');
+
+        $builder
+            ->getDefinition(RequestListener::class)
+            ->setArgument('$acceptFormats', $config['request_listener']['accept_formats'])
+            ->setArgument('$contentTypeFormats', $config['request_listener']['content_type_formats'])
+            ->setArgument('$serializedApiPrefix', $config['request_listener']['serialized_uri_prefix']);
     }
 }
