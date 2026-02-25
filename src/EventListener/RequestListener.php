@@ -18,13 +18,17 @@ use Symfony\Component\Serializer\SerializerInterface;
 
 use function array_filter;
 use function array_map;
+use function bin2hex;
 use function get_debug_type;
 use function implode;
 use function in_array;
+use function random_bytes;
 use function sprintf;
 
 readonly class RequestListener implements EventSubscriberInterface
 {
+    public const string REQUEST_ID_KEY = '_rich_request_id';
+
     /**
      * @param non-empty-list<non-empty-lowercase-string> $acceptFormats
      * @param non-empty-list<non-empty-lowercase-string> $contentTypeFormats
@@ -46,6 +50,7 @@ readonly class RequestListener implements EventSubscriberInterface
     {
         return [
             RequestEvent::class => [
+                ['setRequestId', 192],
                 ['validateMediaTypes', 128],
             ],
             ViewEvent::class => [
@@ -58,6 +63,15 @@ readonly class RequestListener implements EventSubscriberInterface
                 ['serializeException', 2],
             ],
         ];
+    }
+
+    public function setRequestId(RequestEvent $event): void
+    {
+        if (!$event->isMainRequest()) {
+            return;
+        }
+
+        $event->getRequest()->attributes->set(self::REQUEST_ID_KEY, bin2hex(random_bytes(6)));
     }
 
     public function validateMediaTypes(RequestEvent $event): void
