@@ -24,6 +24,7 @@ use function implode;
 use function in_array;
 use function random_bytes;
 use function sprintf;
+use function stripos;
 
 readonly class RequestListener implements EventSubscriberInterface
 {
@@ -139,7 +140,7 @@ readonly class RequestListener implements EventSubscriberInterface
 
     private function isSerializableRequest(Request $request): bool
     {
-        return 0 === \stripos($request->getRequestUri(), $this->serializedApiPrefix);
+        return 0 === stripos($request->getRequestUri(), $this->serializedApiPrefix);
     }
 
     /**
