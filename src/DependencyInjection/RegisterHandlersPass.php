@@ -50,7 +50,8 @@ class RegisterHandlersPass implements CompilerPassInterface
 
     private function isClassMessageHandler(string $class): bool
     {
-        return class_exists($class, false) && is_subclass_of($class, HandlerInterface::class); // @see https://github.com/1tomany/rich-bundle/issues/11
+        // @see https://github.com/1tomany/rich-bundle/issues/11
+        return class_exists($class, false) && is_subclass_of($class, HandlerInterface::class);
     }
 
     /**

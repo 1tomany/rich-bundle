@@ -17,11 +17,12 @@ class RemoveInputsPass implements CompilerPassInterface
 
     public function process(ContainerBuilder $container): void
     {
+        // @see https://github.com/1tomany/rich-bundle/issues/81
         foreach ($container->getDefinitions() as $id => $definition) {
             if ($class = $definition->getClass()) {
                 if ($this->isNonServiceClass($class)) {
                     if ($container->hasDefinition($class)) {
-                        $container->removeDefinition($class); // @see https://github.com/1tomany/rich-bundle/issues/81
+                        $container->removeDefinition($class);
                     }
                 }
             }
@@ -30,7 +31,11 @@ class RemoveInputsPass implements CompilerPassInterface
 
     private function isNonServiceClass(string $class): bool
     {
+        $isNonServiceClass = is_subclass_of($class, CommandInterface::class)
+        || is_subclass_of($class, InputInterface::class)
+        || is_subclass_of($class, ResultInterface::class);
+
         // @see https://github.com/1tomany/rich-bundle/issues/11
-        return class_exists($class, false) && (is_subclass_of($class, CommandInterface::class) || is_subclass_of($class, InputInterface::class) || is_subclass_of($class, ResultInterface::class));
+        return class_exists($class, false) && $isNonServiceClass;
     }
 }
