@@ -88,7 +88,7 @@ readonly class RequestListener implements EventSubscriberInterface
         if ($result instanceof ResultInterface) {
             $response = $this->serializeResponse(
                 $event->getRequest(),
-                $result(),
+                $result->getResult(),
                 $result->getContext(),
                 $result->getStatus(),
                 $result->getHeaders(),
