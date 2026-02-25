@@ -26,7 +26,7 @@ use function trim;
  * @phpstan-import-type Trace from HttpErrorInterface
  * @phpstan-import-type Violation from HttpErrorInterface
  */
-class HttpError implements \Stringable, HttpErrorInterface
+class HttpError implements HttpErrorInterface
 {
     protected ErrorType $type;
 
@@ -64,6 +64,8 @@ class HttpError implements \Stringable, HttpErrorInterface
     }
 
     /**
+     * @see \Stringable
+     *
      * @return non-empty-string
      */
     public function __toString(): string
@@ -71,56 +73,89 @@ class HttpError implements \Stringable, HttpErrorInterface
         return sprintf('[%s] %s', $this->getDescription(), $this->getMessage());
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
+     */
     public function getThrowable(): \Throwable
     {
         return $this->throwable;
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
+     */
     public function getType(): ErrorType
     {
         return $this->type;
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
+     */
     public function getStatus(): int
     {
         return $this->status;
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
+     */
     public function getTitle(): string
     {
         return $this->title;
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
+     */
     public function getDescription(): string
     {
         return sprintf('%d %s', $this->status, $this->title);
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
+     */
     public function getMessage(): string
     {
         return $this->message;
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
+     */
     public function getHeaders(): array
     {
         return $this->headers;
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
+     */
     public function getViolations(): array
     {
         return $this->violations;
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
+     */
     public function getStack(): array
     {
         return $this->stack;
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
+     */
     public function getTrace(): array
     {
         return $this->trace;
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
+     */
     public function getLogLevel(): string
     {
         if ($this->getStatus() < 300) {
@@ -141,6 +176,14 @@ class HttpError implements \Stringable, HttpErrorInterface
         }
 
         return LogLevel::CRITICAL;
+    }
+
+    /**
+     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
+     */
+    public function getContext(): array
+    {
+        return [];
     }
 
     public function hasUserMessage(): bool
@@ -214,16 +257,16 @@ class HttpError implements \Stringable, HttpErrorInterface
         $message = null;
 
         if (
-            $this->throwable instanceof ValidationFailedException
-            || $this->throwable instanceof BadRequestHttpException
+            $this->throwable instanceof ValidationFailedException ||
+            $this->throwable instanceof BadRequestHttpException
         ) {
             $message = 'The data provided is not valid.';
         } elseif ($this->throwable instanceof AccessDeniedException) {
             $message = 'Access to this resource is denied.';
         } elseif (
-            $this->throwable instanceof HttpExceptionInterface
-            || $this->hasAttribute(WithHttpStatus::class)
-            || $this->hasAttribute(HasUserMessage::class)
+            $this->throwable instanceof HttpExceptionInterface ||
+            $this->hasAttribute(WithHttpStatus::class) ||
+            $this->hasAttribute(HasUserMessage::class)
         ) {
             $message = $this->throwable->getMessage();
         }
