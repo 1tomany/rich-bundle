@@ -122,7 +122,6 @@ readonly class RequestListener implements EventSubscriberInterface
         }
 
         if ($this->isSerializableRequest($event->getRequest())) {
-            // Flatten and normalize the exception
             $httpError = new HttpError($event->getThrowable());
 
             // Serialize the flattened exception
@@ -140,7 +139,7 @@ readonly class RequestListener implements EventSubscriberInterface
 
     private function isSerializableRequest(Request $request): bool
     {
-        return 0 === stripos($request->getRequestUri(), $this->serializedApiPrefix);
+        return 0 === \stripos($request->getRequestUri(), $this->serializedApiPrefix);
     }
 
     /**
