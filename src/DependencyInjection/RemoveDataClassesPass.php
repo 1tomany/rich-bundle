@@ -29,13 +29,7 @@ class RemoveDataClassesPass implements CompilerPassInterface
 
     private function isDataClassDefinition(string $class): bool
     {
-        $isNonServiceClass = (
-            is_subclass_of($class, CommandInterface::class) ||
-            is_subclass_of($class, InputInterface::class) ||
-            is_subclass_of($class, ResultInterface::class)
-        );
-
         // @see https://github.com/1tomany/rich-bundle/issues/11
-        return class_exists($class, false) && $isNonServiceClass;
+        return class_exists($class, false) && (is_subclass_of($class, CommandInterface::class) || is_subclass_of($class, InputInterface::class) || is_subclass_of($class, ResultInterface::class));
     }
 }
