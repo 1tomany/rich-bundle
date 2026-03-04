@@ -93,22 +93,6 @@ final class HttpErrorTest extends TestCase
         $this->assertEquals($message, $httpError->getMessage());
     }
 
-    public function testConstructorGeneralizesMessageWhenExceptionIsValidationFailedExceptionWithMultipleViolations(): void
-    {
-        $message = 'The data provided is not valid.';
-
-        $violations = new ConstraintViolationList([
-            new ConstraintViolation('Violation #1', null, [], null, null, null),
-            new ConstraintViolation('Violation #2', null, [], null, null, null),
-        ]);
-
-        $exception = new ValidationFailedException(null, $violations);
-        $this->assertNotEquals($message, $exception->getMessage());
-
-        $httpError = new HttpError($exception);
-        $this->assertEquals($message, $httpError->getMessage());
-    }
-
     public function testConstructorSetsMessageToExceptionMessageWhenExceptionIsBadRequestHttpException(): void
     {
         $message = 'The username is invalid.';
@@ -118,6 +102,25 @@ final class HttpErrorTest extends TestCase
 
         $httpError = new HttpError($exception);
         $this->assertEquals($message, $httpError->getMessage());
+    }
+
+    public function testConstructorGeneralizesMessageWhenViolationExceptionMessageIsBlank(): void
+    {
+        $this->assertEquals(HttpError::MESSAGE_VALIDATION_FAILED, new HttpError(new BadRequestHttpException(''))->getMessage());
+    }
+
+    public function testConstructorGeneralizesMessageWhenExceptionIsValidationFailedExceptionWithMultipleViolations(): void
+    {
+        $violations = new ConstraintViolationList([
+            new ConstraintViolation('Violation #1', null, [], null, null, null),
+            new ConstraintViolation('Violation #2', null, [], null, null, null),
+        ]);
+
+        $exception = new ValidationFailedException(null, $violations);
+        $this->assertNotEquals(HttpError::MESSAGE_VALIDATION_FAILED, $exception->getMessage());
+
+        $httpError = new HttpError($exception);
+        $this->assertEquals(HttpError::MESSAGE_VALIDATION_FAILED, $httpError->getMessage());
     }
 
     public function testConstructorGeneralizesMessageWhenExceptionIsAccessDeniedException(): void
