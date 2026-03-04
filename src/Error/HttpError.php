@@ -271,7 +271,7 @@ class HttpError implements HttpErrorInterface
                 }
             }
 
-            $message = ($message ?? null) ?: 'The data provided is not valid.';
+            $message = trim(($message ?? '')) ?: 'The data provided is not valid.';
         } elseif ($this->throwable instanceof AccessDeniedException) {
             $message = 'Access to this resource is denied.';
         } elseif (
