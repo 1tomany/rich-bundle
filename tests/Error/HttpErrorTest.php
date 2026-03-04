@@ -78,12 +78,12 @@ final class HttpErrorTest extends TestCase
         return $provider;
     }
 
-    public function testConstructorGeneralizesMessageWhenExceptionIsValidationFailedException(): void
+    public function testConstructorSetsMessageToViolationMessageWhenExceptionIsValidationFailedExceptionWithSingleViolation(): void
     {
-        $message = 'The data provided is not valid.';
+        $message = 'The email is invalid.';
 
         $violations = new ConstraintViolationList([
-            new ConstraintViolation('Required', null, [], null, null, null),
+            new ConstraintViolation($message, null, [], null, null, null),
         ]);
 
         $exception = new ValidationFailedException(null, $violations);
@@ -93,15 +93,43 @@ final class HttpErrorTest extends TestCase
         $this->assertEquals($message, $httpError->getMessage());
     }
 
-    public function testConstructorGeneralizesMessageWhenExceptionIsAccessDeniedException(): void
+    public function testConstructorSetsMessageToExceptionMessageWhenExceptionIsBadRequestHttpException(): void
     {
-        $message = 'Access to this resource is denied.';
+        $message = 'The username is invalid.';
 
-        $exception = new AccessDeniedException();
-        $this->assertNotEquals($message, $exception->getMessage());
+        $exception = new BadRequestHttpException($message);
+        $this->assertEquals($message, $exception->getMessage());
 
         $httpError = new HttpError($exception);
         $this->assertEquals($message, $httpError->getMessage());
+    }
+
+    public function testConstructorGeneralizesMessageWhenViolationExceptionMessageIsBlank(): void
+    {
+        $this->assertEquals(HttpError::MESSAGE_VALIDATION_FAILED, new HttpError(new BadRequestHttpException(''))->getMessage());
+    }
+
+    public function testConstructorGeneralizesMessageWhenExceptionIsValidationFailedExceptionWithMultipleViolations(): void
+    {
+        $violations = new ConstraintViolationList([
+            new ConstraintViolation('Violation #1', null, [], null, null, null),
+            new ConstraintViolation('Violation #2', null, [], null, null, null),
+        ]);
+
+        $exception = new ValidationFailedException(null, $violations);
+        $this->assertNotEquals(HttpError::MESSAGE_VALIDATION_FAILED, $exception->getMessage());
+
+        $httpError = new HttpError($exception);
+        $this->assertEquals(HttpError::MESSAGE_VALIDATION_FAILED, $httpError->getMessage());
+    }
+
+    public function testConstructorGeneralizesMessageWhenExceptionIsAccessDeniedException(): void
+    {
+        $exception = new AccessDeniedException();
+        $this->assertNotEquals(HttpError::MESSAGE_ACCESS_DENIED, $exception->getMessage());
+
+        $httpError = new HttpError($exception);
+        $this->assertEquals(HttpError::MESSAGE_ACCESS_DENIED, $httpError->getMessage());
     }
 
     public function testConstructorMaintainsMessageWhenExceptionImplementsHttpExceptionInterface(): void
@@ -129,11 +157,11 @@ final class HttpErrorTest extends TestCase
 
     public function testConstructorGeneralizesMessageWithAllOtherExceptions(): void
     {
-        $message = 'An unexpected error occurred.';
         $exception = new \Exception('Unrecoverable error');
+        $this->assertNotEquals(HttpError::MESSAGE_UNEXPECTED_ERROR, $exception->getMessage());
 
-        $this->assertNotEquals($message, $exception->getMessage());
-        $this->assertEquals($message, new HttpError($exception)->getMessage());
+        $httpError = new HttpError($exception);
+        $this->assertEquals(HttpError::MESSAGE_UNEXPECTED_ERROR, $httpError->getMessage());
     }
 
     public function testConstructorResolvesHeadersWhenExceptionImplementsHttpExceptionInterface(): void

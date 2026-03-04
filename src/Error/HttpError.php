@@ -40,7 +40,7 @@ class HttpError implements HttpErrorInterface
     protected array $headers = [];
 
     /** @var non-empty-string */
-    protected string $message = 'An unexpected error occurred.';
+    protected string $message = self::MESSAGE_UNEXPECTED_ERROR;
 
     /** @var list<Violation> */
     protected array $violations = [];
@@ -50,6 +50,10 @@ class HttpError implements HttpErrorInterface
 
     /** @var list<Trace> */
     protected array $trace = [];
+
+    public const string MESSAGE_ACCESS_DENIED = 'Access to this resource is denied.';
+    public const string MESSAGE_VALIDATION_FAILED = 'The data provided is not valid.';
+    public const string MESSAGE_UNEXPECTED_ERROR = 'An unexpected error occurred.';
 
     public function __construct(protected readonly \Throwable $throwable)
     {
@@ -262,12 +266,20 @@ class HttpError implements HttpErrorInterface
         $message = null;
 
         if (
-            $this->throwable instanceof ValidationFailedException ||
-            $this->throwable instanceof BadRequestHttpException
+            $this->throwable instanceof BadRequestHttpException ||
+            $this->throwable instanceof ValidationFailedException
         ) {
-            $message = 'The data provided is not valid.';
+            if ($this->throwable instanceof ValidationFailedException) {
+                if (1 === $this->throwable->getViolations()->count()) {
+                    $message = $this->throwable->getViolations()->get(0)->getMessage();
+                }
+            } else {
+                $message = $this->throwable->getMessage();
+            }
+
+            $message = trim($message ?? '') ?: self::MESSAGE_VALIDATION_FAILED;
         } elseif ($this->throwable instanceof AccessDeniedException) {
-            $message = 'Access to this resource is denied.';
+            $message = self::MESSAGE_ACCESS_DENIED;
         } elseif (
             $this->throwable instanceof HttpExceptionInterface ||
             $this->hasAttribute(WithHttpStatus::class) ||
@@ -276,7 +288,7 @@ class HttpError implements HttpErrorInterface
             $message = $this->throwable->getMessage();
         }
 
-        $this->message = trim($message ?? '') ?: $this->message;
+        $this->message = trim($message ?? '') ?: self::MESSAGE_UNEXPECTED_ERROR;
     }
 
     protected function expandViolations(): void
