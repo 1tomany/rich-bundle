@@ -78,12 +78,13 @@ final class HttpErrorTest extends TestCase
         return $provider;
     }
 
-    public function testConstructorGeneralizesMessageWhenExceptionIsValidationFailedException(): void
+    public function testConstructorGeneralizesMessageWhenExceptionIsValidationFailedExceptionWithMultipleViolations(): void
     {
         $message = 'The data provided is not valid.';
 
         $violations = new ConstraintViolationList([
-            new ConstraintViolation('Required', null, [], null, null, null),
+            new ConstraintViolation('Violation #1', null, [], null, null, null),
+            new ConstraintViolation('Violation #2', null, [], null, null, null),
         ]);
 
         $exception = new ValidationFailedException(null, $violations);
