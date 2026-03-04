@@ -125,13 +125,11 @@ final class HttpErrorTest extends TestCase
 
     public function testConstructorGeneralizesMessageWhenExceptionIsAccessDeniedException(): void
     {
-        $message = 'Access to this resource is denied.';
-
         $exception = new AccessDeniedException();
-        $this->assertNotEquals($message, $exception->getMessage());
+        $this->assertNotEquals(HttpError::MESSAGE_ACCESS_DENIED, $exception->getMessage());
 
         $httpError = new HttpError($exception);
-        $this->assertEquals($message, $httpError->getMessage());
+        $this->assertEquals(HttpError::MESSAGE_ACCESS_DENIED, $httpError->getMessage());
     }
 
     public function testConstructorMaintainsMessageWhenExceptionImplementsHttpExceptionInterface(): void

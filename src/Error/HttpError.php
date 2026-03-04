@@ -51,6 +51,10 @@ class HttpError implements HttpErrorInterface
     /** @var list<Trace> */
     protected array $trace = [];
 
+    /** @var non-empty-string */
+    public const string MESSAGE_ACCESS_DENIED = 'Access to this resource is denied.';
+
+    /** @var non-empty-string */
     public const string MESSAGE_VALIDATION_FAILED = 'The data provided is not valid.';
 
     public function __construct(protected readonly \Throwable $throwable)
@@ -277,7 +281,7 @@ class HttpError implements HttpErrorInterface
 
             $message = trim($message ?? '') ?: self::MESSAGE_VALIDATION_FAILED;
         } elseif ($this->throwable instanceof AccessDeniedException) {
-            $message = 'Access to this resource is denied.';
+            $message = self::MESSAGE_ACCESS_DENIED;
         } elseif (
             $this->throwable instanceof HttpExceptionInterface ||
             $this->hasAttribute(WithHttpStatus::class) ||
