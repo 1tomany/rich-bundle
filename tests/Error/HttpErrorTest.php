@@ -109,6 +109,17 @@ final class HttpErrorTest extends TestCase
         $this->assertEquals($message, $httpError->getMessage());
     }
 
+    public function testConstructorSetsMessageToExceptionMessageWhenExceptionIsBadRequestHttpException(): void
+    {
+        $message = 'The username is invalid.';
+
+        $exception = new BadRequestHttpException($message);
+        $this->assertEquals($message, $exception->getMessage());
+
+        $httpError = new HttpError($exception);
+        $this->assertEquals($message, $httpError->getMessage());
+    }
+
     public function testConstructorGeneralizesMessageWhenExceptionIsAccessDeniedException(): void
     {
         $message = 'Access to this resource is denied.';

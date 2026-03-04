@@ -269,6 +269,8 @@ class HttpError implements HttpErrorInterface
                 if (1 === $this->throwable->getViolations()->count()) {
                     $message = $this->throwable->getViolations()->get(0)->getMessage();
                 }
+            } else {
+                $message = $this->throwable->getMessage();
             }
 
             $message = trim($message ?? '') ?: 'The data provided is not valid.';
