@@ -265,7 +265,13 @@ class HttpError implements HttpErrorInterface
             $this->throwable instanceof ValidationFailedException ||
             $this->throwable instanceof BadRequestHttpException
         ) {
-            $message = 'The data provided is not valid.';
+            if ($this->throwable instanceof ValidationFailedException) {
+                if (1 === $this->throwable->getViolations()->count()) {
+                    $message = $this->throwable->getViolations()->get(0)->getMessage();
+                }
+            }
+
+            $message = ($message ?? null) ?: 'The data provided is not valid.';
         } elseif ($this->throwable instanceof AccessDeniedException) {
             $message = 'Access to this resource is denied.';
         } elseif (
