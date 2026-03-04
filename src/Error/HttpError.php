@@ -40,7 +40,7 @@ class HttpError implements HttpErrorInterface
     protected array $headers = [];
 
     /** @var non-empty-string */
-    protected string $message = 'An unexpected error occurred.';
+    protected string $message = self::MESSAGE_UNEXPECTED_ERROR;
 
     /** @var list<Violation> */
     protected array $violations = [];
@@ -51,11 +51,9 @@ class HttpError implements HttpErrorInterface
     /** @var list<Trace> */
     protected array $trace = [];
 
-    /** @var non-empty-string */
     public const string MESSAGE_ACCESS_DENIED = 'Access to this resource is denied.';
-
-    /** @var non-empty-string */
     public const string MESSAGE_VALIDATION_FAILED = 'The data provided is not valid.';
+    public const string MESSAGE_UNEXPECTED_ERROR = 'An unexpected error occurred.';
 
     public function __construct(protected readonly \Throwable $throwable)
     {
@@ -290,7 +288,7 @@ class HttpError implements HttpErrorInterface
             $message = $this->throwable->getMessage();
         }
 
-        $this->message = trim($message ?? '') ?: $this->message;
+        $this->message = trim($message ?? '') ?: self::MESSAGE_UNEXPECTED_ERROR;
     }
 
     protected function expandViolations(): void
