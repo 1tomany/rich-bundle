@@ -78,6 +78,21 @@ final class HttpErrorTest extends TestCase
         return $provider;
     }
 
+    public function testConstructorSetsMessageToViolationMessageWhenExceptionIsValidationFailedExceptionWithSingleViolation(): void
+    {
+        $message = 'The email is invalid.';
+
+        $violations = new ConstraintViolationList([
+            new ConstraintViolation($message, null, [], null, null, null),
+        ]);
+
+        $exception = new ValidationFailedException(null, $violations);
+        $this->assertNotEquals($message, $exception->getMessage());
+
+        $httpError = new HttpError($exception);
+        $this->assertEquals($message, $httpError->getMessage());
+    }
+
     public function testConstructorGeneralizesMessageWhenExceptionIsValidationFailedExceptionWithMultipleViolations(): void
     {
         $message = 'The data provided is not valid.';
