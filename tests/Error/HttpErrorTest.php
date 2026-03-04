@@ -157,11 +157,11 @@ final class HttpErrorTest extends TestCase
 
     public function testConstructorGeneralizesMessageWithAllOtherExceptions(): void
     {
-        $message = 'An unexpected error occurred.';
         $exception = new \Exception('Unrecoverable error');
+        $this->assertNotEquals(HttpError::MESSAGE_UNEXPECTED_ERROR, $exception->getMessage());
 
-        $this->assertNotEquals($message, $exception->getMessage());
-        $this->assertEquals($message, new HttpError($exception)->getMessage());
+        $httpError = new HttpError($exception);
+        $this->assertEquals(HttpError::MESSAGE_UNEXPECTED_ERROR, $httpError->getMessage());
     }
 
     public function testConstructorResolvesHeadersWhenExceptionImplementsHttpExceptionInterface(): void
