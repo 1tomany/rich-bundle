@@ -266,8 +266,8 @@ class HttpError implements HttpErrorInterface
         $message = null;
 
         if (
-            $this->throwable instanceof ValidationFailedException ||
-            $this->throwable instanceof BadRequestHttpException
+            $this->throwable instanceof BadRequestHttpException ||
+            $this->throwable instanceof ValidationFailedException
         ) {
             if ($this->throwable instanceof ValidationFailedException) {
                 if (1 === $this->throwable->getViolations()->count()) {
