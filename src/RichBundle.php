@@ -18,7 +18,39 @@ class RichBundle extends AbstractBundle
      */
     public function configure(DefinitionConfigurator $definition): void
     {
-        $definition->import('../config/config.php');
+        $definition
+            ->rootNode()
+                ->children()
+                    ->arrayNode('request_listener')
+                        ->addDefaultsIfNotSet()
+                        ->children()
+                            ->arrayNode('accept_formats')
+                                ->acceptAndWrap(['string'])
+                                    ->defaultValue(['json', 'xml'])
+                                    ->stringPrototype()
+                                ->end()
+                            ->end()
+                            ->arrayNode('content_type_formats')
+                                ->acceptAndWrap(['string'])
+                                    ->defaultValue(['form', 'json'])
+                                    ->stringPrototype()
+                                ->end()
+                            ->end()
+                            ->booleanNode('log_important_exceptions')
+                                ->defaultTrue()
+                            ->end()
+                            ->stringNode('serialized_uri_prefix')
+                                ->cannotBeEmpty()
+                                ->defaultValue('/api')
+                                ->validate()
+                                    ->ifFalse(static fn(string $v): bool => str_starts_with($v, '/'))
+                                    ->thenInvalid('Prefix must start with a forward slash.')
+                                ->end()
+                            ->end()
+                        ->end()
+                    ->end()
+                ->end()
+            ->end();
     }
 
     public function build(ContainerBuilder $container): void
