@@ -53,7 +53,7 @@ class RichBundle extends AbstractBundle
                                 ->cannotBeEmpty()
                                 ->defaultValue('/api')
                                 ->validate()
-                                    ->ifFalse(static fn(string $v): bool => str_starts_with($v, '/'))
+                                    ->ifFalse(static fn (string $v): bool => str_starts_with($v, '/'))
                                     ->thenInvalid('Prefix must start with a forward slash.')
                                 ->end()
                             ->end()
