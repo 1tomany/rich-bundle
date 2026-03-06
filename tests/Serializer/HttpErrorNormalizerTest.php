@@ -20,10 +20,11 @@ final class HttpErrorNormalizerTest extends TestCase
         $exception2 = new \Exception('Exception 2', previous: $exception1);
         $exception3 = new \Exception('Exception 3', previous: $exception2);
 
-        $record = new HttpErrorNormalizer(true)->normalize(new HttpError($exception3));
+        $record = new HttpErrorNormalizer(true)->normalize(...[
+            'data' => new HttpError($exception3),
+        ]);
 
         assert(array_key_exists('stack', $record));
-        // $this->assertArrayHasKey('stack', $record);
         $this->assertNotEmpty($record['stack']);
     }
 
@@ -32,7 +33,9 @@ final class HttpErrorNormalizerTest extends TestCase
         $exception1 = new \Exception('Exception 1');
         $exception2 = new \Exception('Exception 2', previous: $exception1);
 
-        $record = new HttpErrorNormalizer(false)->normalize(new HttpError($exception2));
+        $record = new HttpErrorNormalizer(false)->normalize(...[
+            'data' => new HttpError($exception2),
+        ]);
 
         $this->assertArrayNotHasKey('stack', $record);
     }
