@@ -34,6 +34,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 use function call_user_func;
 use function count;
+use function implode;
 use function in_array;
 use function is_array;
 use function is_callable;
@@ -165,7 +166,7 @@ readonly class InputParser implements InputParserInterface
             $message = 'Parsing the request failed because it is is malformed and could not be mapped correctly.';
 
             if ($e instanceof MissingConstructorArgumentsException) {
-                $message = sprintf('Parsing the request failed because the following required parameters were missing: "%s".', \implode('", "', $e->getMissingConstructorArguments()));
+                $message = sprintf('Parsing the request failed because the following required parameters were missing: "%s".', implode('", "', $e->getMissingConstructorArguments()));
             }
 
             throw HttpException::create(400, $message, previous: $e);
