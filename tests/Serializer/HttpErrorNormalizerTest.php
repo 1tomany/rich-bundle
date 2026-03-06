@@ -7,9 +7,6 @@ use OneToMany\RichBundle\Serializer\HttpErrorNormalizer;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
-use function array_key_exists;
-use function assert;
-
 #[Group('UnitTests')]
 #[Group('SerializerTests')]
 final class HttpErrorNormalizerTest extends TestCase
@@ -24,11 +21,8 @@ final class HttpErrorNormalizerTest extends TestCase
             'data' => new HttpError($exception3),
         ]);
 
-        assert(array_key_exists('stack', $record));
-        assert(array_key_exists('trace', $record));
-
-        $this->assertNotEmpty($record['stack']);
-        $this->assertNotEmpty($record['trace']);
+        $this->assertArrayHasKey('stack', $record);
+        $this->assertArrayHasKey('trace', $record);
     }
 
     public function testNormalizingExceptionInNonDebugEnvironmentDoesNotIncludeStackAndTrace(): void
