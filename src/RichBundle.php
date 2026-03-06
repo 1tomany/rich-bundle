@@ -96,6 +96,8 @@ class RichBundle extends AbstractBundle
                 // Event Subscribers
                 ->set(RequestListener::class)
                     ->tag('kernel.event_subscriber')
+                    ->arg('$logger', service('logger'))
+                    ->arg('$serializer', service('serializer'))
                     ->arg('$acceptFormats', $config['request_listener']['accept_formats'])
                     ->arg('$contentTypeFormats', $config['request_listener']['content_type_formats'])
                     ->arg('$serializedUriPrefix', $config['request_listener']['serialized_uri_prefix'])
