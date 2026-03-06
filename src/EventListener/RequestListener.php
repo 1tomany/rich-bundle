@@ -172,7 +172,7 @@ final readonly class RequestListener implements EventSubscriberInterface
         try {
             $content = $this->serializer->serialize($data, $format, $context);
         } catch (SerializerExceptionInterface $e) {
-            throw new RuntimeException(sprintf('Serializing the response failed because data of type "%s" could not be encoded as "%s".', get_debug_type($data), $format), previous: $e);
+            throw new RuntimeException(sprintf('Serializing the response failed because the type "%s" could not be encoded as "%s".', get_debug_type($data), $format), previous: $e);
         }
 
         $response = new Response($content, $status, $headers + [
