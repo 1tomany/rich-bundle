@@ -39,8 +39,6 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
             'title' => $data->getTitle(),
             'detail' => $data->getMessage(),
             'violations' => $data->getViolations(),
-            // 'stack' => $data->getStack(),
-            // 'trace' => $data->getTrace(),
         ];
 
         if ($this->debug) {
@@ -61,6 +59,9 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
         return $data instanceof HttpErrorInterface;
     }
 
+    /**
+     * @see Symfony\Component\Serializer\Normalizer\NormalizerInterface
+     */
     public function getSupportedTypes(?string $format): array
     {
         return [
