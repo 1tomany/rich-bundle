@@ -138,14 +138,5 @@ class RichBundle extends AbstractBundle
                     ->arg('$inputParser', service(InputParser::class))
                     ->arg('$validator', service('validator'))
         ;
-
-        // $container->import('../config/services.yaml');
-
-        // $builder
-        //     ->getDefinition(RequestListener::class)
-        //     ->setArgument('$acceptFormats', $config['request_listener']['accept_formats'])
-        //     ->setArgument('$contentTypeFormats', $config['request_listener']['content_type_formats'])
-        //     ->setArgument('$serializedUriPrefix', $config['request_listener']['serialized_uri_prefix'])
-        //     ->setArgument('$logImportantExceptions', $config['request_listener']['log_important_exceptions']);
     }
 }
