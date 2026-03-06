@@ -2,15 +2,25 @@
 
 namespace OneToMany\RichBundle;
 
+use OneToMany\RichBundle\Contract\Input\InputParserInterface;
 use OneToMany\RichBundle\DependencyInjection\RemoveDataClassesPass;
 use OneToMany\RichBundle\EventListener\RequestListener;
+use OneToMany\RichBundle\Form\InputDataMapper;
+use OneToMany\RichBundle\Input\InputParser;
+use OneToMany\RichBundle\Serializer\HttpErrorNormalizer;
+use OneToMany\RichBundle\ValueResolver\InputValueResolver;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 
+use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
+use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
+
 class RichBundle extends AbstractBundle
 {
+    protected string $extensionAlias = 'onetomany_rich';
+
     /**
      * @see Symfony\Component\Config\Definition\ConfigurableInterface
      *
@@ -56,7 +66,7 @@ class RichBundle extends AbstractBundle
     public function build(ContainerBuilder $container): void
     {
         // Remove Command, Input, and Result classes
-        $container->addCompilerPass(new RemoveDataClassesPass());
+        // $container->addCompilerPass(new RemoveDataClassesPass());
     }
 
     /**
@@ -73,13 +83,48 @@ class RichBundle extends AbstractBundle
      */
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
-        $container->import('../config/services.yaml');
+        $container
+            ->services()
+                // Input Parsers
+                ->set(InputParser::class)
+                    ->arg('$containerBag', service('parameter_bag'))
+                    ->arg('$serializer', service('serializer'))
+                    ->arg('$validator', service('validator'))
+                    ->arg('$tokenStorage', service('security.token_storage')->nullOnInvalid())
+                    ->alias(InputParserInterface::class, service(InputParser::class))
 
-        $builder
-            ->getDefinition(RequestListener::class)
-            ->setArgument('$acceptFormats', $config['request_listener']['accept_formats'])
-            ->setArgument('$contentTypeFormats', $config['request_listener']['content_type_formats'])
-            ->setArgument('$serializedUriPrefix', $config['request_listener']['serialized_uri_prefix'])
-            ->setArgument('$logImportantExceptions', $config['request_listener']['log_important_exceptions']);
+                // Event Subscribers
+                ->set(RequestListener::class)
+                    ->tag('kernel.event_subscriber')
+                    ->arg('$acceptFormats', $config['request_listener']['accept_formats'])
+                    ->arg('$contentTypeFormats', $config['request_listener']['content_type_formats'])
+                    ->arg('$serializedUriPrefix', $config['request_listener']['serialized_uri_prefix'])
+                    ->arg('$logImportantExceptions', $config['request_listener']['log_important_exceptions'])
+
+                // Forms
+                ->set(InputDataMapper::class)
+                    ->arg('$requestStack', service('request_stack'))
+                    ->arg('$inputParser', service(InputParser::class))
+
+                // Normalizers
+                ->set(HttpErrorNormalizer::class)
+                    ->tag('serializer.normalizer')
+                    ->arg('$debug', param('kernel.debug'))
+
+                // Value Resolvers
+                ->set(InputValueResolver::class)
+                    ->tag('controller.argument_value_resolver')
+                    ->arg('$inputParser', service(InputParser::class))
+                    ->arg('$validator', service('validator'))
+        ;
+
+        // $container->import('../config/services.yaml');
+
+        // $builder
+        //     ->getDefinition(RequestListener::class)
+        //     ->setArgument('$acceptFormats', $config['request_listener']['accept_formats'])
+        //     ->setArgument('$contentTypeFormats', $config['request_listener']['content_type_formats'])
+        //     ->setArgument('$serializedUriPrefix', $config['request_listener']['serialized_uri_prefix'])
+        //     ->setArgument('$logImportantExceptions', $config['request_listener']['log_important_exceptions']);
     }
 }
