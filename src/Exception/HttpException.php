@@ -3,8 +3,9 @@
 namespace OneToMany\RichBundle\Exception;
 
 use OneToMany\RichBundle\Contract\Exception\ExceptionInterface;
+use Symfony\Component\HttpKernel\Exception\HttpException as SymfonyHttpException;
 
-class HttpException extends \Symfony\Component\HttpKernel\Exception\HttpException implements ExceptionInterface
+class HttpException extends SymfonyHttpException implements ExceptionInterface
 {
     /**
      * @param array<string, string> $headers
