@@ -14,7 +14,7 @@ use function assert;
 #[Group('SerializerTests')]
 final class HttpErrorNormalizerTest extends TestCase
 {
-    public function testNormalizingExceptionInDebugEnvironmentIncludesStack(): void
+    public function testNormalizingExceptionInDebugEnvironmentIncludesStackAndTrace(): void
     {
         $exception1 = new \Exception('Exception 1');
         $exception2 = new \Exception('Exception 2', previous: $exception1);
@@ -25,10 +25,13 @@ final class HttpErrorNormalizerTest extends TestCase
         ]);
 
         assert(array_key_exists('stack', $record));
+        assert(array_key_exists('trace', $record));
+
         $this->assertNotEmpty($record['stack']);
+        $this->assertNotEmpty($record['trace']);
     }
 
-    public function testNormalizingExceptionInNonDebugEnvironmentDoesNotIncludeStack(): void
+    public function testNormalizingExceptionInNonDebugEnvironmentDoesNotIncludeStackAndTrace(): void
     {
         $exception1 = new \Exception('Exception 1');
         $exception2 = new \Exception('Exception 2', previous: $exception1);
@@ -38,5 +41,6 @@ final class HttpErrorNormalizerTest extends TestCase
         ]);
 
         $this->assertArrayNotHasKey('stack', $record);
+        $this->assertArrayNotHasKey('trace', $record);
     }
 }
