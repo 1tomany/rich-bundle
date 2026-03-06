@@ -8,9 +8,9 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use function array_merge;
 
 /**
- * @phpstan-import-type Stack from \OneToMany\RichBundle\Contract\Error\HttpErrorInterface
- * @phpstan-import-type Trace from \OneToMany\RichBundle\Contract\Error\HttpErrorInterface
- * @phpstan-import-type Violation from \OneToMany\RichBundle\Contract\Error\HttpErrorInterface
+ * @phpstan-import-type Stack from HttpErrorInterface
+ * @phpstan-import-type Trace from HttpErrorInterface
+ * @phpstan-import-type Violation from HttpErrorInterface
  */
 final readonly class HttpErrorNormalizer implements NormalizerInterface
 {
