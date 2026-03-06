@@ -20,11 +20,13 @@ use OneToMany\RichBundle\Exception\HttpException;
 use OneToMany\RichBundle\Exception\LogicException;
 use OneToMany\RichBundle\Validator\UninitializedProperties;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
+use Symfony\Component\HttpFoundation\Exception\RequestExceptionInterface as HttpFoundationRequestExceptionInterface;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Serializer\Encoder\DecoderInterface;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
+use Symfony\Component\Serializer\Exception\MissingConstructorArgumentsException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
@@ -32,6 +34,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 use function call_user_func;
 use function count;
+use function implode;
 use function in_array;
 use function is_array;
 use function is_callable;
@@ -159,13 +162,17 @@ readonly class InputParser implements InputParserInterface
             $input = $this->serializer->denormalize($this->data->all(), $type, null, [
                 'filter_bool' => true, 'disable_type_enforcement' => true,
             ]);
-        } catch (\Throwable $e) {
-            throw HttpException::create(400, 'Parsing the request failed because it is is malformed and could not be mapped correctly.', previous: $e);
+        } catch (HttpFoundationRequestExceptionInterface|SerializerExceptionInterface $e) {
+            $message = 'Parsing the request failed because it is is malformed and could not be mapped correctly.';
+
+            if ($e instanceof MissingConstructorArgumentsException) {
+                $message = sprintf('Parsing the request failed because the following required parameters were missing: "%s".', implode('", "', $e->getMissingConstructorArguments()));
+            }
+
+            throw HttpException::create(400, $message, previous: $e);
         }
 
-        // Validate that all class properties are initialized.
-        // Without it, validating the class will throw an error
-        // because an uninitialized property can't be validated.
+        // Validate that all class properties are initialized
         $violations = $this->validator->validate($input, [
             new UninitializedProperties(),
         ]);

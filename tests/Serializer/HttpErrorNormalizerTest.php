@@ -11,21 +11,21 @@ use PHPUnit\Framework\TestCase;
 #[Group('SerializerTests')]
 final class HttpErrorNormalizerTest extends TestCase
 {
-    public function testNormalizingExceptionInDebugEnvironmentIncludesStack(): void
+    public function testNormalizingExceptionInDebugEnvironmentIncludesStackAndTrace(): void
     {
         $exception1 = new \Exception('Exception 1');
         $exception2 = new \Exception('Exception 2', previous: $exception1);
         $exception3 = new \Exception('Exception 3', previous: $exception2);
 
-        $record = new HttpErrorNormalizer(true)->normalize(
-            new HttpError($exception3)
-        );
+        $record = new HttpErrorNormalizer(true)->normalize(...[
+            'data' => new HttpError($exception3),
+        ]);
 
         $this->assertArrayHasKey('stack', $record);
-        $this->assertNotEmpty($record['stack']);
+        $this->assertArrayHasKey('trace', $record);
     }
 
-    public function testNormalizingExceptionInNonDebugEnvironmentDoesNotIncludeStack(): void
+    public function testNormalizingExceptionInNonDebugEnvironmentDoesNotIncludeStackAndTrace(): void
     {
         $exception1 = new \Exception('Exception 1');
         $exception2 = new \Exception('Exception 2', previous: $exception1);
@@ -35,5 +35,6 @@ final class HttpErrorNormalizerTest extends TestCase
         ]);
 
         $this->assertArrayNotHasKey('stack', $record);
+        $this->assertArrayNotHasKey('trace', $record);
     }
 }
