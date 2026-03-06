@@ -2,8 +2,11 @@
 
 namespace OneToMany\RichBundle;
 
+use OneToMany\RichBundle\Contract\Action\CommandInterface;
+use OneToMany\RichBundle\Contract\Action\InputInterface;
+use OneToMany\RichBundle\Contract\Action\ResultInterface;
 use OneToMany\RichBundle\Contract\Input\InputParserInterface;
-use OneToMany\RichBundle\DependencyInjection\RemoveDataClassesPass;
+use OneToMany\RichBundle\DependencyInjection\Compiler\RemoveDtoTagsPass;
 use OneToMany\RichBundle\EventListener\RequestListener;
 use OneToMany\RichBundle\Form\InputDataMapper;
 use OneToMany\RichBundle\Input\InputParser;
@@ -20,6 +23,28 @@ use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
 class RichBundle extends AbstractBundle
 {
     protected string $extensionAlias = 'onetomany_rich';
+
+    /**
+     * @see Symfony\Component\HttpKernel\Bundle\BundleInterface
+     */
+    public function build(ContainerBuilder $container): void
+    {
+        parent::build($container);
+
+        $container
+            ->registerForAutoconfiguration(CommandInterface::class)
+            ->addTag(RemoveDtoTagsPass::DTO_CLASS_TAG);
+
+        $container
+            ->registerForAutoconfiguration(InputInterface::class)
+            ->addTag(RemoveDtoTagsPass::DTO_CLASS_TAG);
+
+        $container
+            ->registerForAutoconfiguration(ResultInterface::class)
+            ->addTag(RemoveDtoTagsPass::DTO_CLASS_TAG);
+
+        $container->addCompilerPass(new RemoveDtoTagsPass());
+    }
 
     /**
      * @see Symfony\Component\Config\Definition\ConfigurableInterface
@@ -61,12 +86,6 @@ class RichBundle extends AbstractBundle
                     ->end()
                 ->end()
             ->end();
-    }
-
-    public function build(ContainerBuilder $container): void
-    {
-        // Remove Command, Input, and Result classes
-        // $container->addCompilerPass(new RemoveDataClassesPass());
     }
 
     /**
