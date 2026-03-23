@@ -43,9 +43,9 @@
         "bin/rich"
     ],
     "scripts": {
-        "fix": "./vendor/bin/php-cs-fixer fix",
-        "stan": "./vendor/bin/phpstan",
-        "test": "./vendor/bin/phpunit"
+        "fix": "php-cs-fixer fix @additional_args",
+        "stan": "phpstan @additional_args",
+        "test": "phpunit @additional_args"
     },
     "authors": [
         {
