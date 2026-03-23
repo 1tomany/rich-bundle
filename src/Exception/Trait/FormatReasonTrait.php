@@ -3,9 +3,6 @@
 namespace OneToMany\RichBundle\Exception\Trait;
 
 use function lcfirst;
-use function rtrim;
-use function sprintf;
-use function strlen;
 use function trim;
 
 trait FormatReasonTrait
@@ -19,20 +16,7 @@ trait FormatReasonTrait
             $reason = $reason->getMessage();
         }
 
-        if ($reason = trim((string) $reason)) {
-            $reasonLength = strlen($reason);
-
-            do {
-                $reason = trim(rtrim($reason, '.,!;'));
-                $trimmedReasonLength = strlen($reason);
-
-                if ($reasonLength === $trimmedReasonLength) {
-                    break;
-                }
-
-                $reasonLength = $trimmedReasonLength;
-            } while (!empty($reason));
-        }
+        $reason = trim((string) $reason, " \t\n\r\0\x0B.,!;");
 
         return $reason ? trim(implode(' ', [$prefix, lcfirst($reason)])) : '';
     }
