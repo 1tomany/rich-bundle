@@ -3,6 +3,7 @@
 namespace OneToMany\RichBundle\Tests\Exception\Trait;
 
 use OneToMany\RichBundle\Exception\Trait\FormatReasonTrait;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
@@ -24,6 +25,31 @@ final class FormatReasonTraitTest extends TestCase
 
     public function testFormattingThrowableUsesMessage(): void
     {
-        $this->assertEquals(': an error occurred', $this->formatReason(new \Exception('An error occurred . . .')));
+        $this->assertEquals('an error occurred', $this->formatReason(new \Exception('An error occurred.'), ''));
+    }
+
+    #[DataProvider('providerReasonAndFormattedReason')]
+    public function testFormattingReasonIterativelyRemovesEndingPunctuation(
+        string $reason,
+        string $formattedReason,
+    ): void
+    {
+        $this->assertEquals($formattedReason, $this->formatReason($reason, ''));
+    }
+
+    public static function providerReasonAndFormattedReason(): array
+    {
+        $provider = [
+            ['', ''],
+            ['.', ''],
+            ['...', ''],
+            ['a...', 'a'],
+            ['A.,!;', 'a'],
+            ['Error!!!', 'error'],
+            ['Error; file not found.', 'error; file not found'],
+            ['Account: not  found;', 'account: not  found'],
+        ];
+
+        return $provider;
     }
 }

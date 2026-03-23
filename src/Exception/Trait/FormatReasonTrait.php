@@ -10,7 +10,10 @@ use function trim;
 
 trait FormatReasonTrait
 {
-    private function formatReason(string|\Throwable|null $reason): string
+    private function formatReason(
+        string|\Throwable|null $reason,
+        string $prefix = ':',
+    ): string
     {
         if ($reason instanceof \Throwable) {
             $reason = $reason->getMessage();
@@ -19,24 +22,18 @@ trait FormatReasonTrait
         if ($reason = trim((string) $reason)) {
             $reasonLength = strlen($reason);
 
-            while (true) {
-                $reason = rtrim($reason, '.,!;');
-                $reason = trim($reason);
+            do {
+                $reason = trim(rtrim($reason, '.,!;'));
+                $trimmedReasonLength = strlen($reason);
 
-                $trimmedLength = strlen($reason);
-
-                if ($reasonLength === $trimmedLength) {
+                if ($reasonLength === $trimmedReasonLength) {
                     break;
                 }
 
-                if (!$reason) {
-                    break;
-                }
-
-                $reasonLength = $trimmedLength;
-            }
+                $reasonLength = $trimmedReasonLength;
+            } while (!empty($reason));
         }
 
-        return $reason ? sprintf(': %s', lcfirst($reason)) : '';
+        return $reason ? trim(implode(' ', [$prefix, lcfirst($reason)])) : '';
     }
 }
