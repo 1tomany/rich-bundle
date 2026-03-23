@@ -12,7 +12,7 @@ use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
 use OneToMany\RichBundle\Contract\Input\InputParserInterface;
 use OneToMany\RichBundle\Exception\HttpException;
-use OneToMany\RichBundle\Exception\LogicException;
+use OneToMany\RichBundle\Exception\RuntimeException;
 use OneToMany\RichBundle\Input\InputParser;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -496,7 +496,7 @@ final class InputParserTest extends TestCase
 
     public function testParsingSourceUserRequiresSymfonySecurityBundle(): void
     {
-        $this->expectException(LogicException::class);
+        $this->expectException(RuntimeException::class);
         $this->expectExceptionMessageMatches('/Symfony Security Bundle is not installed/');
 
         $class = new class implements InputInterface {
