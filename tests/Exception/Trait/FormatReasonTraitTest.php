@@ -32,8 +32,7 @@ final class FormatReasonTraitTest extends TestCase
     public function testFormattingReasonIterativelyRemovesEndingPunctuation(
         string $reason,
         string $formattedReason,
-    ): void
-    {
+    ): void {
         $this->assertEquals($formattedReason, $this->formatReason($reason, ''));
     }
 

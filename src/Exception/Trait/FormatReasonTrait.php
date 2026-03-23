@@ -10,8 +10,7 @@ trait FormatReasonTrait
     private function formatReason(
         string|\Throwable|null $reason,
         string $prefix = ':',
-    ): string
-    {
+    ): string {
         if ($reason instanceof \Throwable) {
             $reason = $reason->getMessage();
         }
