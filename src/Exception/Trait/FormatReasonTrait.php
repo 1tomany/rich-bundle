@@ -16,7 +16,7 @@ trait FormatReasonTrait
             $reason = $reason->getMessage();
         }
 
-        $reason = trim((string) $reason, " \t\n\r\0\x0B.,!;");
+        $reason = trim(trim((string) $reason), '.,!;');
 
         return $reason ? trim(implode(' ', [$prefix, lcfirst($reason)])) : '';
     }
