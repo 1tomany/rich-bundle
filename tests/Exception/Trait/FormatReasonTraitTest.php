@@ -24,6 +24,6 @@ final class FormatReasonTraitTest extends TestCase
 
     public function testFormattingThrowableUsesMessage(): void
     {
-        $this->assertEquals(': an error occurred', $this->formatReason(new \Exception('An error occurred.')));
+        $this->assertEquals(': an error occurred', $this->formatReason(new \Exception('An error occurred . . .')));
     }
 }

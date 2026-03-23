@@ -20,7 +20,9 @@ trait FormatReasonTrait
             $reasonLength = strlen($reason);
 
             while (true) {
-                $reason = trim(rtrim($reason, '.,!'));
+                $reason = rtrim($reason, '.,!;');
+                $reason = trim($reason);
+
                 $trimmedLength = strlen($reason);
 
                 if ($reasonLength === $trimmedLength) {
