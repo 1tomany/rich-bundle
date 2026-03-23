@@ -12,37 +12,29 @@ trait FormatReasonTrait
 {
     private function formatReason(string|\Throwable|null $reason): string
     {
-        if (!$reason) {
-            return '';
-        }
-
         if ($reason instanceof \Throwable) {
             $reason = $reason->getMessage();
         }
 
-        $reason = trim($reason);
+        if ($reason = trim((string) $reason)) {
+            $reasonLength = strlen($reason);
 
-        if (!$reason) {
-            return '';
-        }
+            while (true) {
+                $reason = trim(rtrim($reason, '.,!'));
+                $trimmedLength = strlen($reason);
 
-        $reasonLength = strlen($reason);
+                if ($reasonLength === $trimmedLength) {
+                    break;
+                }
 
-        while (true) {
-            $reason = rtrim($reason, '.,!');
-            $trimmedLength = strlen($reason);
+                if (!$reason) {
+                    break;
+                }
 
-            if ($reasonLength === $trimmedLength) {
-                break;
+                $reasonLength = $trimmedLength;
             }
-
-            $reasonLength = $trimmedLength;
         }
 
-        // if ($reason = trim(rtrim((string) $reason, '.,!'))) {
-        //     $reason = sprintf(': %s', lcfirst($reason));
-        // }
-
-        return sprintf(': %s', lcfirst($reason));
+        return $reason ? sprintf(': %s', lcfirst($reason)) : '';
     }
 }
