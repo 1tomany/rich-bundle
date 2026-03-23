@@ -16,4 +16,14 @@ final class FormatReasonTraitTest extends TestCase
     {
         $this->assertEmpty($this->formatReason(null));
     }
+
+    public function testFormattingEmptyTrimmedReasonReturnsEmptyString(): void
+    {
+        $this->assertEmpty($this->formatReason("\t    \n"));
+    }
+
+    public function testFormattingThrowableUsesMessage(): void
+    {
+        $this->assertEquals(': an error occurred', $this->formatReason(new \Exception('An error occurred.')));
+    }
 }
