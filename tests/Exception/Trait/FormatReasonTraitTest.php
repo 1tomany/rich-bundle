@@ -37,10 +37,14 @@ final class FormatReasonTraitTest extends TestCase
         $this->assertEquals($formattedReason, $this->formatReason($reason, ''));
     }
 
+    /**
+     * @return non-empty-list<non-empty-list<string>>
+     */
     public static function providerReasonAndFormattedReason(): array
     {
         $provider = [
             ['', ''],
+            [' ', ''],
             ['.', ''],
             ['...', ''],
             ['a...', 'a'],
