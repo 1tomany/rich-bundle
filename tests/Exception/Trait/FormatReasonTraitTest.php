@@ -46,6 +46,7 @@ final class FormatReasonTraitTest extends TestCase
             [' ', ''],
             ['.', ''],
             ['...', ''],
+            ['..,,!!;;', ''],
             ['a...', 'a'],
             ['A.,!;', 'a'],
             ['Error!!!', 'error'],

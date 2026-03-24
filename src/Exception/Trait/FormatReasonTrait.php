@@ -11,6 +11,10 @@ trait FormatReasonTrait
         string|\Throwable|null $reason,
         string $prefix = ':',
     ): string {
+        if (!$reason) {
+            return '';
+        }
+
         if ($reason instanceof \Throwable) {
             $reason = $reason->getMessage();
         }
