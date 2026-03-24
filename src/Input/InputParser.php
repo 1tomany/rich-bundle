@@ -17,7 +17,7 @@ use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
 use OneToMany\RichBundle\Contract\Input\InputParserInterface;
 use OneToMany\RichBundle\Exception\HttpException;
-use OneToMany\RichBundle\Exception\LogicException;
+use OneToMany\RichBundle\Exception\RuntimeException;
 use OneToMany\RichBundle\Validator\UninitializedProperties;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\HttpFoundation\Exception\RequestExceptionInterface as HttpFoundationRequestExceptionInterface;
@@ -149,7 +149,7 @@ readonly class InputParser implements InputParserInterface
 
                 if ($source instanceof SourceUser) {
                     if (null === $this->tokenStorage) {
-                        throw new LogicException(sprintf('Resolving the property "%s" failed because the Symfony Security Bundle is not installed. Try running "composer require symfony/security-bundle".', $property->getName()));
+                        throw new RuntimeException(sprintf('Resolving the property "%s" failed because the Symfony Security Bundle is not installed. Try running "composer require symfony/security-bundle".', $property->getName()));
                     }
 
                     $this->appendProperty($property, $source, $this->tokenStorage->getToken()?->getUser());
