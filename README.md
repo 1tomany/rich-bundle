@@ -31,7 +31,7 @@ The handler that runs synchronously today may need to be placed in a message que
 
 Each handler should contain the business logic necessary to handle the command passed to it. Ideally, handlers should be `final` and `readonly` as well to ensure they don't accidentally rely on any previous state to handle a command.
 
-<img src="https://raw.githubusercontent.com/1tomany/rich-bundle/refs/heads/main/assets/architecture.png">
+<img src="https://raw.githubusercontent.com/1tomany/rich-bundle/refs/heads/master/assets/architecture.png">
 
 ## Getting started
 Because this is a new bundle, you'll have to manually create the structure for each module in your application. My goal is to leverage the Symfony Maker Bundle to allow you to create the RICH structure for each action similar to how you would create a Doctrine entity.
