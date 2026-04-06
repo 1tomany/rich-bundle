@@ -33,6 +33,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+use function array_key_exists;
 use function call_user_func;
 use function count;
 use function implode;
@@ -135,7 +136,7 @@ readonly class InputParser implements InputParserInterface
                 if ($source instanceof SourceQuery) {
                     $requestQuery ??= $request->query->all();
 
-                    if (\array_key_exists($name, $requestQuery)) {
+                    if (array_key_exists($name, $requestQuery)) {
                         $this->appendProperty($property, $source, $requestQuery[$name]);
                     }
                 }
