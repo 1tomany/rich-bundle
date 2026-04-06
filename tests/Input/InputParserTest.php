@@ -14,6 +14,7 @@ use OneToMany\RichBundle\Contract\Input\InputParserInterface;
 use OneToMany\RichBundle\Exception\HttpException;
 use OneToMany\RichBundle\Exception\RuntimeException;
 use OneToMany\RichBundle\Input\InputParser;
+use OneToMany\RichBundle\Tests\Input\Fixtures\Input\SourceRouteInput;
 use OneToMany\RichBundle\Tests\Input\Fixtures\Input\SourceServerInput;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -615,6 +616,24 @@ final class InputParserTest extends TestCase
         $this->assertInstanceOf($class::class, $input);
         $this->assertEquals($data['name'], $input->name);
         $this->assertEquals($data['email'], $input->email);
+    }
+
+    public function testParsingSourceRoute(): void
+    {
+        $routeParams = [
+            'id' => random_int(1, 1024),
+            'name' => 'Modesto Herman',
+        ];
+
+        $request = new Request(attributes: [
+            '_route_params' => $routeParams,
+        ]);
+
+        $input = $this->createInputParser()->parse($request, SourceRouteInput::class);
+
+        $this->assertInstanceOf(SourceRouteInput::class, $input);
+        $this->assertEquals($routeParams['id'], $input->id);
+        $this->assertEquals($routeParams['name'], $input->name);
     }
 
     public function testParsingSourceServer(): void
