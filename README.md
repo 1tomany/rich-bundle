@@ -1,7 +1,9 @@
 # RICH Bundle for Symfony
+
 This bundle makes it easy to incorporate the RICH architecture into your Symfony application. RICH stands for Request, Input, Command, Handler, and its goal is to make backend web application development as easy, straightforward, and futureproof as possible. RICH applications apply the single responsibility principle to each action a user can take with your application which guarantees that it can mutate over time without unintended consequences.
 
 ## RICH philosophy
+
 The central philosophy behind a RICH application is to apply to backend engineering what Tailwind CSS did to frontend engineering without introducing the unnecessary complexity of hexagonal architecture, domain driven design, and CQRS.
 
 Tailwind decoupled CSS into atomic components that you can apply as classes to HTML elements. This essentially undoes the Cascading in Cascading Style Sheets, but for good reason: you can safely modify the style of one element without much fear that it will radically alter the layout of your application. This is incredibly powerful for teams of developers: the tenured team member knows that the CSS class `.btn-blue` renders a full width block level button with a red background, but the developer that started last week doesn't, and he accidentally destroyed the styling of the application with his first PR.
@@ -9,6 +11,7 @@ Tailwind decoupled CSS into atomic components that you can apply as classes to H
 RICH applies these sames principles to backend engineering: each input, command, and handler are separate PHP classes that only have a single responsibility. The naming of these classes should describe an action that can be performed in your application. For example, if your application allows users to be created and updated, you would have `CreateUserInput` and `UpdateUserInput` as your input classes, `CreateUserCommand` and `UpdateUserCommand` as your command classes, and you guessed it, `CreateUserHandler` and `UpdateUserHandler` as your handler classes. Like Tailwind, this may seem redundant and a source of code duplication, but the benefits an architecture like this provide far outweigh the negatives.
 
 ## RICH structure
+
 **Request** Everything starts with an action taken by an outside actor. The request is content and metadata associated with that action. Almost anything can generate a request: another system that has integrated with your REST API, a user submitting a form, a developer running a console command, or even another module from within your application.
 
 **Input** Once sent, the request content and metadata is mapped onto an input object and validated. By default, this bundle uses the Symfony serializer and validator components, but you're welcome to manually map data and validate it however you see fit.
@@ -34,9 +37,11 @@ Each handler should contain the business logic necessary to handle the command p
 <img src="https://raw.githubusercontent.com/1tomany/rich-bundle/refs/heads/master/assets/architecture.png">
 
 ## Getting started
+
 Because this is a new bundle, you'll have to manually create the structure for each module in your application. My goal is to leverage the Symfony Maker Bundle to allow you to create the RICH structure for each action similar to how you would create a Doctrine entity.
 
 ### Install the bundle
+
 Install the bundle using Composer:
 
 ```shell
@@ -44,6 +49,7 @@ composer require 1tomany/rich-bundle
 ```
 
 ### Create the module structure
+
 Next, you'll need to create the directory structure for your first module. There is no strict definition on what a module is, other than a set of features that are loosely related to the same domain.
 
 It's easiest to think of a module as being related to each of your "primary" entities where a "primary" entity is one that can (mostly) exist without a parent entity. For example, `Invoice` would be a "primary" entity, but `InvoiceLine` would not be because an `InvoiceLine` can't exist without a parent `Invoice`.
@@ -79,6 +85,7 @@ We'll get into the purpose of each of these soon. Use the following command to c
 Moving forward, lets assume we're working on a module named `Account` for a Doctrine entity also named `Account` which uses a repository (shockingly) named `AccountRepository`.
 
 ### Create the module's contracts
+
 As the name implies, the `Contract` directory stores contracts to interact with this module. You should have, at minimum, two contracts to start with: a `<Entity>RepositoryInterface` and `ExceptionInterface`.
 
 In the `Contract/Repository` directory, you'll find a file named `AccountRepositoryInterface.php` with the following scaffolding:
@@ -153,6 +160,7 @@ Additionally, two base exceptions, `DomainException` and `RuntimeException` have
 Finally, I'll generally place other value objects and enums in the `Contract` directory for a module. It loosely indicates they will be used in other modules or domains in your application.
 
 ### Create the command class
+
 Though the input class is used first, the command class is shared amongst the input and handler classes, so lets start by creating it. Each command class must implement the `OneToMany\RichBundle\Contract\Action\CommandInterface` interface.
 
 Create a file named `CreateAccountCommand.php` in the `src/Account/Action/Command` directory and populate it with the following code:
@@ -180,6 +188,7 @@ final readonly class CreateAccountCommand implements CommandInterface
 ```
 
 ### Create the input class
+
 Now that we have a command class, we need an input class that creates the command object after the request has been mapped and validated. Each input class must implement the `OneToMany\RichBundle\Contract\Action\InputInterface` interface.
 
 Create a file named `CreateAccountInput.php` in the `src/Account/Action/Input` directory and populate it with the following code:
@@ -254,6 +263,7 @@ While the input class is also fairly simple in nature, it accomplishes a lot.
 Classes that implement the `OneToMany\RichBundle\Contract\Action\InputInterface` interface should use the `@implements` annotation to indicate the type of command the `toCommand()` method creates.
 
 #### Property sources
+
 You'll also notice some new attributes: `#[SourceUser]`, `#[SourceRequest]`, and `#[SourceIpAddress]`. These allow you to indicate where in the request the data should come from. The `#[MapRequestPayload]` attribute that was announced in Symfony 6.3 is powerful, but limiting in that it assumes everything comes from the request content. There are nine attributes provided by this bundle that allow you to specify the source of the data from the request.
 
 - `#[SourceContainer(name: 'app.config_setting')]` Fetches a parameter named `app.config_setting` from the container bag. While the `$name` argument is not strictly required, unless the container property is named identically to the class property, you'll need to supply it.
@@ -264,6 +274,7 @@ You'll also notice some new attributes: `#[SourceUser]`, `#[SourceRequest]`, and
 - `#[SourceQuery(name: 'query')]` Fetches a parameter named `query` from the `Symfony\Component\HttpFoundation\Request::$query` bag.
 - `#[SourceRequest(name: 'user')]` Fetches a parameter named `user` from the request content. This bundle uses HTTP content negotiation via the `Content-Type` request header to attempt to determine the type of content submitted. A standard Symfony installation allows you to use `form`, `json`, and `xml` formats by default.
 - `#[SourceRoute(name: 'productId')]` Fetches a parameter named `productId` from the route.
+- `#[SourceServer(name: 'REQUEST_URI')]` Fetches a parameter named `REQUEST_URI` from the `Symfony\Component\HttpFoundation\Request::$server` bag.
 - `#[SourceUser]` Fetches the authenticated user and returns `null` or an instance of the `Symfony\Component\Security\Core\User\UserInterface` interface.
 - `#[PropertyIgnored]` Indicates that the value resolver should ignore this property.
 
@@ -318,6 +329,7 @@ For instance, given the query string `email=&username=vic@1tomany.com`, the reso
 You can also combine chained sources. For example, you can have both a `#[SourceRequest]` and `#[SourceContainer]` attribute on a property: if the value wasn't found in the request content, then it would be retrieved from the container parameters.
 
 #### Additional property source arguments
+
 Each source attribute has boolean `$trim` and `$nullify` arguments as well. By default, `$trim` is `true` and `$nullify` is `false`. When `$trim` is `true`, the resolver will convert any scalar value to a string and run the `\trim()` function in it. The value will then be coerced back to the type specified by the property of the input class during denormalization.
 
 When `$nullify` is `true`, the resolver will convert any scalar value to `null` if the value is exactly an empty string. The underlying property must also allow null values, otherwise an `OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException` exception is thrown.
@@ -358,11 +370,11 @@ The following request content would be decoded correctly.
 
 ```json
 {
-  "name": "Modesto Herman   ",
-  "email": " mh@example.com  ",
-  "notes": " Please call back! \n",
-  "pin": "  8891",
-  "birth": ""
+    "name": "Modesto Herman   ",
+    "email": " mh@example.com  ",
+    "notes": " Please call back! \n",
+    "pin": "  8891",
+    "birth": ""
 }
 ```
 
@@ -377,9 +389,11 @@ However, if an empty string was used for the value of the key `name` the request
 In practice, you would only set `$nullify` to `true` on properties that are nullable.
 
 #### Input denormalization
+
 Once the data from the request has been extracted, it is denormalized and used to construct an object of type `OneToMany\RichBundle\Contract\Action\InputInterface`. If any exception is thrown during the denormalization process, it is captured and wrapped in an `OneToMany\RichBundle\ValueResolver\Exception\InvalidMappingException` exception. This exception provides a nicer message to the end user while still allowing a developer to review the exception stack.
 
 #### Input validation
+
 The final step when resolving the input class is validating it. Each class goes through two rounds of validation. The first uses an internal validation constraint named `OneToMany\RichBundle\Validator\UninitializedProperties`. This constraint ensures that there are no uninitialized properties in the input object.
 
 A property is uninitialized if it was explicitly ignored or not mapped and does not have a default value.
@@ -389,6 +403,7 @@ If all properties are initialized, the resolver then validates the hydrated inpu
 The value resolver will throw a `Symfony\Component\Validator\Exception\ValidationFailedException` exception if the input object has uninitialized properties or validation fails, whichever happens first.
 
 ### Create the handler class
+
 The **R**equest has been handled, the **I**nput has been validated, and the **C**ommand can be created. It's now time to **H**andle the command with the handler class.
 
 Each handler class must implement the `OneToMany\RichBundle\Contract\Action\HandlerInterface` interface. This requires creating a method named `handle()` that takes an object of type `OneToMany\RichBundle\Contract\Action\CommandInterface` as it's argument and returns an object of type `OneToMany\RichBundle\Contract\Action\ResultInterface`.
@@ -462,17 +477,19 @@ Next, if an author was provided, the handler attempts to find that record. If no
 Finally, the new `App\Entity\Account` object is persisted, flushed, and returned. If there were other actions that needed to be taken, such as creating a record in another system, you could easily inject the Symfony message bus and enqueue a command to create a new customer record in Stripe, for instance.
 
 #### Unnecessary queries
+
 The query to find the author user may seem unnecessary - if the request was previously authenticated by Symfony and we _know_ the author user, why query for them again?
 
 Your intuition is right, in a simple environment, this is likely a redundant query that returns the same user object that was already loaded and hydrated by the Symfony security system. However, we want to build robust systems that can operate in a variety of different contexts, so you can't always make that assumption:
 
-* This handler may be placed behind a message queue on a server unaware of the HTTP request.
-* This handler may be used from the command line which is unaware of any authenticated users.
-* This handler may be used for bulk data imports where each row in a CSV file can have a different author.
+- This handler may be placed behind a message queue on a server unaware of the HTTP request.
+- This handler may be used from the command line which is unaware of any authenticated users.
+- This handler may be used for bulk data imports where each row in a CSV file can have a different author.
 
 In each of these scenarios, the handler is unaware of the HTTP context, so it can't rely on it to exist to function properly. Ensuring each handler can operate in isolation also makes them easier to test: you can write a functional test without worrying about bootstrapping an HTTP environment.
 
 #### Handler exceptions
+
 A very specifically named exception `App\Account\Action\Handler\Exception\UserNotFoundForCreatingAccountException` is thrown when the author user can't be found. I prefer to create a new exception class for each exception state. From just the name of the class, any developer can quickly tell what caused it to be thrown. A unique class for each exception also lets you standardize the error message and exception code.
 
 ```php
@@ -502,6 +519,7 @@ Despite what I said about writing handlers that are not HTTP aware, I typically 
 3. Any non-HTTP environment or context can simply ignore the exception's code or map it to one of their own.
 
 ### Create the controller
+
 One beautiful result of the RICH architecture is your controllers are usually very small. Because Symfony treats a controller as any other service, you can place them wherever you like. We'll take advantage of that and place them in the same root directory and namespace that the input, command, handler, and result classes live.
 
 ```php
@@ -551,6 +569,7 @@ curl --location 'https://localhost:8000/api/accounts' \
 ```
 
 ## Conclusion
+
 I've been using this bundle (or rather, the code in this bundle) in production applications for over a year, and it's provided a delightful developer experience. Each class has a single purpose, I can easily throw a long running handler into a message queue, testing is much simpler, and most importantly, I can change individual components without fear they'll break something unrelated.
 
 Make your application RICH!

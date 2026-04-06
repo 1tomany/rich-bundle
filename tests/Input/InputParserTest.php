@@ -14,6 +14,8 @@ use OneToMany\RichBundle\Contract\Input\InputParserInterface;
 use OneToMany\RichBundle\Exception\HttpException;
 use OneToMany\RichBundle\Exception\RuntimeException;
 use OneToMany\RichBundle\Input\InputParser;
+use OneToMany\RichBundle\Tests\Input\Fixtures\Input\SourceRouteInput;
+use OneToMany\RichBundle\Tests\Input\Fixtures\Input\SourceServerInput;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
@@ -23,6 +25,7 @@ use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PropertyInfo\Extractor\ConstructorExtractor;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
+use Symfony\Component\PropertyInfo\Extractor\PhpStanExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -32,9 +35,11 @@ use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
 use Symfony\Component\Serializer\Normalizer\BackedEnumNormalizer;
 use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
+use Symfony\Component\Serializer\Normalizer\UnwrappingDenormalizer;
 use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validation;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 use function json_encode;
 use function random_int;
@@ -45,6 +50,43 @@ use function time;
 #[Group('InputTests')]
 final class InputParserTest extends TestCase
 {
+    private static Serializer $serializer;
+    private static ValidatorInterface $validator;
+
+    public static function setUpBeforeClass(): void
+    {
+        $normalizers = [
+            new BackedEnumNormalizer(),
+            new DateTimeNormalizer(),
+            new ArrayDenormalizer(),
+            new UnwrappingDenormalizer(),
+            new ObjectNormalizer(
+                null,
+                null,
+                null,
+                new PropertyInfoExtractor([], [
+                    new ReflectionExtractor(),
+                    new ConstructorExtractor([
+                        new PhpDocExtractor(),
+                        new PhpStanExtractor(),
+                        new ReflectionExtractor(),
+                    ]),
+                ]),
+            ),
+        ];
+
+        self::$serializer = new Serializer(
+            $normalizers, [
+                new JsonEncoder(),
+                new XmlEncoder(),
+            ],
+        );
+
+        self::$validator = Validation::createValidatorBuilder()
+            ->enableAttributeMapping()
+            ->getValidator();
+    }
+
     public function testParsingRequestRequiresContentTypeHeaderWithNonEmptyBody(): void
     {
         $this->expectExceptionObject(HttpException::create(422, 'Parsing the request failed because the Content-Type header was missing or malformed.'));
@@ -576,29 +618,43 @@ final class InputParserTest extends TestCase
         $this->assertEquals($data['email'], $input->email);
     }
 
+    public function testParsingSourceRoute(): void
+    {
+        $routeParams = [
+            'id' => random_int(1, 1024),
+            'name' => 'Modesto Herman',
+        ];
+
+        $request = new Request(attributes: [
+            '_route_params' => $routeParams,
+        ]);
+
+        $input = $this->createInputParser()->parse($request, SourceRouteInput::class);
+
+        $this->assertInstanceOf(SourceRouteInput::class, $input);
+        $this->assertEquals($routeParams['id'], $input->id);
+        $this->assertEquals($routeParams['name'], $input->name);
+    }
+
+    public function testParsingSourceServer(): void
+    {
+        $request = new Request(server: [
+            'REQUEST_URI' => '/rich-bundle',
+            'SERVER_NAME' => '1tomany.com',
+        ]);
+
+        $input = $this->createInputParser()->parse($request, SourceServerInput::class);
+
+        $this->assertInstanceOf(SourceServerInput::class, $input);
+        $this->assertEquals($request->server->get('REQUEST_URI'), $input->request_uri);
+        $this->assertEquals($request->server->get('SERVER_NAME'), $input->serverName);
+    }
+
     /**
      * @param array<string, mixed> $parameters
      */
     private function createInputParser(array $parameters = []): InputParserInterface
     {
-        $containerBag = new ContainerBag(new Container(new ParameterBag($parameters)));
-
-        $normalizers = [
-            new BackedEnumNormalizer(),
-            new DateTimeNormalizer(),
-            new ArrayDenormalizer(),
-        ];
-
-        $normalizers[] = new ObjectNormalizer(null, null, null, new PropertyInfoExtractor([], [
-            new ReflectionExtractor(), new ConstructorExtractor([new PhpDocExtractor()]),
-        ]));
-
-        $serializer = new Serializer($normalizers, [
-            new JsonEncoder(), new XmlEncoder(),
-        ]);
-
-        $validator = Validation::createValidatorBuilder()->enableAttributeMapping()->getValidator();
-
-        return new InputParser($containerBag, $serializer, $validator);
+        return new InputParser(new ContainerBag(new Container(new ParameterBag($parameters))), self::$serializer, self::$validator);
     }
 }

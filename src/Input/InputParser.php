@@ -12,6 +12,7 @@ use OneToMany\RichBundle\Attribute\SourceIpAddress;
 use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceRoute;
+use OneToMany\RichBundle\Attribute\SourceServer;
 use OneToMany\RichBundle\Attribute\SourceUser;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
@@ -40,6 +41,7 @@ use function is_array;
 use function is_callable;
 use function is_string;
 use function sprintf;
+use function strtoupper;
 use function trim;
 
 readonly class InputParser implements InputParserInterface
@@ -132,6 +134,7 @@ readonly class InputParser implements InputParserInterface
                 }
 
                 if ($source instanceof SourceQuery && $request->query->has($name)) {
+                    // @see https://github.com/symfony/symfony/issues/62561
                     $this->appendProperty($property, $source, $request->query->all()[$name]);
                 }
 
@@ -144,6 +147,14 @@ readonly class InputParser implements InputParserInterface
 
                     if (is_array($routeParams) && isset($routeParams[$name])) {
                         $this->appendProperty($property, $source, $routeParams[$name]);
+                    }
+                }
+
+                if ($source instanceof SourceServer) {
+                    $name = strtoupper($name);
+
+                    if ($request->server->has($name)) {
+                        $this->appendProperty($property, $source, $request->server->get($name));
                     }
                 }
 
