@@ -2,7 +2,11 @@
 
 namespace OneToMany\RichBundle\Tests\Input\Fixtures\Input;
 
+use OneToMany\RichBundle\Attribute\SourceAttributesBag;
+use OneToMany\RichBundle\Attribute\SourceHeadersBag;
+use OneToMany\RichBundle\Attribute\SourceQueryBag;
 use OneToMany\RichBundle\Attribute\SourceRequestBag;
+use OneToMany\RichBundle\Attribute\SourceServerBag;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
 use OneToMany\RichBundle\Tests\Input\Fixtures\Command\InputCommand;
 use OneToMany\RichBundle\Tests\Input\Fixtures\Input\Trait\ToCommandTrait;
@@ -22,19 +26,19 @@ final readonly class SourceRequestBagInput implements InputInterface
      * @param array<string, mixed> $server
      */
     public function __construct(
-        #[SourceRequestBag('attributes')]
+        #[SourceAttributesBag]
         public array $attributes,
 
-        #[SourceRequestBag('headers')]
+        #[SourceHeadersBag]
         public array $headers,
 
-        #[SourceRequestBag('query')]
+        #[SourceQueryBag]
         public array $query,
 
-        #[SourceRequestBag('request')]
+        #[SourceRequestBag]
         public array $request,
 
-        #[SourceRequestBag('server')]
+        #[SourceServerBag]
         public array $server,
     ) {
     }

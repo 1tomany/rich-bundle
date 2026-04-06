@@ -11,7 +11,7 @@ use OneToMany\RichBundle\Attribute\SourceHeader;
 use OneToMany\RichBundle\Attribute\SourceIpAddress;
 use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
-use OneToMany\RichBundle\Attribute\SourceRequestBag;
+use OneToMany\RichBundle\Attribute\SourceParameterBag;
 use OneToMany\RichBundle\Attribute\SourceRoute;
 use OneToMany\RichBundle\Attribute\SourceServer;
 use OneToMany\RichBundle\Attribute\SourceUser;
@@ -144,7 +144,7 @@ readonly class InputParser implements InputParserInterface
                     $this->appendProperty($property, $source, $requestData->get($name));
                 }
 
-                if ($source instanceof SourceRequestBag && property_exists($request, $source->source)) {
+                if ($source instanceof SourceParameterBag && property_exists($request, $source->source)) {
                     $this->appendProperty($property, $source, $request->{$source->source}->all());
                 }
 

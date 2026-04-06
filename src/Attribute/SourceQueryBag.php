@@ -3,13 +3,13 @@
 namespace OneToMany\RichBundle\Attribute;
 
 #[\Attribute(\Attribute::TARGET_PROPERTY)]
-final readonly class SourceRequestBag extends SourceParameterBag
+final readonly class SourceQueryBag extends SourceParameterBag
 {
     /**
      * @param string|list<non-empty-string>|callable|null $callback
      */
     public function __construct(mixed $callback = null)
     {
-        parent::__construct('request', $callback);
+        parent::__construct('query', $callback);
     }
 }
