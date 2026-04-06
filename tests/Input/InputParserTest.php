@@ -7,7 +7,6 @@ use OneToMany\RichBundle\Attribute\SourceContent;
 use OneToMany\RichBundle\Attribute\SourceHeader;
 use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
-use OneToMany\RichBundle\Attribute\SourceServer;
 use OneToMany\RichBundle\Attribute\SourceUser;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
@@ -15,6 +14,7 @@ use OneToMany\RichBundle\Contract\Input\InputParserInterface;
 use OneToMany\RichBundle\Exception\HttpException;
 use OneToMany\RichBundle\Exception\RuntimeException;
 use OneToMany\RichBundle\Input\InputParser;
+use OneToMany\RichBundle\Tests\Input\Fixtures\Input\SourceServerInput;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
@@ -619,29 +619,16 @@ final class InputParserTest extends TestCase
 
     public function testParsingSourceServer(): void
     {
-        $class = new class implements InputInterface {
-            #[SourceServer]
-            public string $request_uri;
-
-            #[SourceServer(name: 'SERVER_NAME')]
-            public string $serverName;
-
-            public function toCommand(): CommandInterface
-            {
-                throw new \Exception('Not implemented!');
-            }
-        };
-
-        $serverBag = [
+        $request = new Request(server: [
             'REQUEST_URI' => '/rich-bundle',
             'SERVER_NAME' => '1tomany.com',
-        ];
+        ]);
 
-        $input = $this->createInputParser()->parse(new Request(server: $serverBag), $class::class);
+        $input = $this->createInputParser()->parse($request, SourceServerInput::class);
 
-        $this->assertInstanceOf($class::class, $input);
-        $this->assertEquals($serverBag['REQUEST_URI'], $input->request_uri);
-        $this->assertEquals($serverBag['SERVER_NAME'], $input->serverName);
+        $this->assertInstanceOf(SourceServerInput::class, $input);
+        $this->assertEquals($request->server->get('REQUEST_URI'), $input->request_uri);
+        $this->assertEquals($request->server->get('SERVER_NAME'), $input->serverName);
     }
 
     /**

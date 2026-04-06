@@ -1,9 +1,9 @@
 <?php
 
-namespace OneToMany\RichBundle\Tests\Input\Fixtures\Trait;
+namespace OneToMany\RichBundle\Tests\Input\Fixtures\Input\Trait;
 
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
-use OneToMany\RichBundle\Exception\RuntimeException;
+use OneToMany\RichBundle\Tests\Input\Fixtures\Command\InputCommand;
 
 trait ToCommandTrait
 {
@@ -12,6 +12,6 @@ trait ToCommandTrait
      */
     public function toCommand(): CommandInterface
     {
-        throw new RuntimeException('Not implemented!');
+        return new InputCommand();
     }
 }
