@@ -21,6 +21,7 @@ use OneToMany\RichBundle\Exception\HttpException;
 use OneToMany\RichBundle\Exception\RuntimeException;
 use OneToMany\RichBundle\Validator\UninitializedProperties;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
+use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Symfony\Component\HttpFoundation\Exception\RequestExceptionInterface as HttpFoundationRequestExceptionInterface;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
@@ -134,12 +135,9 @@ readonly class InputParser implements InputParserInterface
                     $this->appendProperty($property, $source, $request->getClientIp());
                 }
 
-                if ($source instanceof SourceQuery) {
-                    $requestQuery ??= $request->query->all();
-
-                    if (array_key_exists($name, $requestQuery)) {
-                        $this->appendProperty($property, $source, $requestQuery[$name]);
-                    }
+                if ($source instanceof SourceQuery && $request->query->has($name)) {
+                    // @see https://github.com/symfony/symfony/issues/62561
+                    $this->appendProperty($property, $source, $request->query->all()[$name]);
                 }
 
                 if ($source instanceof SourceRequest && $requestData->has($name)) {
