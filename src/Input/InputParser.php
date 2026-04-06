@@ -21,7 +21,6 @@ use OneToMany\RichBundle\Exception\HttpException;
 use OneToMany\RichBundle\Exception\RuntimeException;
 use OneToMany\RichBundle\Validator\UninitializedProperties;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
-use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Symfony\Component\HttpFoundation\Exception\RequestExceptionInterface as HttpFoundationRequestExceptionInterface;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
@@ -34,7 +33,6 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-use function array_key_exists;
 use function call_user_func;
 use function count;
 use function implode;

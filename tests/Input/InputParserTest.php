@@ -24,6 +24,7 @@ use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PropertyInfo\Extractor\ConstructorExtractor;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
+use Symfony\Component\PropertyInfo\Extractor\PhpStanExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -33,6 +34,7 @@ use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
 use Symfony\Component\Serializer\Normalizer\BackedEnumNormalizer;
 use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
+use Symfony\Component\Serializer\Normalizer\UnwrappingDenormalizer;
 use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validation;
@@ -611,18 +613,35 @@ final class InputParserTest extends TestCase
     {
         $containerBag = new ContainerBag(new Container(new ParameterBag($parameters)));
 
+        $typeExtractor = new PropertyInfoExtractor([], [
+            new ReflectionExtractor(),
+            new ConstructorExtractor([
+                new PhpDocExtractor(),
+                new PhpStanExtractor(),
+                new ReflectionExtractor(),
+            ]),
+        ]);
+
         $normalizers = [
             new BackedEnumNormalizer(),
             new DateTimeNormalizer(),
             new ArrayDenormalizer(),
+            new UnwrappingDenormalizer(),
+            new ObjectNormalizer(
+                null,
+                null,
+                null,
+                $typeExtractor,
+            ),
         ];
 
-        $normalizers[] = new ObjectNormalizer(null, null, null, new PropertyInfoExtractor([], [
-            new ReflectionExtractor(), new ConstructorExtractor([new PhpDocExtractor()]),
-        ]));
+        // $normalizers[] = new ObjectNormalizer(null, null, null, new PropertyInfoExtractor([], [
+        //     new ReflectionExtractor(), new ConstructorExtractor([new PhpDocExtractor()]),
+        // ]));
 
         $serializer = new Serializer($normalizers, [
-            new JsonEncoder(), new XmlEncoder(),
+            new JsonEncoder(),
+            new XmlEncoder(),
         ]);
 
         $validator = Validation::createValidatorBuilder()->enableAttributeMapping()->getValidator();
