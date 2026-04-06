@@ -132,8 +132,12 @@ readonly class InputParser implements InputParserInterface
                     $this->appendProperty($property, $source, $request->getClientIp());
                 }
 
-                if ($source instanceof SourceQuery && $request->query->has($name)) {
-                    $this->appendProperty($property, $source, $request->query->all()[$name]);
+                if ($source instanceof SourceQuery) {
+                    $requestQuery ??= $request->query->all();
+
+                    if (\array_key_exists($name, $requestQuery)) {
+                        $this->appendProperty($property, $source, $requestQuery[$name]);
+                    }
                 }
 
                 if ($source instanceof SourceRequest && $requestData->has($name)) {
