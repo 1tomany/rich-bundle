@@ -42,6 +42,7 @@ use function is_array;
 use function is_callable;
 use function is_string;
 use function sprintf;
+use function strtoupper;
 use function trim;
 
 readonly class InputParser implements InputParserInterface
@@ -146,7 +147,7 @@ readonly class InputParser implements InputParserInterface
                 }
 
                 if ($source instanceof SourceServer) {
-                    $name = \strtoupper($name);
+                    $name = strtoupper($name);
 
                     if ($request->server->has($name)) {
                         $this->appendProperty($property, $source, $request->server->get($name));
