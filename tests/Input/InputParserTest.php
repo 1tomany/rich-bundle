@@ -33,11 +33,15 @@ use Symfony\Component\Serializer\Encoder\XmlEncoder;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
 use Symfony\Component\Serializer\Normalizer\BackedEnumNormalizer;
 use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
+use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
+use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Normalizer\UnwrappingDenormalizer;
 use Symfony\Component\Serializer\Serializer;
+use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validation;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 use function json_encode;
 use function random_int;
@@ -48,6 +52,43 @@ use function time;
 #[Group('InputTests')]
 final class InputParserTest extends TestCase
 {
+    private static Serializer $serializer;
+    private static ValidatorInterface $validator;
+
+    public static function setUpBeforeClass(): void
+    {
+        $normalizers = [
+            new BackedEnumNormalizer(),
+            new DateTimeNormalizer(),
+            new ArrayDenormalizer(),
+            new UnwrappingDenormalizer(),
+            new ObjectNormalizer(
+                null,
+                null,
+                null,
+                new PropertyInfoExtractor([], [
+                    new ReflectionExtractor(),
+                    new ConstructorExtractor([
+                        new PhpDocExtractor(),
+                        new PhpStanExtractor(),
+                        new ReflectionExtractor(),
+                    ]),
+                ]),
+            ),
+        ];
+
+        self::$serializer = new Serializer(
+            $normalizers, [
+                new JsonEncoder(),
+                new XmlEncoder(),
+            ],
+        );
+
+        self::$validator = Validation::createValidatorBuilder()
+            ->enableAttributeMapping()
+            ->getValidator();
+    }
+
     public function testParsingRequestRequiresContentTypeHeaderWithNonEmptyBody(): void
     {
         $this->expectExceptionObject(HttpException::create(422, 'Parsing the request failed because the Content-Type header was missing or malformed.'));
@@ -611,41 +652,6 @@ final class InputParserTest extends TestCase
      */
     private function createInputParser(array $parameters = []): InputParserInterface
     {
-        $containerBag = new ContainerBag(new Container(new ParameterBag($parameters)));
-
-        $typeExtractor = new PropertyInfoExtractor([], [
-            new ReflectionExtractor(),
-            new ConstructorExtractor([
-                new PhpDocExtractor(),
-                new PhpStanExtractor(),
-                new ReflectionExtractor(),
-            ]),
-        ]);
-
-        $normalizers = [
-            new BackedEnumNormalizer(),
-            new DateTimeNormalizer(),
-            new ArrayDenormalizer(),
-            new UnwrappingDenormalizer(),
-            new ObjectNormalizer(
-                null,
-                null,
-                null,
-                $typeExtractor,
-            ),
-        ];
-
-        // $normalizers[] = new ObjectNormalizer(null, null, null, new PropertyInfoExtractor([], [
-        //     new ReflectionExtractor(), new ConstructorExtractor([new PhpDocExtractor()]),
-        // ]));
-
-        $serializer = new Serializer($normalizers, [
-            new JsonEncoder(),
-            new XmlEncoder(),
-        ]);
-
-        $validator = Validation::createValidatorBuilder()->enableAttributeMapping()->getValidator();
-
-        return new InputParser($containerBag, $serializer, $validator);
+        return new InputParser(new ContainerBag(new Container(new ParameterBag($parameters))), self::$serializer, self::$validator);
     }
 }
