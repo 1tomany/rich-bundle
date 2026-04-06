@@ -11,6 +11,7 @@ use OneToMany\RichBundle\Attribute\SourceHeader;
 use OneToMany\RichBundle\Attribute\SourceIpAddress;
 use OneToMany\RichBundle\Attribute\SourceQuery;
 use OneToMany\RichBundle\Attribute\SourceRequest;
+use OneToMany\RichBundle\Attribute\SourceRequestBag;
 use OneToMany\RichBundle\Attribute\SourceRoute;
 use OneToMany\RichBundle\Attribute\SourceServer;
 use OneToMany\RichBundle\Attribute\SourceUser;
@@ -40,6 +41,7 @@ use function in_array;
 use function is_array;
 use function is_callable;
 use function is_string;
+use function property_exists;
 use function sprintf;
 use function strtoupper;
 use function trim;
@@ -140,6 +142,10 @@ readonly class InputParser implements InputParserInterface
 
                 if ($source instanceof SourceRequest && $requestData->has($name)) {
                     $this->appendProperty($property, $source, $requestData->get($name));
+                }
+
+                if ($source instanceof SourceRequestBag && property_exists($request, $source->type)) {
+                    $this->appendProperty($property, $source, $request->{$source->type}->all());
                 }
 
                 if ($source instanceof SourceRoute) {
