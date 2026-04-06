@@ -14,6 +14,13 @@ final readonly class SourceRequestBagInput implements InputInterface
 {
     use ToCommandTrait;
 
+    /**
+     * @param array<string, mixed> $attributes
+     * @param array<string, mixed> $headers
+     * @param array<string, mixed> $query
+     * @param array<string, mixed> $request
+     * @param array<string, mixed> $server
+     */
     public function __construct(
         #[SourceRequestBag('attributes')]
         public array $attributes,
