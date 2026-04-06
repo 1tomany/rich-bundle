@@ -14,6 +14,7 @@ use OneToMany\RichBundle\Contract\Input\InputParserInterface;
 use OneToMany\RichBundle\Exception\HttpException;
 use OneToMany\RichBundle\Exception\RuntimeException;
 use OneToMany\RichBundle\Input\InputParser;
+use OneToMany\RichBundle\Tests\Input\Fixtures\Input\SourceRequestBagInput;
 use OneToMany\RichBundle\Tests\Input\Fixtures\Input\SourceRouteInput;
 use OneToMany\RichBundle\Tests\Input\Fixtures\Input\SourceServerInput;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -45,6 +46,7 @@ use function json_encode;
 use function random_int;
 use function str_rot13;
 use function time;
+use function uniqid;
 
 #[Group('UnitTests')]
 #[Group('InputTests')]
@@ -616,6 +618,45 @@ final class InputParserTest extends TestCase
         $this->assertInstanceOf($class::class, $input);
         $this->assertEquals($data['name'], $input->name);
         $this->assertEquals($data['email'], $input->email);
+    }
+
+    public function testParsingSourceRequestBag(): void
+    {
+        $attributes = [
+            '_route_params' => [
+                'id' => random_int(1, 1024),
+            ],
+            '_token' => uniqid(),
+        ];
+
+        $query = [
+            'id' => random_int(1, 1024),
+            'name' => 'Modesto Herman',
+        ];
+
+        $request = [
+            'action' => 'update',
+            'name' => 'Vic Cherubini',
+        ];
+
+        $server = [
+            'SERVER_NAME' => '1tomany.com',
+            'REQUEST_URI' => '/rich-bundle',
+            'HTTP_METHOD' => 'POST',
+            'HTTP_ACCEPT' => 'application/xml',
+            'HTTP_CONTENT_TYPE' => 'application/json',
+        ];
+
+        $request = new Request($query, [], $attributes, [], [], $server);
+
+        $input = $this->createInputParser()->parse($request, SourceRequestBagInput::class);
+
+        $this->assertInstanceOf(SourceRequestBagInput::class, $input);
+        $this->assertSame($request->attributes->all(), $input->attributes);
+        $this->assertSame($request->headers->all(), $input->headers);
+        $this->assertSame($request->query->all(), $input->query);
+        $this->assertSame($request->request->all(), $input->request);
+        $this->assertSame($request->server->all(), $input->server);
     }
 
     public function testParsingSourceRoute(): void
