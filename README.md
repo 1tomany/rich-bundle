@@ -269,8 +269,8 @@ You'll also notice some new attributes: `#[SourceUser]`, `#[SourceRequest]`, and
 All source attributes extend from a common base attribute named `PropertySource` which has a constructor with the following arguments:
 
 - `?string $name = null` The name of the _key_ to find in the request data. The `InputParser` uses the property name if this argument is left `null`.
-- `bool $trim = true` If string values should be trimmed: `Vic ` would become `Vic`.
-- `bool $nullify = false` If empty string values should be nullified: ``would become`null`. Combining this with `$trim`being`true`would convert` `to`null`.
+- `bool $trim = true` If string values should be trimmed: `'Vic '` would become `'Vic'`.
+- `bool $nullify = false` If empty string values should be nullified: `''` would become `null`. Combining this with `$trim` being `true` would convert `'   '` to `null`.
 - `?callback $callback = null` A callback to apply to the value before it is injected. Any valid arguments to `call_user_func()` are allowed here.
 
 The `Request` class below refers to the `Symfony\Component\HttpFoundation\Request` class.
