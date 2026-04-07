@@ -251,6 +251,9 @@ final readonly class CreateAccountInput implements InputInterface
     ) {
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Action\CommandInterface
+     */
     public function toCommand(): CommandInterface
     {
         return new CreateAccountCommand($this->user?->getId(), (string) $this->name, (string) $this->company, (string) $this->email, $this->notes, $this->founded, $this->ipAddress);
@@ -264,25 +267,37 @@ Classes that implement the `OneToMany\RichBundle\Contract\Action\InputInterface`
 
 #### Property sources
 
-You'll also notice some new attributes: `#[SourceUser]`, `#[SourceRequest]`, and `#[SourceIpAddress]`. These allow you to indicate where in the request the data should come from. The `#[MapRequestPayload]` attribute that was announced in Symfony 6.3 is powerful, but limiting in that it assumes everything comes from the request content. There are nine attributes provided by this bundle that allow you to specify the source of the data from the request.
+You'll also notice some new attributes: `#[SourceUser]`, `#[SourceRequest]`, and `#[SourceIpAddress]`. These allow you to indicate where in the request the data should come from. The `#[MapRequestPayload]` attribute that was announced in Symfony 6.3 is powerful, but limiting in that it assumes everything comes from the request content. There are 15 attributes provided by this bundle that allow you to specify the source of the data from the request.
 
+All source attributes extend from a common base attribute named `PropertySource` which has a constructor with the following arguments:
+
+- `?string $name = null` The name of the _key_ to find in the request data. The `InputParser` uses the property name if this argument is left `null`.
+- `bool $trim = true` If string values should be trimmed: `'Vic '` would become `'Vic'`.
+- `bool $nullify = false` If empty string values should be nullified: `''` would become `null`. Combining this with `$trim` being `true` would convert `'   '` to `null`.
+- `?callback $callback = null` A callback to apply to the value before it is injected. Any valid arguments to `call_user_func()` are allowed here.
+
+The `Request` class below refers to the `Symfony\Component\HttpFoundation\Request` class.
+
+- `#[SourceAttributesBag]` Returns the results of `Request::$attributes->all()`. The `$name`, `$trim`, and `$nullify` arguments are ignored.
 - `#[SourceContainer(name: 'app.config_setting')]` Fetches a parameter named `app.config_setting` from the container bag. While the `$name` argument is not strictly required, unless the container property is named identically to the class property, you'll need to supply it.
-- `#[SourceContent]` Fetches the entire request contents as a string using the method `Symfony\Component\HttpFoundation\Request::getContent()`.
-- `#[SourceFile(name: 'file')]` Fetches a parameter named `file` from the `Symfony\Component\HttpFoundation\Request::$files` bag. The property should be type hinted with the `Symfony\Component\HttpFoundation\File\UploadedFile` class.
-- `#[SourceHeader(name: 'Content-Type')]` Fetches the `Content-Type` header from the `Symfony\Component\HttpFoundation\Request::$headers` bag. The name is not case-sensitive, and underscores and dashes can be swapped: `CONTENT_TYPE` would result in the same value.
-- `#[SourceIpAddress]` Fetches the value returned by the `Symfony\Component\HttpFoundation\Request::getClientIp()` method.
-- `#[SourceQuery(name: 'query')]` Fetches a parameter named `query` from the `Symfony\Component\HttpFoundation\Request::$query` bag.
-- `#[SourceRequest(name: 'user')]` Fetches a parameter named `user` from the request content. This bundle uses HTTP content negotiation via the `Content-Type` request header to attempt to determine the type of content submitted. A standard Symfony installation allows you to use `form`, `json`, and `xml` formats by default.
-- `#[SourceRoute(name: 'productId')]` Fetches a parameter named `productId` from the route.
-- `#[SourceServer(name: 'REQUEST_URI')]` Fetches a parameter named `REQUEST_URI` from the `Symfony\Component\HttpFoundation\Request::$server` bag.
-- `#[SourceUser]` Fetches the authenticated user and returns `null` or an instance of the `Symfony\Component\Security\Core\User\UserInterface` interface.
+- `#[SourceContent]` Returns `Request::getContent()`.
+- `#[SourceFile(name: 'avatar')]` Fetches a file named `avatar` from `Request::$files`. The property should be type hinted with the `Symfony\Component\HttpFoundation\File\UploadedFile` class. The `$trim` and `$nullify` properties are ignored.
+- `#[SourceHeader(name: 'Content-Type')]` Fetches the `Content-Type` header from `Request::$headers`. The name is not case-sensitive, and underscores and dashes can be swapped: `CONTENT_TYPE` would result in the same value.
+- `#[SourceHeadersBag]` Returns the results of `Request::$headers->all()`. The `$name`, `$trim`, and `$nullify` arguments are ignored.
+- `#[SourceIpAddress]` Returns `Request::getClientIp()`.
+- `#[SourceQuery(name: 'id')]` Fetches a value named `id` from `Request::$query`.
+- `#[SourceQueryBag]` Returns the results of `Request::$query->all()`. The `$name`, `$trim`, and `$nullify` arguments are ignored.
+- `#[SourceRequest(name: 'user')]` Fetches a value named `user` from the request content. This bundle uses HTTP content negotiation via the `Content-Type` request header to attempt to determine the type of content submitted. A standard Symfony installation allows you to use `form`, `json`, and `xml` formats by default.
+- `#[SourceRequestBag]` Returns the results of `Request::$request->all()`. The `$name`, `$trim`, and `$nullify` arguments are ignored.
+- `#[SourceRoute(name: 'productId')]` Fetches a value named `productId` from the route parameters.
+- `#[SourceServer(name: 'REQUEST_URI')]` Fetches a value named `REQUEST_URI` from `Request::$server`. Unlike the `#[SourceHeader]` attribute, this attribute **is** case sensitive and underscores and hyphens are not interchangeable.
+- `#[SourceQueryBag]` Returns the results of `Request::$server->all()`. The `$name`, `$trim`, and `$nullify` arguments are ignored.
+- `#[SourceUser]` Fetches the authenticated user and returns `null` or an instance of the `Symfony\Component\Security\Core\User\UserInterface` interface. The `$name`, `$trim`, and `$nullify` arguments are ignored.
 - `#[PropertyIgnored]` Indicates that the value resolver should ignore this property.
 
 If a property is not explicitly ignored or sourced, the value resolver will assume it uses the `#[SourceRequest]` attribute.
 
-The `$name` argument for each attribute is optional. The value resolver will use the name of the property if a `$name` is not given. The `name` property is ignored in the `#[SourceIpAddress]` and `#[SourceUser]` attributes because their values are the results of a method call.
-
-Sources are also chainable. This allows you to support multiple versions of an API without having to change the underlying input object. For example, the first version if your API might use a key named `email` but the second version of your API changed that to `username`. All attributes are chainable, but `#[SourceIpAddress]` and `#[SourceUser]` are not repeatable.
+Most source attributes are also repeatable. This allows you to support multiple versions of an API without having to change the underlying input object. For example, the first version if your API might use a key named `email` but the second version of your API changed that to `username`. The attributes `#[SourceAttributesBag]`, `#[SourceHeadersBag]`, `#[SourceIpAddress]`, `#[SourceQueryBag]`, `#[SourceRequestBag]`, `#[SourceServerBag]`, and `#[SourceUser]` are not repeatable.
 
 In the example below, the `$username` property could be mapped from either of the following URLs:
 
@@ -315,6 +330,9 @@ final readonly class ReadAccountInput implements InputInterface
     ) {
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Action\CommandInterface
+     */
     public function toCommand(): CommandInterface
     {
         return new ReadAccountCommand($this->username);
@@ -330,7 +348,7 @@ You can also combine chained sources. For example, you can have both a `#[Source
 
 #### Additional property source arguments
 
-Each source attribute has boolean `$trim` and `$nullify` arguments as well. By default, `$trim` is `true` and `$nullify` is `false`. When `$trim` is `true`, the resolver will convert any scalar value to a string and run the `\trim()` function in it. The value will then be coerced back to the type specified by the property of the input class during denormalization.
+Each source attribute has boolean `$trim` and `$nullify` arguments as well. By default, `$trim` is `true` and `$nullify` is `false`. When `$trim` is `true`, the resolver will convert any scalar value to a string and run the `trim()` function in it. The value will then be coerced back to the type specified by the property of the input class during denormalization.
 
 When `$nullify` is `true`, the resolver will convert any scalar value to `null` if the value is exactly an empty string. The underlying property must also allow null values, otherwise an `OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException` exception is thrown.
 
@@ -384,13 +402,13 @@ The following request content would be decoded correctly.
 4. `$pin` would have the value `int(8891)` because `$trim` is `true`.
 5. `$birth` would have the value `NULL` because `$trim` and `$nullify` are true. After being trimmed, the value is identical to an empty string and is nullified.
 
-However, if an empty string was used for the value of the key `name` the request, a `OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException` would be thrown because the `$name` property is not nullable, yet the source was explicitly set to nullify the value.
+However, if an empty string was used for the value of the key `name` the request, a `OneToMany\RichBundle\Exception\HttpException` would be thrown because the `$name` property is not nullable, yet the source was explicitly set to nullify the value.
 
-In practice, you would only set `$nullify` to `true` on properties that are nullable.
+In practice, you should only set `$nullify` to `true` on properties that are nullable.
 
 #### Input denormalization
 
-Once the data from the request has been extracted, it is denormalized and used to construct an object of type `OneToMany\RichBundle\Contract\Action\InputInterface`. If any exception is thrown during the denormalization process, it is captured and wrapped in an `OneToMany\RichBundle\ValueResolver\Exception\InvalidMappingException` exception. This exception provides a nicer message to the end user while still allowing a developer to review the exception stack.
+Once the data from the request has been extracted, it is denormalized and used to construct an object of type `OneToMany\RichBundle\Contract\Action\InputInterface`. If any exception is thrown during the denormalization process, it is captured and wrapped in an exception that implements the `OneToMany\RichBundle\Contract\Exception\ExceptionInterface` interface.
 
 #### Input validation
 
@@ -437,6 +455,9 @@ final readonly class CreateAccountHandler implements HandlerInterface
     ) {
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Action\HandlerInterface
+     */
     public function handle(CommandInterface $command): ResultInterface
     {
         // Create the Account entity

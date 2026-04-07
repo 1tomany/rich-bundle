@@ -10,6 +10,8 @@ abstract readonly class PropertySource
 {
     /**
      * @param string|list<non-empty-string>|callable|null $callback
+     *
+     * @throws RuntimeException when the callback is not callable
      */
     public function __construct(
         public ?string $name = null,

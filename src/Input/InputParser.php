@@ -4,15 +4,20 @@ namespace OneToMany\RichBundle\Input;
 
 use OneToMany\RichBundle\Attribute\PropertyIgnored;
 use OneToMany\RichBundle\Attribute\PropertySource;
+use OneToMany\RichBundle\Attribute\SourceAttributesBag;
 use OneToMany\RichBundle\Attribute\SourceContainer;
 use OneToMany\RichBundle\Attribute\SourceContent;
 use OneToMany\RichBundle\Attribute\SourceFile;
 use OneToMany\RichBundle\Attribute\SourceHeader;
+use OneToMany\RichBundle\Attribute\SourceHeadersBag;
 use OneToMany\RichBundle\Attribute\SourceIpAddress;
 use OneToMany\RichBundle\Attribute\SourceQuery;
+use OneToMany\RichBundle\Attribute\SourceQueryBag;
 use OneToMany\RichBundle\Attribute\SourceRequest;
+use OneToMany\RichBundle\Attribute\SourceRequestBag;
 use OneToMany\RichBundle\Attribute\SourceRoute;
 use OneToMany\RichBundle\Attribute\SourceServer;
+use OneToMany\RichBundle\Attribute\SourceServerBag;
 use OneToMany\RichBundle\Attribute\SourceUser;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
@@ -113,6 +118,10 @@ readonly class InputParser implements InputParserInterface
             foreach ($this->findSources($property) as $source) {
                 $name = $source->getName($property->getName());
 
+                if ($source instanceof SourceAttributesBag) {
+                    $this->appendProperty($property, $source, $request->attributes->all());
+                }
+
                 if ($source instanceof SourceContainer && $this->containerBag->has($name)) {
                     $this->appendProperty($property, $source, $this->containerBag->get($name));
                 }
@@ -129,6 +138,10 @@ readonly class InputParser implements InputParserInterface
                     $this->appendProperty($property, $source, $request->headers->get($name));
                 }
 
+                if ($source instanceof SourceHeadersBag) {
+                    $this->appendProperty($property, $source, $request->headers->all());
+                }
+
                 if ($source instanceof SourceIpAddress) {
                     $this->appendProperty($property, $source, $request->getClientIp());
                 }
@@ -138,8 +151,16 @@ readonly class InputParser implements InputParserInterface
                     $this->appendProperty($property, $source, $request->query->all()[$name]);
                 }
 
+                if ($source instanceof SourceQueryBag) {
+                    $this->appendProperty($property, $source, $request->query->all());
+                }
+
                 if ($source instanceof SourceRequest && $requestData->has($name)) {
                     $this->appendProperty($property, $source, $requestData->get($name));
+                }
+
+                if ($source instanceof SourceRequestBag) {
+                    $this->appendProperty($property, $source, $request->request->all());
                 }
 
                 if ($source instanceof SourceRoute) {
@@ -156,6 +177,10 @@ readonly class InputParser implements InputParserInterface
                     if ($request->server->has($name)) {
                         $this->appendProperty($property, $source, $request->server->get($name));
                     }
+                }
+
+                if ($source instanceof SourceServerBag) {
+                    $this->appendProperty($property, $source, $request->server->all());
                 }
 
                 if ($source instanceof SourceUser) {
