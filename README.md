@@ -275,18 +275,22 @@ All source attributes extend from a common base attribute named `PropertySource`
 
 The `Request` class below refers to the `Symfony\Component\HttpFoundation\Request` class.
 
-1. `#[SourceAttributesBag]` Returns the results of `Request::$attributes->all()`. The `$name`, `$trim`, and `$nullify` arguments are ignored.
-1. `#[SourceContainer(name: 'app.config_setting')]` Fetches a parameter named `app.config_setting` from the container bag. While the `$name` argument is not strictly required, unless the container property is named identically to the class property, you'll need to supply it.
-1. `#[SourceContent]` Fetches the entire request contents as a string using the method `Symfony\Component\HttpFoundation\Request::getContent()`.
-1. `#[SourceFile(name: 'avatar')]` Fetches a parameter named `avatar` from the `Symfony\Component\HttpFoundation\Request::$files` bag. The property should be type hinted with the `Symfony\Component\HttpFoundation\File\UploadedFile` class.
-1. `#[SourceHeader(name: 'Content-Type')]` Fetches the `Content-Type` header from the `Symfony\Component\HttpFoundation\Request::$headers` bag. The name is not case-sensitive, and underscores and dashes can be swapped: `CONTENT_TYPE` would result in the same value.
-1. `#[SourceIpAddress]` Fetches the value returned by the `Symfony\Component\HttpFoundation\Request::getClientIp()` method.
-1. `#[SourceQuery(name: 'id')]` Fetches a parameter named `id` from the `Symfony\Component\HttpFoundation\Request::$query` bag.
-1. `#[SourceRequest(name: 'user')]` Fetches a parameter named `user` from the request content. This bundle uses HTTP content negotiation via the `Content-Type` request header to attempt to determine the type of content submitted. A standard Symfony installation allows you to use `form`, `json`, and `xml` formats by default.
-1. `#[SourceRoute(name: 'productId')]` Fetches a parameter named `productId` from the route.
-1. `#[SourceServer(name: 'REQUEST_URI')]` Fetches a parameter named `REQUEST_URI` from the `Symfony\Component\HttpFoundation\Request::$server` bag. Unlike the `SourceHeader` attribute, this one **is** case sensitive.
-1. `#[SourceUser]` Fetches the authenticated user and returns `null` or an instance of the `Symfony\Component\Security\Core\User\UserInterface` interface.
-1. `#[PropertyIgnored]` Indicates that the value resolver should ignore this property.
+- `#[SourceAttributesBag]` Returns the results of `Request::$attributes->all()`. The `$name`, `$trim`, and `$nullify` arguments are ignored.
+- `#[SourceContainer(name: 'app.config_setting')]` Fetches a parameter named `app.config_setting` from the container bag. While the `$name` argument is not strictly required, unless the container property is named identically to the class property, you'll need to supply it.
+- `#[SourceContent]` Returns `Request::getContent()`.
+- `#[SourceFile(name: 'avatar')]` Fetches a file named `avatar` from `Request::$files`. The property should be type hinted with the `Symfony\Component\HttpFoundation\File\UploadedFile` class. The `$trim` and `$nullify` properties are ignored.
+- `#[SourceHeader(name: 'Content-Type')]` Fetches the `Content-Type` header from `Request::$headers`. The name is not case-sensitive, and underscores and dashes can be swapped: `CONTENT_TYPE` would result in the same value.
+- `#[SourceHeadersBag]` Returns the results of `Request::$headers->all()`. The `$name`, `$trim`, and `$nullify` arguments are ignored.
+- `#[SourceIpAddress]` Returns `Request::getClientIp()`.
+- `#[SourceQuery(name: 'id')]` Fetches a value named `id` from `Request::$query`.
+- `#[SourceQueryBag]` Returns the results of `Request::$query->all()`. The `$name`, `$trim`, and `$nullify` arguments are ignored.
+- `#[SourceRequest(name: 'user')]` Fetches a value named `user` from the request content. This bundle uses HTTP content negotiation via the `Content-Type` request header to attempt to determine the type of content submitted. A standard Symfony installation allows you to use `form`, `json`, and `xml` formats by default.
+- `#[SourceRequestBag]` Returns the results of `Request::$request->all()`. The `$name`, `$trim`, and `$nullify` arguments are ignored.
+- `#[SourceRoute(name: 'productId')]` Fetches a value named `productId` from the route parameters.
+- `#[SourceServer(name: 'REQUEST_URI')]` Fetches a value named `REQUEST_URI` from `Request::$server`. Unlike the `#[SourceHeader]` attribute, this attribute **is** case sensitive and underscores and hyphens are not interchangeable.
+- `#[SourceQueryBag]` Returns the results of `Request::$server->all()`. The `$name`, `$trim`, and `$nullify` arguments are ignored.
+- `#[SourceUser]` Fetches the authenticated user and returns `null` or an instance of the `Symfony\Component\Security\Core\User\UserInterface` interface. The `$name`, `$trim`, and `$nullify` arguments are ignored.
+- `#[PropertyIgnored]` Indicates that the value resolver should ignore this property.
 
 If a property is not explicitly ignored or sourced, the value resolver will assume it uses the `#[SourceRequest]` attribute.
 
