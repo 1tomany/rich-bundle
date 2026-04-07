@@ -264,19 +264,29 @@ Classes that implement the `OneToMany\RichBundle\Contract\Action\InputInterface`
 
 #### Property sources
 
-You'll also notice some new attributes: `#[SourceUser]`, `#[SourceRequest]`, and `#[SourceIpAddress]`. These allow you to indicate where in the request the data should come from. The `#[MapRequestPayload]` attribute that was announced in Symfony 6.3 is powerful, but limiting in that it assumes everything comes from the request content. There are nine attributes provided by this bundle that allow you to specify the source of the data from the request.
+You'll also notice some new attributes: `#[SourceUser]`, `#[SourceRequest]`, and `#[SourceIpAddress]`. These allow you to indicate where in the request the data should come from. The `#[MapRequestPayload]` attribute that was announced in Symfony 6.3 is powerful, but limiting in that it assumes everything comes from the request content. There are 15 attributes provided by this bundle that allow you to specify the source of the data from the request.
 
-- `#[SourceContainer(name: 'app.config_setting')]` Fetches a parameter named `app.config_setting` from the container bag. While the `$name` argument is not strictly required, unless the container property is named identically to the class property, you'll need to supply it.
-- `#[SourceContent]` Fetches the entire request contents as a string using the method `Symfony\Component\HttpFoundation\Request::getContent()`.
-- `#[SourceFile(name: 'avatar')]` Fetches a parameter named `avatar` from the `Symfony\Component\HttpFoundation\Request::$files` bag. The property should be type hinted with the `Symfony\Component\HttpFoundation\File\UploadedFile` class.
-- `#[SourceHeader(name: 'Content-Type')]` Fetches the `Content-Type` header from the `Symfony\Component\HttpFoundation\Request::$headers` bag. The name is not case-sensitive, and underscores and dashes can be swapped: `CONTENT_TYPE` would result in the same value.
-- `#[SourceIpAddress]` Fetches the value returned by the `Symfony\Component\HttpFoundation\Request::getClientIp()` method.
-- `#[SourceQuery(name: 'id')]` Fetches a parameter named `id` from the `Symfony\Component\HttpFoundation\Request::$query` bag.
-- `#[SourceRequest(name: 'user')]` Fetches a parameter named `user` from the request content. This bundle uses HTTP content negotiation via the `Content-Type` request header to attempt to determine the type of content submitted. A standard Symfony installation allows you to use `form`, `json`, and `xml` formats by default.
-- `#[SourceRoute(name: 'productId')]` Fetches a parameter named `productId` from the route.
-- `#[SourceServer(name: 'REQUEST_URI')]` Fetches a parameter named `REQUEST_URI` from the `Symfony\Component\HttpFoundation\Request::$server` bag. Unlike the `SourceHeader` attribute, this one **is** case sensitive.
-- `#[SourceUser]` Fetches the authenticated user and returns `null` or an instance of the `Symfony\Component\Security\Core\User\UserInterface` interface.
-- `#[PropertyIgnored]` Indicates that the value resolver should ignore this property.
+All source attributes extend from a common base attribute named `PropertySource` which has a constructor with the following arguments:
+
+- `?string $name = null` The name of the _key_ to find in the request data. The `InputParser` uses the property name if this argument is left `null`.
+- `bool $trim = true` If string values should be trimmed: `Vic ` would become `Vic`.
+- `bool $nullify = false` If empty string values should be nullified: ``would become`null`. Combining this with `$trim`being`true`would convert` `to`null`.
+- `?callback $callback = null` A callback to apply to the value before it is injected. Any valid arguments to `call_user_func()` are allowed here.
+
+The `Request` class below refers to the `Symfony\Component\HttpFoundation\Request` class.
+
+1. `#[SourceAttributesBag]` Returns the results of `Request::$attributes->all()`. The `$name`, `$trim`, and `$nullify` arguments are ignored.
+1. `#[SourceContainer(name: 'app.config_setting')]` Fetches a parameter named `app.config_setting` from the container bag. While the `$name` argument is not strictly required, unless the container property is named identically to the class property, you'll need to supply it.
+1. `#[SourceContent]` Fetches the entire request contents as a string using the method `Symfony\Component\HttpFoundation\Request::getContent()`.
+1. `#[SourceFile(name: 'avatar')]` Fetches a parameter named `avatar` from the `Symfony\Component\HttpFoundation\Request::$files` bag. The property should be type hinted with the `Symfony\Component\HttpFoundation\File\UploadedFile` class.
+1. `#[SourceHeader(name: 'Content-Type')]` Fetches the `Content-Type` header from the `Symfony\Component\HttpFoundation\Request::$headers` bag. The name is not case-sensitive, and underscores and dashes can be swapped: `CONTENT_TYPE` would result in the same value.
+1. `#[SourceIpAddress]` Fetches the value returned by the `Symfony\Component\HttpFoundation\Request::getClientIp()` method.
+1. `#[SourceQuery(name: 'id')]` Fetches a parameter named `id` from the `Symfony\Component\HttpFoundation\Request::$query` bag.
+1. `#[SourceRequest(name: 'user')]` Fetches a parameter named `user` from the request content. This bundle uses HTTP content negotiation via the `Content-Type` request header to attempt to determine the type of content submitted. A standard Symfony installation allows you to use `form`, `json`, and `xml` formats by default.
+1. `#[SourceRoute(name: 'productId')]` Fetches a parameter named `productId` from the route.
+1. `#[SourceServer(name: 'REQUEST_URI')]` Fetches a parameter named `REQUEST_URI` from the `Symfony\Component\HttpFoundation\Request::$server` bag. Unlike the `SourceHeader` attribute, this one **is** case sensitive.
+1. `#[SourceUser]` Fetches the authenticated user and returns `null` or an instance of the `Symfony\Component\Security\Core\User\UserInterface` interface.
+1. `#[PropertyIgnored]` Indicates that the value resolver should ignore this property.
 
 If a property is not explicitly ignored or sourced, the value resolver will assume it uses the `#[SourceRequest]` attribute.
 
