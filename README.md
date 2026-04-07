@@ -251,6 +251,9 @@ final readonly class CreateAccountInput implements InputInterface
     ) {
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Action\CommandInterface
+     */
     public function toCommand(): CommandInterface
     {
         return new CreateAccountCommand($this->user?->getId(), (string) $this->name, (string) $this->company, (string) $this->email, $this->notes, $this->founded, $this->ipAddress);
@@ -294,9 +297,7 @@ The `Request` class below refers to the `Symfony\Component\HttpFoundation\Reques
 
 If a property is not explicitly ignored or sourced, the value resolver will assume it uses the `#[SourceRequest]` attribute.
 
-The `$name` argument for each attribute is optional. The value resolver will use the name of the property if a `$name` is not given. The `name` property is ignored in the `#[SourceIpAddress]` and `#[SourceUser]` attributes because their values are the results of a method call.
-
-Sources are also chainable. This allows you to support multiple versions of an API without having to change the underlying input object. For example, the first version if your API might use a key named `email` but the second version of your API changed that to `username`. All attributes are chainable, but `#[SourceIpAddress]` and `#[SourceUser]` are not repeatable.
+Most source attributes are also repeatable. This allows you to support multiple versions of an API without having to change the underlying input object. For example, the first version if your API might use a key named `email` but the second version of your API changed that to `username`. The attributes `#[SourceAttributesBag]`, `#[SourceHeadersBag]`, `#[SourceIpAddress]`, `#[SourceQueryBag]`, `#[SourceRequestBag]`, `#[SourceServerBag]`, and `#[SourceUser]` are not repeatable.
 
 In the example below, the `$username` property could be mapped from either of the following URLs:
 
@@ -329,6 +330,9 @@ final readonly class ReadAccountInput implements InputInterface
     ) {
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Action\CommandInterface
+     */
     public function toCommand(): CommandInterface
     {
         return new ReadAccountCommand($this->username);
@@ -398,13 +402,13 @@ The following request content would be decoded correctly.
 4. `$pin` would have the value `int(8891)` because `$trim` is `true`.
 5. `$birth` would have the value `NULL` because `$trim` and `$nullify` are true. After being trimmed, the value is identical to an empty string and is nullified.
 
-However, if an empty string was used for the value of the key `name` the request, a `OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException` would be thrown because the `$name` property is not nullable, yet the source was explicitly set to nullify the value.
+However, if an empty string was used for the value of the key `name` the request, a `OneToMany\RichBundle\Exception\HttpException` would be thrown because the `$name` property is not nullable, yet the source was explicitly set to nullify the value.
 
-In practice, you would only set `$nullify` to `true` on properties that are nullable.
+In practice, you should only set `$nullify` to `true` on properties that are nullable.
 
 #### Input denormalization
 
-Once the data from the request has been extracted, it is denormalized and used to construct an object of type `OneToMany\RichBundle\Contract\Action\InputInterface`. If any exception is thrown during the denormalization process, it is captured and wrapped in an `OneToMany\RichBundle\ValueResolver\Exception\InvalidMappingException` exception. This exception provides a nicer message to the end user while still allowing a developer to review the exception stack.
+Once the data from the request has been extracted, it is denormalized and used to construct an object of type `OneToMany\RichBundle\Contract\Action\InputInterface`. If any exception is thrown during the denormalization process, it is captured and wrapped in an exception that implements the `OneToMany\RichBundle\Contract\Exception\ExceptionInterface` interface.
 
 #### Input validation
 
@@ -451,6 +455,9 @@ final readonly class CreateAccountHandler implements HandlerInterface
     ) {
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Action\HandlerInterface
+     */
     public function handle(CommandInterface $command): ResultInterface
     {
         // Create the Account entity
