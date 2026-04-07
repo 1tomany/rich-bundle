@@ -348,7 +348,7 @@ You can also combine chained sources. For example, you can have both a `#[Source
 
 #### Additional property source arguments
 
-Each source attribute has boolean `$trim` and `$nullify` arguments as well. By default, `$trim` is `true` and `$nullify` is `false`. When `$trim` is `true`, the resolver will convert any scalar value to a string and run the `\trim()` function in it. The value will then be coerced back to the type specified by the property of the input class during denormalization.
+Each source attribute has boolean `$trim` and `$nullify` arguments as well. By default, `$trim` is `true` and `$nullify` is `false`. When `$trim` is `true`, the resolver will convert any scalar value to a string and run the `trim()` function in it. The value will then be coerced back to the type specified by the property of the input class during denormalization.
 
 When `$nullify` is `true`, the resolver will convert any scalar value to `null` if the value is exactly an empty string. The underlying property must also allow null values, otherwise an `OneToMany\RichBundle\ValueResolver\Exception\PropertyIsNotNullableException` exception is thrown.
 
