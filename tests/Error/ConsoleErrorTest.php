@@ -21,12 +21,21 @@ final class ConsoleErrorTest extends TestCase
         new ConsoleError(new ConstraintViolationList([]));
     }
 
-    public function testGettingMessage(): void
+    public function testGettingMessageWithEmptyProperty(): void
+    {
+        $violationList = new ConstraintViolationList([
+            new ConstraintViolation('Invalid email.', null, [], null, null, null),
+        ]);
+
+        $this->assertEquals('Invalid email.', new ConsoleError($violationList)->getMessage());
+    }
+
+    public function testGettingMessageWithNonEmptyProperty(): void
     {
         $violationList = new ConstraintViolationList([
             new ConstraintViolation('Invalid email.', null, [], null, 'email', null),
         ]);
 
-        $this->assertEquals('The argument "email" is not valid: invalid email.', new ConsoleError($violationList)->getMessage());
+        $this->assertEquals('The property "email" is not valid: invalid email.', new ConsoleError($violationList)->getMessage());
     }
 }

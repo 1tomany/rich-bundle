@@ -18,10 +18,6 @@ class ConsoleError extends HttpError
     public function __construct(
         ConstraintViolationListInterface $violations,
     ) {
-        // if ($violations instanceof ConstraintViolationListInterface) {
-        //     $violations = new ValidationFailedException(null, $violations);
-        // }
-
         if (0 === $violations->count()) {
             throw new InvalidArgumentException('The constraint violation list cannot be empty.');
         }
@@ -45,6 +41,12 @@ class ConsoleError extends HttpError
     #[\Override]
     public function getMessage(): string
     {
-        return sprintf('The argument "%s" is not valid: %s.', $this->getViolations()[0]->property, lcfirst(rtrim($this->getViolations()[0]->message, '.')));
+        $message = $this->getViolations()[0]->message;
+
+        if ($property = $this->getViolations()[0]->property) {
+            return sprintf('The property "%s" is not valid: %s.', $property, lcfirst(rtrim($message, '.')));
+        }
+
+        return $message;
     }
 }
