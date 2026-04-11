@@ -14,7 +14,9 @@ use function array_merge;
  */
 final readonly class HttpErrorNormalizer implements NormalizerInterface
 {
-    public function __construct(private bool $debug = false)
+    public function __construct(
+        private bool $debug = false,
+    )
     {
     }
 
@@ -45,24 +47,14 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
             'detail' => $data->getMessage(),
         ];
 
-        $violations = \array_map(function (Violation $v): array {
-            return $v->toArray();
-        }, $data->getViolations());
-
-        $record = \array_merge($record, [
-            'violations' => $violations,
-        ]);
+        // Expand violation records
+        $record['violations'] = [];
 
         foreach ($data->getViolations() as $v) {
             $record['violations'][] = $v->toArray();
         }
-        // $mapper = function (Violation $v): array {
-        //     return $v->toArray();
-        // };
 
-        // $record['violations'] = \array_map($mapper, $data->getViolations());
-
-        if ($this->debug) {
+        if (true === $this->debug) {
             $record = array_merge($record, [
                 'stack' => $data->getStack(),
                 'trace' => $data->getTrace(),
