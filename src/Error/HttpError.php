@@ -292,7 +292,7 @@ class HttpError implements HttpErrorInterface
                 $message = $this->throwable->getMessage();
             }
 
-            $message = trim($message ?? '') ?: self::MESSAGE_VALIDATION_FAILED;
+            $message = trim((string) $message) ?: self::MESSAGE_VALIDATION_FAILED;
         } elseif ($this->throwable instanceof AccessDeniedException) {
             $message = self::MESSAGE_ACCESS_DENIED;
         } elseif (
@@ -303,7 +303,7 @@ class HttpError implements HttpErrorInterface
             $message = $this->throwable->getMessage();
         }
 
-        $this->message = trim($message ?? '') ?: self::MESSAGE_UNEXPECTED_ERROR;
+        $this->message = trim((string) $message) ?: self::MESSAGE_UNEXPECTED_ERROR;
     }
 
     protected function expandViolations(): void
@@ -340,6 +340,7 @@ class HttpError implements HttpErrorInterface
     protected function flattenTrace(): void
     {
         foreach ($this->throwable->getTrace() as $trace) {
+            // \PHPStan\dumpType($trace);
             $this->trace[] = [
                 'class' => $trace['class'] ?? null,
                 'function' => $trace['function'],
