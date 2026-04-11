@@ -6,6 +6,7 @@ use OneToMany\RichBundle\Attribute\HasErrorType;
 use OneToMany\RichBundle\Attribute\HasUserMessage;
 use OneToMany\RichBundle\Contract\Enum\ErrorType;
 use OneToMany\RichBundle\Contract\Error\HttpErrorInterface;
+use OneToMany\RichBundle\Contract\Error\Record\Violation;
 use Psr\Log\LogLevel;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
@@ -24,7 +25,6 @@ use function trim;
 /**
  * @phpstan-import-type Stack from HttpErrorInterface
  * @phpstan-import-type Trace from HttpErrorInterface
- * @phpstan-import-type Violation from HttpErrorInterface
  */
 class HttpError implements HttpErrorInterface
 {
@@ -313,10 +313,7 @@ class HttpError implements HttpErrorInterface
         while (null !== $exception) {
             if ($exception instanceof ValidationFailedException) {
                 foreach ($exception->getViolations() as $violation) {
-                    $this->violations[] = [
-                        'property' => $violation->getPropertyPath(),
-                        'message' => $violation->getMessage(),
-                    ];
+                    $this->violations[] = Violation::create($violation);
                 }
             }
 

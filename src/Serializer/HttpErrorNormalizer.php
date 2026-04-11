@@ -3,6 +3,7 @@
 namespace OneToMany\RichBundle\Serializer;
 
 use OneToMany\RichBundle\Contract\Error\HttpErrorInterface;
+use OneToMany\RichBundle\Contract\Error\Record\Violation;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 use function array_merge;
@@ -10,7 +11,6 @@ use function array_merge;
 /**
  * @phpstan-import-type Stack from HttpErrorInterface
  * @phpstan-import-type Trace from HttpErrorInterface
- * @phpstan-import-type Violation from HttpErrorInterface
  */
 final readonly class HttpErrorNormalizer implements NormalizerInterface
 {
@@ -27,7 +27,12 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
      *   status: int<100, 599>,
      *   title: non-empty-string,
      *   detail: non-empty-string,
-     *   violations: list<Violation>,
+     *   violations: list<
+     *     array{
+     *       property: string,
+     *       message: string,
+     *     },
+     *   >,
      *   stack?: list<Stack>,
      *   trace?: list<Trace>,
      * }
@@ -38,8 +43,18 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
             'status' => $data->getStatus(),
             'title' => $data->getTitle(),
             'detail' => $data->getMessage(),
-            'violations' => $data->getViolations(),
+            'violations' => [],
+            // 'violations' => $data->getViolations(),
         ];
+
+        foreach ($data->getViolations() as $v) {
+            $record['violations'][] = $v->toArray();
+        }
+        // $mapper = function (Violation $v): array {
+        //     return $v->toArray();
+        // };
+
+        // $record['violations'] = \array_map($mapper, $data->getViolations());
 
         if ($this->debug) {
             $record = array_merge($record, [

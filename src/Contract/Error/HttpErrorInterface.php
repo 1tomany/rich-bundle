@@ -3,6 +3,7 @@
 namespace OneToMany\RichBundle\Contract\Error;
 
 use OneToMany\RichBundle\Contract\Enum\ErrorType;
+use OneToMany\RichBundle\Contract\Error\Record\Violation;
 
 /**
  * @phpstan-type Stack array{
@@ -16,10 +17,6 @@ use OneToMany\RichBundle\Contract\Enum\ErrorType;
  *   function: ?string,
  *   file: ?string,
  *   line: ?int,
- * }
- * @phpstan-type Violation array{
- *   property: string,
- *   message: string,
  * }
  */
 interface HttpErrorInterface extends \Stringable

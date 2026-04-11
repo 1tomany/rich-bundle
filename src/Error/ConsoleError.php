@@ -17,11 +17,11 @@ class ConsoleError extends HttpError
     ) {
         $this->violationList = $throwable->getViolations();
 
-        if (0 === $this->violationList->count()) {
+        parent::__construct($throwable);
+
+        if (empty($this->violations)) {
             throw new InvalidArgumentException('The constraint violation list cannot be empty.');
         }
-
-        parent::__construct($throwable);
     }
 
     /**
@@ -31,6 +31,6 @@ class ConsoleError extends HttpError
      */
     public function __toString(): string
     {
-        return sprintf('The property "%s" is not valid: %s.', $this->violationList->get(0)->getPropertyPath(), $this->violationList->get(0)->getMessage());
+        return sprintf('The property "%s" is not valid: %s.', $this->getViolations()[0]->property, $this->getViolations()[0]->message);
     }
 }
