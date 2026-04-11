@@ -47,6 +47,6 @@ class ConsoleError extends HttpError
             return sprintf('The property "%s" is not valid: %s.', $property, lcfirst(rtrim($message, '.')));
         }
 
-        return $message;
+        return $message ?: parent::MESSAGE_VALIDATION_FAILED;
     }
 }
