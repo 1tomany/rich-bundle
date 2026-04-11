@@ -6,6 +6,8 @@ use OneToMany\RichBundle\Exception\InvalidArgumentException;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
+use function sprintf;
+
 class ConsoleError extends HttpError
 {
     private ConstraintViolationListInterface $violationList;
@@ -29,6 +31,6 @@ class ConsoleError extends HttpError
      */
     public function __toString(): string
     {
-        return \sprintf('The property "%s" is not valid: %s.', $this->violationList->get(0)->getPropertyPath(), $this->violationList->get(0)->getMessage());
+        return sprintf('The property "%s" is not valid: %s.', $this->violationList->get(0)->getPropertyPath(), $this->violationList->get(0)->getMessage());
     }
 }
