@@ -5,6 +5,7 @@ namespace OneToMany\RichBundle\Tests\Error;
 use OneToMany\RichBundle\Attribute\HasErrorType;
 use OneToMany\RichBundle\Attribute\HasUserMessage;
 use OneToMany\RichBundle\Contract\Enum\ErrorType;
+use OneToMany\RichBundle\Contract\Error\Record\Violation;
 use OneToMany\RichBundle\Error\HttpError;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -185,34 +186,17 @@ final class HttpErrorTest extends TestCase
 
     public function testConstructorExpandsViolations(): void
     {
-        $errors = [
-            [
-                'property' => 'username',
-                'message' => 'Invalid email address.',
-            ],
-            [
-                'property' => 'password',
-                'message' => 'Password too short.',
-            ],
-            [
-                'property' => 'age',
-                'message' => 'Too young.',
-            ],
+        $violations = [
+            new Violation('username', 'Invalid email address.'),
+            new Violation('password', 'Password must be longer.'),
+            new Violation('age', 'Must be 13 or older to register.'),
         ];
 
-        $violations = array_map(function (array $e): ConstraintViolationInterface {
-            return new ConstraintViolation($e['message'], null, [], null, $e['property'], null);
-        }, $errors);
+        $violationList = array_map(function (Violation $v): ConstraintViolationInterface {
+            return new ConstraintViolation($v->message, null, [], null, $v->property, null);
+        }, $violations);
 
-        $httpError = new HttpError(new ValidationFailedException(null, new ConstraintViolationList($violations)));
-
-        $this->assertCount(count($errors), $httpError->getViolations());
-
-        foreach ($errors as $idx => $error) {
-            $this->assertEquals($error['property'], $httpError->getViolations()[$idx]->property);
-        }
-
-        // $this->assertSame($errors, new HttpError(new ValidationFailedException(null, new ConstraintViolationList($violations)))->getViolations());
+        $this->assertEquals($violations, new HttpError(new ValidationFailedException(null, new ConstraintViolationList($violationList)))->getViolations());
     }
 
     public function testConstructorFlattensStack(): void
