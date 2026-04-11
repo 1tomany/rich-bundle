@@ -30,6 +30,6 @@ final class ConsoleErrorTest extends TestCase
 
         $consoleError = new ConsoleError(new ValidationFailedException(null, $violationList));
 
-        $this->assertEquals('The property "email" is not valid: invalid email.', $consoleError->__toString());
+        $this->assertEquals('The argument "email" is not valid: invalid email.', $consoleError->__toString());
     }
 }
