@@ -31,6 +31,7 @@ $directories = [
     $srcDir.'/Contract/Enum',
     $srcDir.'/Contract/Exception',
     $srcDir.'/Contract/Repository',
+    $srcDir.'/Framework/Command',
     $srcDir.'/Framework/Controller',
     $srcDir.'/Framework/Controller/API',
     $srcDir.'/Framework/Controller/Web',

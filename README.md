@@ -71,6 +71,7 @@ src/
       Repository/
     Exception/
     Framework/
+      Command/
       Controller/
         API/
         Web/
