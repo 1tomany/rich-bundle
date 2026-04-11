@@ -6,6 +6,7 @@ use OneToMany\RichBundle\Attribute\HasErrorType;
 use OneToMany\RichBundle\Attribute\HasUserMessage;
 use OneToMany\RichBundle\Contract\Enum\ErrorType;
 use OneToMany\RichBundle\Contract\Error\HttpErrorInterface;
+use OneToMany\RichBundle\Contract\Error\Record\Trace;
 use OneToMany\RichBundle\Contract\Error\Record\Violation;
 use Psr\Log\LogLevel;
 use Symfony\Component\HttpFoundation\Response;
@@ -24,7 +25,6 @@ use function trim;
 
 /**
  * @phpstan-import-type Stack from HttpErrorInterface
- * @phpstan-import-type Trace from HttpErrorInterface
  */
 class HttpError implements HttpErrorInterface
 {
@@ -340,13 +340,7 @@ class HttpError implements HttpErrorInterface
     protected function flattenTrace(): void
     {
         foreach ($this->throwable->getTrace() as $trace) {
-            // \PHPStan\dumpType($trace);
-            $this->trace[] = [
-                'class' => $trace['class'] ?? null,
-                'function' => $trace['function'],
-                'file' => $trace['file'] ?? null,
-                'line' => $trace['line'] ?? null,
-            ];
+            $this->trace[] = Trace::create($trace);
         }
     }
 

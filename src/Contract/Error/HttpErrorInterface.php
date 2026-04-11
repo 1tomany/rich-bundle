@@ -3,6 +3,7 @@
 namespace OneToMany\RichBundle\Contract\Error;
 
 use OneToMany\RichBundle\Contract\Enum\ErrorType;
+use OneToMany\RichBundle\Contract\Error\Record\Trace;
 use OneToMany\RichBundle\Contract\Error\Record\Violation;
 
 /**
@@ -11,12 +12,6 @@ use OneToMany\RichBundle\Contract\Error\Record\Violation;
  *   message: string,
  *   file: string,
  *   line: int,
- * }
- * @phpstan-type Trace array{
- *   class: ?string,
- *   function: ?string,
- *   file: ?string,
- *   line: ?int,
  * }
  */
 interface HttpErrorInterface extends \Stringable

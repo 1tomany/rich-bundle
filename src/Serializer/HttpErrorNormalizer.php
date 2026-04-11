@@ -10,7 +10,6 @@ use function array_merge;
 
 /**
  * @phpstan-import-type Stack from HttpErrorInterface
- * @phpstan-import-type Trace from HttpErrorInterface
  */
 final readonly class HttpErrorNormalizer implements NormalizerInterface
 {
@@ -35,7 +34,12 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
      *     },
      *   >,
      *   stack?: list<Stack>,
-     *   trace?: list<Trace>,
+     *   trace?: list<array{
+     *   class: ?class-string,
+     *   function: ?string,
+     *   file: ?string,
+     *   line: ?int,
+     * }>,
      * }
      */
     public function normalize(mixed $data, ?string $format = null, array $context = []): array
@@ -54,9 +58,16 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
         }
 
         if (true === $this->debug) {
+            // Expand Trace objects
+            $record['trace'] = [];
+
+            foreach ($data->getTrace() as $t) {
+                $record['trace'][] = $t->toArray();
+            }
+
             $record = array_merge($record, [
                 'stack' => $data->getStack(),
-                'trace' => $data->getTrace(),
+                // 'trace' => $data->getTrace(),
             ]);
         }
 
