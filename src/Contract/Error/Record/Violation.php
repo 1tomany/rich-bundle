@@ -9,8 +9,7 @@ final readonly class Violation
     public function __construct(
         public string $property,
         public string $message,
-    )
-    {
+    ) {
     }
 
     public static function create(ConstraintViolationInterface $violation): static
