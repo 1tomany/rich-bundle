@@ -2,10 +2,13 @@
 
 namespace OneToMany\RichBundle\Contract\Error\Record;
 
+use function max;
+
 final readonly class TraceItem
 {
     /**
      * @param ?class-string $class
+     * @param ?non-negative-int $line
      */
     public function __construct(
         public ?string $class,
@@ -25,7 +28,7 @@ final readonly class TraceItem
      */
     public static function create(array $trace): static
     {
-        return new static($trace['class'] ?? null, $trace['function'], $trace['file'] ?? null, $trace['line'] ?? null);
+        return new static($trace['class'] ?? null, $trace['function'], $trace['file'] ?? null, isset($trace['line']) ? max(0, $trace['line']) : null);
     }
 
     /**
@@ -33,7 +36,7 @@ final readonly class TraceItem
      *   class: ?class-string,
      *   function: ?string,
      *   file: ?string,
-     *   line: ?int,
+     *   line: ?non-negative-int,
      * }
      */
     public function toArray(): array
