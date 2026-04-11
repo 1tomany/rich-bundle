@@ -8,7 +8,6 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\ConstraintViolation;
 use Symfony\Component\Validator\ConstraintViolationList;
-use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 #[Group('UnitTests')]
 #[Group('ErrorTests')]
@@ -19,7 +18,7 @@ final class ConsoleErrorTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The constraint violation list cannot be empty.');
 
-        new ConsoleError(new ValidationFailedException(null, new ConstraintViolationList([])));
+        new ConsoleError(new ConstraintViolationList([]));
     }
 
     public function testToString(): void
@@ -28,8 +27,6 @@ final class ConsoleErrorTest extends TestCase
             new ConstraintViolation('Invalid email.', null, [], null, 'email', null),
         ]);
 
-        $consoleError = new ConsoleError(new ValidationFailedException(null, $violationList));
-
-        $this->assertEquals('The argument "email" is not valid: invalid email.', $consoleError->__toString());
+        $this->assertEquals('The argument "email" is not valid: invalid email.', new ConsoleError($violationList)->__toString());
     }
 }

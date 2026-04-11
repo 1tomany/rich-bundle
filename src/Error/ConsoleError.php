@@ -36,6 +36,15 @@ class ConsoleError extends HttpError
      */
     public function __toString(): string
     {
+        return $this->getMessage();
+    }
+
+    /**
+     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
+     */
+    #[\Override]
+    public function getMessage(): string
+    {
         return sprintf('The argument "%s" is not valid: %s.', $this->getViolations()[0]->property, lcfirst(rtrim($this->getViolations()[0]->message, '.')));
     }
 }
