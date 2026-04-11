@@ -48,8 +48,7 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
         mixed $data,
         ?string $format = null,
         array $context = [],
-    ): array
-    {
+    ): array {
         $record = [
             'status' => $data->getStatus(),
             'title' => $data->getTitle(),
@@ -87,8 +86,7 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
         mixed $data,
         ?string $format = null,
         array $context = [],
-    ): bool
-    {
+    ): bool {
         return $data instanceof HttpErrorInterface;
     }
 
