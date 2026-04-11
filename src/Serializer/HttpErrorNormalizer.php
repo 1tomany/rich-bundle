@@ -46,7 +46,7 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
             'detail' => $data->getMessage(),
         ];
 
-        // Expand violation records
+        // Expand Violation objects
         $record['violations'] = [];
 
         foreach ($data->getViolations() as $v) {
