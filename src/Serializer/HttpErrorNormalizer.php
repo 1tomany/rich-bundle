@@ -16,8 +16,7 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
 {
     public function __construct(
         private bool $debug = false,
-    )
-    {
+    ) {
     }
 
     /**
