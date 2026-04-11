@@ -40,7 +40,6 @@ use Symfony\Component\Validator\Exception\ValidationFailedException;
 use function array_key_last;
 use function array_map;
 use function array_rand;
-use function count;
 use function random_int;
 
 #[Group('UnitTests')]
