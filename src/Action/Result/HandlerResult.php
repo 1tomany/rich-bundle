@@ -30,8 +30,9 @@ class HandlerResult implements ResultInterface
     /**
      * @param R $result
      */
-    public function __construct(private mixed $result)
-    {
+    public function __construct(
+        private mixed $result,
+    ) {
     }
 
     /**

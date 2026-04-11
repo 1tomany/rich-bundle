@@ -6,6 +6,9 @@ use OneToMany\RichBundle\Attribute\HasErrorType;
 use OneToMany\RichBundle\Attribute\HasUserMessage;
 use OneToMany\RichBundle\Contract\Enum\ErrorType;
 use OneToMany\RichBundle\Contract\Error\HttpErrorInterface;
+use OneToMany\RichBundle\Contract\Error\Record\StackItem;
+use OneToMany\RichBundle\Contract\Error\Record\TraceItem;
+use OneToMany\RichBundle\Contract\Error\Record\Violation;
 use Psr\Log\LogLevel;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
@@ -21,42 +24,52 @@ use function min;
 use function sprintf;
 use function trim;
 
-/**
- * @phpstan-import-type Stack from HttpErrorInterface
- * @phpstan-import-type Trace from HttpErrorInterface
- * @phpstan-import-type Violation from HttpErrorInterface
- */
 class HttpError implements HttpErrorInterface
 {
     protected ErrorType $type;
 
-    /** @var int<100, 599> */
+    /**
+     * @var int<100, 599>
+     */
     protected int $status = 500;
 
-    /** @var non-empty-string */
+    /**
+     * @var non-empty-string
+     */
     protected string $title = 'Internal Server Error';
 
-    /** @var array<string, string> */
+    /**
+     * @var array<string, string>
+     */
     protected array $headers = [];
 
-    /** @var non-empty-string */
+    /**
+     * @var non-empty-string
+     */
     protected string $message = self::MESSAGE_UNEXPECTED_ERROR;
 
-    /** @var list<Violation> */
+    /**
+     * @var list<Violation>
+     */
     protected array $violations = [];
 
-    /** @var list<Stack> */
+    /**
+     * @var list<StackItem>
+     */
     protected array $stack = [];
 
-    /** @var list<Trace> */
+    /**
+     * @var list<TraceItem>
+     */
     protected array $trace = [];
 
     public const string MESSAGE_ACCESS_DENIED = 'Access to this resource is denied.';
     public const string MESSAGE_VALIDATION_FAILED = 'The data provided is not valid.';
     public const string MESSAGE_UNEXPECTED_ERROR = 'An unexpected error occurred.';
 
-    public function __construct(protected readonly \Throwable $throwable)
-    {
+    public function __construct(
+        protected readonly \Throwable $throwable,
+    ) {
         $this->resolveStatus();
         $this->resolveTitle();
         $this->resolveHeaders();
@@ -277,7 +290,7 @@ class HttpError implements HttpErrorInterface
                 $message = $this->throwable->getMessage();
             }
 
-            $message = trim($message ?? '') ?: self::MESSAGE_VALIDATION_FAILED;
+            $message = trim((string) $message) ?: self::MESSAGE_VALIDATION_FAILED;
         } elseif ($this->throwable instanceof AccessDeniedException) {
             $message = self::MESSAGE_ACCESS_DENIED;
         } elseif (
@@ -288,7 +301,7 @@ class HttpError implements HttpErrorInterface
             $message = $this->throwable->getMessage();
         }
 
-        $this->message = trim($message ?? '') ?: self::MESSAGE_UNEXPECTED_ERROR;
+        $this->message = trim((string) $message) ?: self::MESSAGE_UNEXPECTED_ERROR;
     }
 
     protected function expandViolations(): void
@@ -298,10 +311,7 @@ class HttpError implements HttpErrorInterface
         while (null !== $exception) {
             if ($exception instanceof ValidationFailedException) {
                 foreach ($exception->getViolations() as $violation) {
-                    $this->violations[] = [
-                        'property' => $violation->getPropertyPath(),
-                        'message' => $violation->getMessage(),
-                    ];
+                    $this->violations[] = Violation::create($violation);
                 }
             }
 
@@ -314,12 +324,9 @@ class HttpError implements HttpErrorInterface
         $exception = $this->throwable;
 
         while (null !== $exception) {
-            $this->stack[] = [
-                'class' => $exception::class,
-                'message' => $exception->getMessage(),
-                'file' => $exception->getFile(),
-                'line' => $exception->getLine(),
-            ];
+            $this->stack[] = StackItem::create(...[
+                'throwable' => $exception,
+            ]);
 
             $exception = $exception->getPrevious();
         }
@@ -328,12 +335,7 @@ class HttpError implements HttpErrorInterface
     protected function flattenTrace(): void
     {
         foreach ($this->throwable->getTrace() as $trace) {
-            $this->trace[] = [
-                'class' => $trace['class'] ?? null,
-                'function' => $trace['function'],
-                'file' => $trace['file'] ?? null,
-                'line' => $trace['line'] ?? null,
-            ];
+            $this->trace[] = TraceItem::create($trace);
         }
     }
 

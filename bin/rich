@@ -31,6 +31,7 @@ $directories = [
     $srcDir.'/Contract/Enum',
     $srcDir.'/Contract/Exception',
     $srcDir.'/Contract/Repository',
+    $srcDir.'/Framework/Command',
     $srcDir.'/Framework/Controller',
     $srcDir.'/Framework/Controller/API',
     $srcDir.'/Framework/Controller/Web',
@@ -38,8 +39,8 @@ $directories = [
 ];
 
 foreach ($directories as $directory) {
-    if (!is_dir($directory)) {
-        mkdir($directory, 0755, true);
+    if (!mkdir($directory, 0755, true)) {
+        error(sprintf('Creating the directory "%s" failed.', $directory));
     }
 }
 
@@ -52,12 +53,17 @@ $files = [
 
 foreach ($files as $file => $contents) {
     if (!is_file($file) && is_dir(dirname($file))) {
-        file_put_contents($file, trim($contents)."\n");
+        /** @var non-empty-string $contents */
+        $contents = sprintf("%s\n", trim($contents));
+
+        if (false === file_put_contents($file, $contents)) {
+            error(sprintf('Creating the file "%s" failed.', $file));
+        }
     }
 }
 
 function error(string $message): never
 {
-    fwrite(STDERR, trim($message).PHP_EOL);
+    fwrite(STDERR, sprintf("%s\n", trim($message)));
     exit(1);
 }

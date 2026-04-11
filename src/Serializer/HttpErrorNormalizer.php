@@ -5,17 +5,11 @@ namespace OneToMany\RichBundle\Serializer;
 use OneToMany\RichBundle\Contract\Error\HttpErrorInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
-use function array_merge;
-
-/**
- * @phpstan-import-type Stack from HttpErrorInterface
- * @phpstan-import-type Trace from HttpErrorInterface
- * @phpstan-import-type Violation from HttpErrorInterface
- */
 final readonly class HttpErrorNormalizer implements NormalizerInterface
 {
-    public function __construct(private bool $debug = false)
-    {
+    public function __construct(
+        private bool $debug = false,
+    ) {
     }
 
     /**
@@ -27,25 +21,62 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
      *   status: int<100, 599>,
      *   title: non-empty-string,
      *   detail: non-empty-string,
-     *   violations: list<Violation>,
-     *   stack?: list<Stack>,
-     *   trace?: list<Trace>,
+     *   violations: list<
+     *     array{
+     *       property: string,
+     *       message: string,
+     *     },
+     *   >,
+     *   stack?: list<
+     *     array{
+     *       class: class-string,
+     *       message: string,
+     *       file: string,
+     *       line: non-negative-int,
+     *     },
+     *   >,
+     *   trace?: list<
+     *     array{
+     *       class: ?class-string,
+     *       function: ?string,
+     *       file: ?string,
+     *       line: ?int,
+     *     },
+     *   >,
      * }
      */
-    public function normalize(mixed $data, ?string $format = null, array $context = []): array
-    {
+    public function normalize(
+        mixed $data,
+        ?string $format = null,
+        array $context = [],
+    ): array {
         $record = [
             'status' => $data->getStatus(),
             'title' => $data->getTitle(),
             'detail' => $data->getMessage(),
-            'violations' => $data->getViolations(),
         ];
 
-        if ($this->debug) {
-            $record = array_merge($record, [
-                'stack' => $data->getStack(),
-                'trace' => $data->getTrace(),
-            ]);
+        // Violation Objects
+        $record['violations'] = [];
+
+        foreach ($data->getViolations() as $v) {
+            $record['violations'][] = $v->toArray();
+        }
+
+        if (true === $this->debug) {
+            // StackItem Objects
+            $record['stack'] = [];
+
+            foreach ($data->getStack() as $si) {
+                $record['stack'][] = $si->toArray();
+            }
+
+            // TraceItem Objects
+            $record['trace'] = [];
+
+            foreach ($data->getTrace() as $ti) {
+                $record['trace'][] = $ti->toArray();
+            }
         }
 
         return $record;
@@ -54,8 +85,11 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
     /**
      * @param array<string, mixed> $context
      */
-    public function supportsNormalization(mixed $data, ?string $format = null, array $context = []): bool
-    {
+    public function supportsNormalization(
+        mixed $data,
+        ?string $format = null,
+        array $context = [],
+    ): bool {
         return $data instanceof HttpErrorInterface;
     }
 

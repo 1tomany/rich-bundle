@@ -5,6 +5,8 @@ namespace OneToMany\RichBundle\Tests\Error;
 use OneToMany\RichBundle\Attribute\HasErrorType;
 use OneToMany\RichBundle\Attribute\HasUserMessage;
 use OneToMany\RichBundle\Contract\Enum\ErrorType;
+use OneToMany\RichBundle\Contract\Error\Record\StackItem;
+use OneToMany\RichBundle\Contract\Error\Record\Violation;
 use OneToMany\RichBundle\Error\HttpError;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -184,56 +186,32 @@ final class HttpErrorTest extends TestCase
 
     public function testConstructorExpandsViolations(): void
     {
-        $errors = [
-            [
-                'property' => 'username',
-                'message' => 'Invalid email address.',
-            ],
-            [
-                'property' => 'password',
-                'message' => 'Password too short.',
-            ],
-            [
-                'property' => 'age',
-                'message' => 'Too young.',
-            ],
+        $violations = [
+            new Violation('username', 'Invalid email address.'),
+            new Violation('password', 'Password must be longer.'),
+            new Violation('age', 'Must be 13 or older to register.'),
         ];
 
-        $violations = array_map(function (array $e): ConstraintViolationInterface {
-            return new ConstraintViolation($e['message'], null, [], null, $e['property'], null);
-        }, $errors);
+        $violationList = array_map(function (Violation $v): ConstraintViolationInterface {
+            return new ConstraintViolation($v->message, null, [], null, $v->property, null);
+        }, $violations);
 
-        $this->assertSame($errors, new HttpError(new ValidationFailedException(null, new ConstraintViolationList($violations)))->getViolations());
+        $this->assertEquals($violations, new HttpError(new ValidationFailedException(null, new ConstraintViolationList($violationList)))->getViolations());
     }
 
     public function testConstructorFlattensStack(): void
     {
-        $exception1 = new \Exception('Exception 1', 0, null);
-        $exception2 = new \Exception('Exception 2', 0, $exception1);
-        $exception3 = new \Exception('Exception 3', 0, $exception2);
+        $exception1 = new \Exception('Exception 1', previous: null);
+        $exception2 = new \Exception('Exception 2', previous: $exception1);
+        $exception3 = new \Exception('Exception 3', previous: $exception2);
 
         $stackTrace = [
-            [
-                'class' => $exception3::class,
-                'message' => $exception3->getMessage(),
-                'file' => $exception3->getFile(),
-                'line' => $exception3->getLine(),
-            ],
-            [
-                'class' => $exception2::class,
-                'message' => $exception2->getMessage(),
-                'file' => $exception2->getFile(),
-                'line' => $exception2->getLine(),
-            ],
-            [
-                'class' => $exception1::class,
-                'message' => $exception1->getMessage(),
-                'file' => $exception1->getFile(),
-                'line' => $exception1->getLine(),
-            ],
+            StackItem::create($exception3),
+            StackItem::create($exception2),
+            StackItem::create($exception1),
         ];
 
-        $this->assertSame($stackTrace, new HttpError($exception3)->getStack());
+        $this->assertEquals($stackTrace, new HttpError($exception3)->getStack());
     }
 
     public function testConstructorResolvesType(): void
