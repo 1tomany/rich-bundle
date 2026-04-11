@@ -5,6 +5,7 @@ namespace OneToMany\RichBundle\Tests\Error;
 use OneToMany\RichBundle\Attribute\HasErrorType;
 use OneToMany\RichBundle\Attribute\HasUserMessage;
 use OneToMany\RichBundle\Contract\Enum\ErrorType;
+use OneToMany\RichBundle\Contract\Error\Record\StackItem;
 use OneToMany\RichBundle\Contract\Error\Record\Violation;
 use OneToMany\RichBundle\Error\HttpError;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -200,32 +201,17 @@ final class HttpErrorTest extends TestCase
 
     public function testConstructorFlattensStack(): void
     {
-        $exception1 = new \Exception('Exception 1', 0, null);
-        $exception2 = new \Exception('Exception 2', 0, $exception1);
-        $exception3 = new \Exception('Exception 3', 0, $exception2);
+        $exception1 = new \Exception('Exception 1', previous: null);
+        $exception2 = new \Exception('Exception 2', previous: $exception1);
+        $exception3 = new \Exception('Exception 3', previous: $exception2);
 
         $stackTrace = [
-            [
-                'class' => $exception3::class,
-                'message' => $exception3->getMessage(),
-                'file' => $exception3->getFile(),
-                'line' => $exception3->getLine(),
-            ],
-            [
-                'class' => $exception2::class,
-                'message' => $exception2->getMessage(),
-                'file' => $exception2->getFile(),
-                'line' => $exception2->getLine(),
-            ],
-            [
-                'class' => $exception1::class,
-                'message' => $exception1->getMessage(),
-                'file' => $exception1->getFile(),
-                'line' => $exception1->getLine(),
-            ],
+            StackItem::create($exception3),
+            StackItem::create($exception2),
+            StackItem::create($exception1),
         ];
 
-        $this->assertSame($stackTrace, new HttpError($exception3)->getStack());
+        $this->assertEquals($stackTrace, new HttpError($exception3)->getStack());
     }
 
     public function testConstructorResolvesType(): void
