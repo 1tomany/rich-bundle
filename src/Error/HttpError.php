@@ -71,8 +71,7 @@ class HttpError implements HttpErrorInterface
 
     public function __construct(
         protected readonly \Throwable $throwable,
-    )
-    {
+    ) {
         $this->resolveStatus();
         $this->resolveTitle();
         $this->resolveHeaders();
