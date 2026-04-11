@@ -2,6 +2,8 @@
 
 namespace OneToMany\RichBundle\Contract\Error\Record;
 
+use function max;
+
 final readonly class StackItem
 {
     /**
@@ -18,7 +20,7 @@ final readonly class StackItem
 
     public static function create(\Throwable $throwable): static
     {
-        return new static($throwable::class, $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
+        return new static($throwable::class, $throwable->getMessage(), $throwable->getFile(), max(0, $throwable->getLine()));
     }
 
     /**

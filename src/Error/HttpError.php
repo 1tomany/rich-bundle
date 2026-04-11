@@ -24,9 +24,6 @@ use function min;
 use function sprintf;
 use function trim;
 
-/**
- * @phpstan-import-type Stack from HttpErrorInterface
- */
 class HttpError implements HttpErrorInterface
 {
     protected ErrorType $type;

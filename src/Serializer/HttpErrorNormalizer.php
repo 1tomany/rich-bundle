@@ -6,8 +6,6 @@ use OneToMany\RichBundle\Contract\Error\HttpErrorInterface;
 use OneToMany\RichBundle\Contract\Error\Record\Violation;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
-use function array_merge;
-
 final readonly class HttpErrorNormalizer implements NormalizerInterface
 {
     public function __construct(
@@ -30,12 +28,14 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
      *       message: string,
      *     },
      *   >,
-     *   stack?: list<array{
-     *   class: class-string,
-     *   message: string,
-     *   file: string,
-     *   line: non-negative-int,
-     * }>,
+     *   stack?: list<
+     *     array{
+     *       class: class-string,
+     *       message: string,
+     *       file: string,
+     *       line: non-negative-int,
+     *     },
+     *   >,
      *   trace?: list<
      *     array{
      *       class: ?class-string,
@@ -57,7 +57,7 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
             'detail' => $data->getMessage(),
         ];
 
-        // Expand Violation objects
+        // Violation Objects
         $record['violations'] = [];
 
         foreach ($data->getViolations() as $v) {
@@ -65,24 +65,19 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
         }
 
         if (true === $this->debug) {
-            // Expand Stack objects
+            // StackItem Objects
             $record['stack'] = [];
 
             foreach ($data->getStack() as $si) {
                 $record['stack'][] = $si->toArray();
             }
 
-            // Expand Trace objects
+            // TraceItem Objects
             $record['trace'] = [];
 
             foreach ($data->getTrace() as $ti) {
                 $record['trace'][] = $ti->toArray();
             }
-
-            $record = array_merge($record, [
-                'stack' => $data->getStack(),
-                // 'trace' => $data->getTrace(),
-            ]);
         }
 
         return $record;
