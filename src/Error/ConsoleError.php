@@ -16,17 +16,17 @@ class ConsoleError extends HttpError
      * @throws InvalidArgumentException when the constraint violation list is empty
      */
     public function __construct(
-        ConstraintViolationListInterface|ValidationFailedException $throwable,
+        ConstraintViolationListInterface $violations,
     ) {
-        if ($throwable instanceof ConstraintViolationListInterface) {
-            $throwable = new ValidationFailedException(null, $throwable);
-        }
+        // if ($violations instanceof ConstraintViolationListInterface) {
+        //     $violations = new ValidationFailedException(null, $violations);
+        // }
 
-        if (0 === $throwable->getViolations()->count()) {
+        if (0 === $violations->count()) {
             throw new InvalidArgumentException('The constraint violation list cannot be empty.');
         }
 
-        parent::__construct($throwable);
+        parent::__construct(new ValidationFailedException(null, $violations));
     }
 
     /**

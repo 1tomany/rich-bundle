@@ -21,12 +21,12 @@ final class ConsoleErrorTest extends TestCase
         new ConsoleError(new ConstraintViolationList([]));
     }
 
-    public function testToString(): void
+    public function testGettingMessage(): void
     {
         $violationList = new ConstraintViolationList([
             new ConstraintViolation('Invalid email.', null, [], null, 'email', null),
         ]);
 
-        $this->assertEquals('The argument "email" is not valid: invalid email.', new ConsoleError($violationList)->__toString());
+        $this->assertEquals('The argument "email" is not valid: invalid email.', new ConsoleError($violationList)->getMessage());
     }
 }
