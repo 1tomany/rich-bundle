@@ -34,15 +34,21 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
      *     },
      *   >,
      *   stack?: list<Stack>,
-     *   trace?: list<array{
-     *   class: ?class-string,
-     *   function: ?string,
-     *   file: ?string,
-     *   line: ?int,
-     * }>,
+     *   trace?: list<
+     *     array{
+     *       class: ?class-string,
+     *       function: ?string,
+     *       file: ?string,
+     *       line: ?int,
+     *     },
+     *   >,
      * }
      */
-    public function normalize(mixed $data, ?string $format = null, array $context = []): array
+    public function normalize(
+        mixed $data,
+        ?string $format = null,
+        array $context = [],
+    ): array
     {
         $record = [
             'status' => $data->getStatus(),
@@ -77,7 +83,11 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
     /**
      * @param array<string, mixed> $context
      */
-    public function supportsNormalization(mixed $data, ?string $format = null, array $context = []): bool
+    public function supportsNormalization(
+        mixed $data,
+        ?string $format = null,
+        array $context = [],
+    ): bool
     {
         return $data instanceof HttpErrorInterface;
     }
