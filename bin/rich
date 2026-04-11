@@ -58,6 +58,6 @@ foreach ($files as $file => $contents) {
 
 function error(string $message): never
 {
-    fwrite(STDERR, trim($message).PHP_EOL);
+    fwrite(STDERR, sprintf("%s\n", trim($message)));
     exit(1);
 }
