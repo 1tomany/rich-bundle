@@ -208,6 +208,10 @@ final class HttpErrorTest extends TestCase
 
         $this->assertCount(count($errors), $httpError->getViolations());
 
+        foreach ($errors as $idx => $error) {
+            $this->assertEquals($error['property'], $httpError->getViolations()[$idx]->property);
+        }
+
         // $this->assertSame($errors, new HttpError(new ValidationFailedException(null, new ConstraintViolationList($violations)))->getViolations());
     }
 
