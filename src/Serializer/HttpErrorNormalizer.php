@@ -8,9 +8,6 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 use function array_merge;
 
-/**
- * @phpstan-import-type Stack from HttpErrorInterface
- */
 final readonly class HttpErrorNormalizer implements NormalizerInterface
 {
     public function __construct(
@@ -33,7 +30,12 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
      *       message: string,
      *     },
      *   >,
-     *   stack?: list<Stack>,
+     *   stack?: list<array{
+     *   class: class-string,
+     *   message: string,
+     *   file: string,
+     *   line: non-negative-int,
+     * }>,
      *   trace?: list<
      *     array{
      *       class: ?class-string,
@@ -63,11 +65,18 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
         }
 
         if (true === $this->debug) {
+            // Expand Stack objects
+            $record['stack'] = [];
+
+            foreach ($data->getStack() as $si) {
+                $record['stack'][] = $si->toArray();
+            }
+
             // Expand Trace objects
             $record['trace'] = [];
 
-            foreach ($data->getTrace() as $t) {
-                $record['trace'][] = $t->toArray();
+            foreach ($data->getTrace() as $ti) {
+                $record['trace'][] = $ti->toArray();
             }
 
             $record = array_merge($record, [

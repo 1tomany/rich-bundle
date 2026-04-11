@@ -2,7 +2,7 @@
 
 namespace OneToMany\RichBundle\Contract\Error\Record;
 
-final readonly class Trace
+final readonly class TraceItem
 {
     /**
      * @param ?class-string $class

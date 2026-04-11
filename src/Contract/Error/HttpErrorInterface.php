@@ -3,17 +3,10 @@
 namespace OneToMany\RichBundle\Contract\Error;
 
 use OneToMany\RichBundle\Contract\Enum\ErrorType;
-use OneToMany\RichBundle\Contract\Error\Record\Trace;
+use OneToMany\RichBundle\Contract\Error\Record\StackItem;
+use OneToMany\RichBundle\Contract\Error\Record\TraceItem;
 use OneToMany\RichBundle\Contract\Error\Record\Violation;
 
-/**
- * @phpstan-type Stack array{
- *   class: string,
- *   message: string,
- *   file: string,
- *   line: int,
- * }
- */
 interface HttpErrorInterface extends \Stringable
 {
     public function getThrowable(): \Throwable;
@@ -51,12 +44,12 @@ interface HttpErrorInterface extends \Stringable
     public function getViolations(): array;
 
     /**
-     * @return list<Stack>
+     * @return list<StackItem>
      */
     public function getStack(): array;
 
     /**
-     * @return list<Trace>
+     * @return list<TraceItem>
      */
     public function getTrace(): array;
 

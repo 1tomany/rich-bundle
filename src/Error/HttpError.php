@@ -6,7 +6,8 @@ use OneToMany\RichBundle\Attribute\HasErrorType;
 use OneToMany\RichBundle\Attribute\HasUserMessage;
 use OneToMany\RichBundle\Contract\Enum\ErrorType;
 use OneToMany\RichBundle\Contract\Error\HttpErrorInterface;
-use OneToMany\RichBundle\Contract\Error\Record\Trace;
+use OneToMany\RichBundle\Contract\Error\Record\StackItem;
+use OneToMany\RichBundle\Contract\Error\Record\TraceItem;
 use OneToMany\RichBundle\Contract\Error\Record\Violation;
 use Psr\Log\LogLevel;
 use Symfony\Component\HttpFoundation\Response;
@@ -56,12 +57,12 @@ class HttpError implements HttpErrorInterface
     protected array $violations = [];
 
     /**
-     * @var list<Stack>
+     * @var list<StackItem>
      */
     protected array $stack = [];
 
     /**
-     * @var list<Trace>
+     * @var list<TraceItem>
      */
     protected array $trace = [];
 
@@ -326,12 +327,9 @@ class HttpError implements HttpErrorInterface
         $exception = $this->throwable;
 
         while (null !== $exception) {
-            $this->stack[] = [
-                'class' => $exception::class,
-                'message' => $exception->getMessage(),
-                'file' => $exception->getFile(),
-                'line' => $exception->getLine(),
-            ];
+            $this->stack[] = StackItem::create(...[
+                'throwable' => $exception,
+            ]);
 
             $exception = $exception->getPrevious();
         }
@@ -340,7 +338,7 @@ class HttpError implements HttpErrorInterface
     protected function flattenTrace(): void
     {
         foreach ($this->throwable->getTrace() as $trace) {
-            $this->trace[] = Trace::create($trace);
+            $this->trace[] = TraceItem::create($trace);
         }
     }
 
