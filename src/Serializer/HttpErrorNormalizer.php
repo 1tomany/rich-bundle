@@ -43,9 +43,15 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
             'status' => $data->getStatus(),
             'title' => $data->getTitle(),
             'detail' => $data->getMessage(),
-            'violations' => [],
-            // 'violations' => $data->getViolations(),
         ];
+
+        $violations = \array_map(function (Violation $v): array {
+            return $v->toArray();
+        }, $data->getViolations());
+
+        $record = \array_merge($record, [
+            'violations' => $violations,
+        ]);
 
         foreach ($data->getViolations() as $v) {
             $record['violations'][] = $v->toArray();
