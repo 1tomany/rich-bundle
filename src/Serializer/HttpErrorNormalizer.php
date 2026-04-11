@@ -3,7 +3,6 @@
 namespace OneToMany\RichBundle\Serializer;
 
 use OneToMany\RichBundle\Contract\Error\HttpErrorInterface;
-use OneToMany\RichBundle\Contract\Error\Record\Violation;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 final readonly class HttpErrorNormalizer implements NormalizerInterface
