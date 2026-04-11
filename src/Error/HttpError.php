@@ -30,32 +30,48 @@ class HttpError implements HttpErrorInterface
 {
     protected ErrorType $type;
 
-    /** @var int<100, 599> */
+    /**
+     * @var int<100, 599>
+     */
     protected int $status = 500;
 
-    /** @var non-empty-string */
+    /**
+     * @var non-empty-string
+     */
     protected string $title = 'Internal Server Error';
 
-    /** @var array<string, string> */
+    /**
+     * @var array<string, string>
+     */
     protected array $headers = [];
 
-    /** @var non-empty-string */
+    /**
+     * @var non-empty-string
+     */
     protected string $message = self::MESSAGE_UNEXPECTED_ERROR;
 
-    /** @var list<Violation> */
+    /**
+     * @var list<Violation>
+     */
     protected array $violations = [];
 
-    /** @var list<Stack> */
+    /**
+     * @var list<Stack>
+     */
     protected array $stack = [];
 
-    /** @var list<Trace> */
+    /**
+     * @var list<Trace>
+     */
     protected array $trace = [];
 
     public const string MESSAGE_ACCESS_DENIED = 'Access to this resource is denied.';
     public const string MESSAGE_VALIDATION_FAILED = 'The data provided is not valid.';
     public const string MESSAGE_UNEXPECTED_ERROR = 'An unexpected error occurred.';
 
-    public function __construct(protected readonly \Throwable $throwable)
+    public function __construct(
+        protected readonly \Throwable $throwable,
+    )
     {
         $this->resolveStatus();
         $this->resolveTitle();
