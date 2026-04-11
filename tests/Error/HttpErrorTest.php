@@ -39,6 +39,7 @@ use Symfony\Component\Validator\Exception\ValidationFailedException;
 use function array_key_last;
 use function array_map;
 use function array_rand;
+use function count;
 use function random_int;
 
 #[Group('UnitTests')]
@@ -205,7 +206,7 @@ final class HttpErrorTest extends TestCase
 
         $httpError = new HttpError(new ValidationFailedException(null, new ConstraintViolationList($violations)));
 
-        $this->assertCount(\count($errors), $httpError->getViolations());
+        $this->assertCount(count($errors), $httpError->getViolations());
 
         // $this->assertSame($errors, new HttpError(new ValidationFailedException(null, new ConstraintViolationList($violations)))->getViolations());
     }
