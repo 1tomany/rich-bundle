@@ -40,7 +40,7 @@
         }
     },
     "bin": [
-        "bin/rich"
+        "bin/create-rich-module"
     ],
     "scripts": {
         "fix": "php-cs-fixer fix",
