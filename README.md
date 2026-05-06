@@ -58,29 +58,30 @@ I recommend the following directory structure for each module:
 
 ```
 src/
-  <Module>/
-    Action/
-      Command/
-      Event/
-      Handler/
+  Module/
+    <Module>/
+      Action/
+        Command/
+        Event/
+        Handler/
+          Exception/
+        Input/
+      Contract/
+        Enum/
         Exception/
-      Input/
-    Contract/
-      Enum/
+        Repository/
       Exception/
-      Repository/
-    Exception/
-    Framework/
-      Command/
-      Controller/
-        API/
-        Web/
+      Framework/
+        Command/
+        Controller/
+          API/
+          Web/
 ```
 
 We'll get into the purpose of each of these soon. Use the following command to create this structure for a module named `Account` in your application:
 
 ```shell
-./vendor/bin/rich Account
+./vendor/bin/create-rich-module Account
 ```
 
 Moving forward, lets assume we're working on a module named `Account` for a Doctrine entity also named `Account` which uses a repository (shockingly) named `AccountRepository`.
@@ -94,7 +95,7 @@ In the `Contract/Repository` directory, you'll find a file named `AccountReposit
 ```php
 <?php
 
-namespace App\Account\Contract\Repository;
+namespace App\Module\Account\Contract\Repository;
 
 use App\Entity\Account;
 
@@ -149,7 +150,7 @@ You'll find a file named `ExceptionInterface.php` in the `src/Account/Contract/E
 ```php
 <?php
 
-namespace App\Account\Contract\Exception;
+namespace App\Module\Account\Contract\Exception;
 
 interface ExceptionInterface extends \Throwable
 {
@@ -169,7 +170,7 @@ Create a file named `CreateAccountCommand.php` in the `src/Account/Action/Comman
 ```php
 <?php
 
-namespace App\Account\Action\Command;
+namespace App\Module\Account\Action\Command;
 
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 
@@ -197,10 +198,10 @@ Create a file named `CreateAccountInput.php` in the `src/Account/Action/Input` d
 ```php
 <?php
 
-namespace App\Account\Action\Input;
+namespace App\Module\Account\Action\Input;
 
-use App\Account\Action\Command\CreateAccountCommand;
 use App\Entity\User;
+use App\Module\Account\Action\Command\CreateAccountCommand;
 use OneToMany\RichBundle\Attribute\SourceIpAddress;
 use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceUser;
@@ -308,9 +309,9 @@ In the example below, the `$username` property could be mapped from either of th
 ```php
 <?php
 
-namespace App\Account\Action\Input;
+namespace App\Module\Account\Action\Input;
 
-use App\Account\Action\Command\ReadAccountCommand;
+use App\Module\Account\Action\Command\ReadAccountCommand;
 use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
@@ -358,7 +359,7 @@ Take the following input class as an example:
 ```php
 <?php
 
-namespace App\Account\Action\Input;
+namespace App\Module\Account\Action\Input;
 
 use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
@@ -432,13 +433,13 @@ Let's see what this class looks like:
 ```php
 <?php
 
-namespace App\Account\Action\Handler;
+namespace App\Module\Account\Action\Handler;
 
-use App\Account\Action\Command\CreateAccountCommand;
-use App\Account\Action\Input\CreateCustomerInput;
-use App\Account\Action\Handler\Exception\UserNotFoundForCreatingAccountException;
 use App\Entity\Account;
-use App\User\Contract\UserRepositoryInterface;
+use App\Module\Account\Action\Command\CreateAccountCommand;
+use App\Module\Account\Action\Input\CreateCustomerInput;
+use App\Module\Account\Action\Handler\Exception\UserNotFoundForCreatingAccountException;
+use App\Module\User\Contract\UserRepositoryInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use OneToMany\RichBundle\Action\Result\HandlerResult;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
