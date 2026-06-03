@@ -8,22 +8,22 @@
     "require": {
         "php": ">=8.4",
         "psr/log": "^3.0",
-        "symfony/config": "^7.2|^8.0",
-        "symfony/dependency-injection": "^7.2|^8.0",
-        "symfony/event-dispatcher": "^7.2|^8.0",
-        "symfony/form": "^7.2|^8.0",
-        "symfony/http-foundation": "^7.2|^8.0",
-        "symfony/http-kernel": "^7.2|^8.0",
-        "symfony/security-core": "^7.2|^8.0",
-        "symfony/serializer": "^7.2|^8.0",
-        "symfony/validator": "^7.2|^8.0"
+        "symfony/config": "^7.2|^8.0|^8.1",
+        "symfony/dependency-injection": "^7.2|^8.0|^8.1",
+        "symfony/event-dispatcher": "^7.2|^8.0|^8.1",
+        "symfony/form": "^7.2|^8.0|^8.1",
+        "symfony/http-foundation": "^7.2|^8.0|^8.1",
+        "symfony/http-kernel": "^7.2|^8.0|^8.1",
+        "symfony/security-core": "^7.2|^8.0|^8.1",
+        "symfony/serializer": "^7.2|^8.0|^8.1",
+        "symfony/validator": "^7.2|^8.0|^8.1"
     },
     "require-dev": {
         "fakerphp/faker": "^1.24",
         "friendsofphp/php-cs-fixer": "^3.93",
         "phpdocumentor/reflection-docblock": "^5.2",
-        "phpstan/phpstan": "^2.1",
-        "phpunit/phpunit": "^12.5"
+        "phpstan/phpstan": "^2.1.55",
+        "phpunit/phpunit": "^13.1.11"
     },
     "suggest": {
         "1tomany/data-uri-bundle": "Provides a decoder to convert data into a self-destroying file object",
@@ -32,7 +32,10 @@
     "autoload": {
         "psr-4": {
             "OneToMany\\RichBundle\\": "src/"
-        }
+        },
+        "exclude-from-classmap": [
+            "/Tests/"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
@@ -45,7 +48,12 @@
     "scripts": {
         "fix": "php-cs-fixer fix",
         "stan": "phpstan",
-        "test": "phpunit"
+        "test": "phpunit",
+        "flat": [
+            "@fix",
+            "@stan",
+            "@test"
+        ]
     },
     "authors": [
         {
