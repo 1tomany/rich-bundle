@@ -196,7 +196,9 @@ readonly class InputParser implements InputParserInterface
         try {
             /** @var InputInterface<C> $input */
             $input = $this->serializer->denormalize($this->data->all(), $type, null, [
-                'filter_bool' => true, 'disable_type_enforcement' => true,
+                'datetime_format' => null,
+                'disable_type_enforcement' => true,
+                'filter_bool' => true,
             ]);
         } catch (HttpFoundationRequestExceptionInterface|SerializerExceptionInterface $e) {
             $message = 'Parsing the request failed because it is is malformed and could not be mapped correctly.';
