@@ -19,12 +19,12 @@ interface InputParserInterface
      *
      * @return InputInterface<C>
      *
-     * @throws HttpException when content is provided and the Content-Type header is missing or malformed
-     * @throws HttpException when decoding the content as specified by the Content-Type header fails
-     * @throws HttpException when denormalizing the content to the underlying InputInterface object fails
-     * @throws HttpException when a property of an InputInterface object is marked to be nullified but is not nullable
-     * @throws RuntimeException when the SourceUser attribute is used but the Symfony Security Bundle is not installed
-     * @throws ValidationFailedException when a property of the InputInterface object is uninitialized after mapping
+     * @throws HttpException when the Content-Type header is invalid
+     * @throws HttpException when decoding the request content fails
+     * @throws HttpException when denormalizing the request content fails
+     * @throws HttpException when a non-nullable property is configured to be nullified
+     * @throws RuntimeException when the Symfony Security Bundle is not installed
+     * @throws ValidationFailedException when a property is uninitialized after mapping
      */
     public function parse(Request $request, string $type, array $defaultData = []): InputInterface;
 
