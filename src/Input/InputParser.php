@@ -63,6 +63,8 @@ readonly class InputParser implements InputParserInterface
     }
 
     /**
+     * @see OneToMany\RichBundle\Contract\Input\InputParserInterface
+     *
      * @template C of CommandInterface
      *
      * @return InputInterface<C>
@@ -97,7 +99,7 @@ readonly class InputParser implements InputParserInterface
                 }
 
                 if (!is_array($requestData ?? null) || (($e ?? null) instanceof \Throwable)) {
-                    throw HttpException::create(400, sprintf('Parsing the request failed because the content could not be decoded as "%s".', $format), previous: ($e ?? null));
+                    throw HttpException::create(400, sprintf('Parsing the request failed because the content could not be decoded as "%s".', $format), previous: $e ?? null);
                 }
             } else {
                 $requestData = [];
@@ -220,6 +222,18 @@ readonly class InputParser implements InputParserInterface
         }
 
         return $input;
+    }
+
+    /**
+     * @see OneToMany\RichBundle\Contract\Input\InputParserInterface
+     */
+    public function validate(InputInterface $input, ?array $groups = null): void
+    {
+        $violations = $this->validator->validate($input, null, $groups);
+
+        if ($violations->count() > 0) {
+            throw new ValidationFailedException($input, $violations);
+        }
     }
 
     private function isPropertyIgnored(\ReflectionProperty $property): bool
