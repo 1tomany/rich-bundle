@@ -39,9 +39,6 @@ interface InputParserInterface
     public function validate(InputInterface $input, ?array $groups = null): void;
 
     /**
-     * @see OneToMany\RichBundle\Contract\Input\InputParserInterface::parse()
-     * @see OneToMany\RichBundle\Contract\Input\InputParserInterface::validate()
-     *
      * @template C of CommandInterface
      *
      * @param class-string<InputInterface<C>> $type
