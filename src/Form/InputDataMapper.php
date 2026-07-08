@@ -24,6 +24,8 @@ readonly class InputDataMapper implements DataMapperInterface
     }
 
     /**
+     * @see Symfony\Component\Form\DataMapperInterface
+     *
      * @param ?InputInterface<CommandInterface> $viewData
      */
     public function mapDataToForms(mixed $viewData, \Traversable $forms): void
@@ -47,6 +49,8 @@ readonly class InputDataMapper implements DataMapperInterface
     }
 
     /**
+     * @see Symfony\Component\Form\DataMapperInterface
+     *
      * @param-out InputInterface<CommandInterface> $viewData
      */
     public function mapFormsToData(\Traversable $forms, mixed &$viewData): void
