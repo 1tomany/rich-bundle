@@ -8,8 +8,6 @@ use OneToMany\RichBundle\Contract\Input\InputParserInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Controller\ValueResolverInterface;
 use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
-use Symfony\Component\Validator\Exception\ValidationFailedException;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 use function is_a;
 
@@ -17,11 +15,12 @@ readonly class InputValueResolver implements ValueResolverInterface
 {
     public function __construct(
         private InputParserInterface $inputParser,
-        private ValidatorInterface $validator,
     ) {
     }
 
     /**
+     * @see Symfony\Component\HttpKernel\Controller\ValueResolverInterface
+     *
      * @return list<InputInterface<CommandInterface>>
      */
     public function resolve(Request $request, ArgumentMetadata $argument): iterable
@@ -37,11 +36,7 @@ readonly class InputValueResolver implements ValueResolverInterface
         $input = $this->inputParser->parse($request, $type);
 
         // Validate the InputInterface object
-        $violations = $this->validator->validate($input);
-
-        if ($violations->count() > 0) {
-            throw new ValidationFailedException($input, $violations);
-        }
+        $this->inputParser->validate($input);
 
         return [$input];
     }

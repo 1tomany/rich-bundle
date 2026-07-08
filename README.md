@@ -165,7 +165,7 @@ Finally, I'll generally place other value objects and enums in the `Contract` di
 
 Though the input class is used first, the command class is shared amongst the input and handler classes, so lets start by creating it. Each command class must implement the `OneToMany\RichBundle\Contract\Action\CommandInterface` interface.
 
-Create a file named `CreateAccountCommand.php` in the `src/Module/Account/Action/Command` directory and populate it with the following code:
+Create a file named `CreateAccountCommand.php` in the `src/Module/Account/Action/Command/` directory and populate it with the following code:
 
 ```php
 <?php

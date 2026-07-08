@@ -13,7 +13,7 @@ $finder->in([
 ]);
 
 $finder->append([
-    './bin/rich',
+    './bin/create-rich-module',
 ]);
 
 $config = new Config()
