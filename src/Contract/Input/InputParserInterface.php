@@ -17,4 +17,11 @@ interface InputParserInterface
      * @return InputInterface<C>
      */
     public function parse(Request $request, string $type, array $defaultData = []): InputInterface;
+
+    /**
+     *
+     * @param InputInterface $input
+     * @return void
+     */
+    public function validate(InputInterface $input): void;
 }
