@@ -137,7 +137,6 @@ class RichBundle extends AbstractBundle
                 ->set(InputValueResolver::class)
                     ->tag('controller.argument_value_resolver')
                     ->arg('$inputParser', service(InputParser::class))
-                    ->arg('$validator', service('validator'))
         ;
     }
 }
