@@ -29,6 +29,9 @@ interface InputParserInterface
     public function parse(Request $request, string $type, array $defaultData = []): InputInterface;
 
     /**
+     * @template C of CommandInterface
+     *
+     * @param InputInterface<C> $input
      * @param ?array<non-empty-string> $groups
      *
      * @throws ValidationFailedException when validating the input fails
