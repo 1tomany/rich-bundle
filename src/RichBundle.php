@@ -101,7 +101,11 @@ class RichBundle extends AbstractBundle
      *   },
      * } $config
      */
-    public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
+    public function loadExtension(
+        array $config,
+        ContainerConfigurator $container,
+        ContainerBuilder $builder,
+    ): void
     {
         $container
             ->services()
