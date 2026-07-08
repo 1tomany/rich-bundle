@@ -198,7 +198,6 @@ readonly class InputParser implements InputParserInterface
         }
 
         try {
-            /** @var InputInterface<C> $input */
             $input = $this->serializer->denormalize($this->data->all(), $type, null, [
                 'datetime_format' => null,
                 'disable_type_enforcement' => true,
