@@ -25,8 +25,9 @@ interface InputParserInterface
      * @throws HttpException when a non-nullable property is configured to be nullified
      * @throws RuntimeException when the Symfony Security Bundle is not installed
      * @throws ValidationFailedException when a property is uninitialized after mapping
+     * @throws ValidationFailedException when $validate is true and validation fails
      */
-    public function parse(Request $request, string $type, array $defaultData = []): InputInterface;
+    public function parse(Request $request, string $type, array $defaultData = [], bool $validate = false): InputInterface;
 
     /**
      * @template C of CommandInterface

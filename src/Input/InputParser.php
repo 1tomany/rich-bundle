@@ -67,9 +67,11 @@ readonly class InputParser implements InputParserInterface
      *
      * @template C of CommandInterface
      *
+     * @param class-string<InputInterface<C>> $type
+     *
      * @return InputInterface<C>
      */
-    public function parse(Request $request, string $type, array $defaultData = []): InputInterface
+    public function parse(Request $request, string $type, array $defaultData = [], bool $validate = false): InputInterface
     {
         // Initialize the data
         $this->data->replace([]);
@@ -196,7 +198,6 @@ readonly class InputParser implements InputParserInterface
         }
 
         try {
-            /** @var InputInterface<C> $input */
             $input = $this->serializer->denormalize($this->data->all(), $type, null, [
                 'datetime_format' => null,
                 'disable_type_enforcement' => true,
@@ -219,6 +220,10 @@ readonly class InputParser implements InputParserInterface
 
         if ($violations->count() > 0) {
             throw new ValidationFailedException($input, $violations);
+        }
+
+        if (true === $validate) {
+            $this->validate($input);
         }
 
         return $input;

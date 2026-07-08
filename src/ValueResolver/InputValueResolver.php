@@ -32,11 +32,8 @@ readonly class InputValueResolver implements ValueResolverInterface
             return [];
         }
 
-        // Extract and hydrate the InputInterface object
-        $input = $this->inputParser->parse($request, $type);
-
-        // Validate the InputInterface object
-        $this->inputParser->validate($input);
+        // Decode, denormalize, and validate the InputInterface argument
+        $input = $this->inputParser->parse($request, $type, validate: true);
 
         return [$input];
     }
