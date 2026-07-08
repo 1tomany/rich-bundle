@@ -101,8 +101,11 @@ class RichBundle extends AbstractBundle
      *   },
      * } $config
      */
-    public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
-    {
+    public function loadExtension(
+        array $config,
+        ContainerConfigurator $container,
+        ContainerBuilder $builder,
+    ): void {
         $container
             ->services()
                 // Input Parsers
@@ -137,7 +140,6 @@ class RichBundle extends AbstractBundle
                 ->set(InputValueResolver::class)
                     ->tag('controller.argument_value_resolver')
                     ->arg('$inputParser', service(InputParser::class))
-                    ->arg('$validator', service('validator'))
         ;
     }
 }
