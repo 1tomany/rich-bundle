@@ -245,6 +245,7 @@ readonly class InputParser implements InputParserInterface
      */
     public function parseAndValidate(Request $request, string $type, array $defaultData = [], ?array $groups = null): InputInterface
     {
+        /** @var InputInterface<C> $input */
         $input = $this->parse($request, $type, $defaultData);
 
         $this->validate($input, $groups);
