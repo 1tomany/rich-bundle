@@ -37,4 +37,18 @@ interface InputParserInterface
      * @throws ValidationFailedException when validating the input fails
      */
     public function validate(InputInterface $input, ?array $groups = null): void;
+
+    /**
+     * @see OneToMany\RichBundle\Contract\Input\InputParserInterface::parse()
+     * @see OneToMany\RichBundle\Contract\Input\InputParserInterface::validate()
+     *
+     * @template C of CommandInterface
+     *
+     * @param class-string<InputInterface<C>> $type
+     * @param array<string, mixed> $defaultData
+     * @param ?array<non-empty-string> $groups
+     *
+     * @return InputInterface<C>
+     */
+    public function parseAndValidate(Request $request, string $type, array $defaultData = [], ?array $groups = null): InputInterface;
 }

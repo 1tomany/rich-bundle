@@ -236,6 +236,22 @@ readonly class InputParser implements InputParserInterface
         }
     }
 
+    /**
+     * @see OneToMany\RichBundle\Contract\Input\InputParserInterface
+     *
+     * @template C of CommandInterface
+     *
+     * @return InputInterface<C>
+     */
+    public function parseAndValidate(Request $request, string $type, array $defaultData = [], ?array $groups = null): InputInterface
+    {
+        $input = $this->parse($request, $type, $defaultData);
+
+        $this->validate($input, $groups);
+
+        return $input;
+    }
+
     private function isPropertyIgnored(\ReflectionProperty $property): bool
     {
         return 0 !== count($property->getAttributes(PropertyIgnored::class));
