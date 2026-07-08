@@ -67,6 +67,8 @@ readonly class InputParser implements InputParserInterface
      *
      * @template C of CommandInterface
      *
+     * @param class-string<InputInterface<C>> $type
+     *
      * @return InputInterface<C>
      */
     public function parse(Request $request, string $type, array $defaultData = []): InputInterface
@@ -241,11 +243,12 @@ readonly class InputParser implements InputParserInterface
      *
      * @template C of CommandInterface
      *
+     * @param class-string<InputInterface<C>> $type
+     *
      * @return InputInterface<C>
      */
     public function parseAndValidate(Request $request, string $type, array $defaultData = [], ?array $groups = null): InputInterface
     {
-        /** @var InputInterface<C> $input */
         $input = $this->parse($request, $type, $defaultData);
 
         $this->validate($input, $groups);
