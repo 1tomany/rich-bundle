@@ -105,8 +105,7 @@ class RichBundle extends AbstractBundle
         array $config,
         ContainerConfigurator $container,
         ContainerBuilder $builder,
-    ): void
-    {
+    ): void {
         $container
             ->services()
                 // Input Parsers
