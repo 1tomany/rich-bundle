@@ -8,12 +8,7 @@
     "require": {
         "php": ">=8.4",
         "psr/log": "^3.0",
-        "symfony/config": "^7.2|^8.0|^8.1",
-        "symfony/dependency-injection": "^7.2|^8.0|^8.1",
-        "symfony/event-dispatcher": "^7.2|^8.0|^8.1",
         "symfony/form": "^7.2|^8.0|^8.1",
-        "symfony/http-foundation": "^7.2|^8.0|^8.1",
-        "symfony/http-kernel": "^7.2|^8.0|^8.1",
         "symfony/security-core": "^7.2|^8.0|^8.1",
         "symfony/serializer": "^7.2|^8.0|^8.1",
         "symfony/validator": "^7.2|^8.0|^8.1"
@@ -23,7 +18,8 @@
         "friendsofphp/php-cs-fixer": "^3.93",
         "phpdocumentor/reflection-docblock": "^5.2|^6.0",
         "phpstan/phpstan": "^2.1.55",
-        "phpunit/phpunit": "^13.1.11"
+        "phpunit/phpunit": "^13.1.11",
+        "symfony/framework-bundle": "^7.2|^8.0|^8.1"
     },
     "suggest": {
         "1tomany/data-uri-bundle": "Provides a decoder to convert data into a self-destroying file object",
