@@ -10,14 +10,14 @@ indent_style = space
 insert_final_newline = true
 trim_trailing_whitespace = true
 
-[{*.css,*.html,*.js,*.json,*.jsonl,*.xml}]
-indent_size = 2
-
-[{*.json,*.jsonc,*.jsonl}]
+[*.json]
 insert_final_newline = false
 
 [*.md]
 trim_trailing_whitespace = false
+
+[*.xml]
+indent_size = 2
 
 [composer.json]
 indent_size = 4
