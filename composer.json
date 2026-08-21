@@ -24,6 +24,7 @@
     },
     "suggest": {
         "1tomany/data-uri-bundle": "Provides a decoder to convert data into a self-destroying file object",
+        "symfony/maker-bundle": "Provides the make:rich-module command to scaffold the directory and file structure for a RICH module",
         "symfony/security-bundle": "Provides an autowired TokenStorageInterface to extract authenticated users"
     },
     "autoload": {
@@ -39,9 +40,6 @@
             "OneToMany\\RichBundle\\Tests\\": "tests/"
         }
     },
-    "bin": [
-        "bin/create-rich-module"
-    ],
     "scripts": {
         "fix": "php-cs-fixer fix",
         "stan": "phpstan",

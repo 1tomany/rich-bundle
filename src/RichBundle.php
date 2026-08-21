@@ -10,8 +10,10 @@ use OneToMany\RichBundle\DependencyInjection\Compiler\RemoveDtoTagsPass;
 use OneToMany\RichBundle\EventListener\RequestListener;
 use OneToMany\RichBundle\Form\InputDataMapper;
 use OneToMany\RichBundle\Input\InputParser;
+use OneToMany\RichBundle\Maker\MakeRichModule;
 use OneToMany\RichBundle\Serializer\HttpErrorNormalizer;
 use OneToMany\RichBundle\ValueResolver\InputValueResolver;
+use Symfony\Bundle\MakerBundle\Maker\AbstractMaker;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -141,5 +143,16 @@ class RichBundle extends AbstractBundle
                     ->tag('controller.argument_value_resolver')
                     ->arg('$inputParser', service(InputParser::class))
         ;
+
+        // The "make:rich-module" command relies on the Symfony Maker Bundle,
+        // an optional, development only dependency, so it's only registered
+        // if the bundle is installed and available in the application.
+        if (class_exists(AbstractMaker::class)) {
+            $container
+                ->services()
+                    ->set(MakeRichModule::class)
+                        ->tag('maker.command')
+            ;
+        }
     }
 }

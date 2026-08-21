@@ -7,13 +7,8 @@ use PhpCsFixer\Runner\Parallel\ParallelConfig;
 $finder = new Finder();
 
 $finder->in([
-    './bin/',
     './src/',
     './tests/',
-]);
-
-$finder->append([
-    './bin/create-rich-module',
 ]);
 
 $config = new Config()

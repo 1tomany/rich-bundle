@@ -38,7 +38,7 @@ Each handler should contain the business logic necessary to handle the command p
 
 ## Getting started
 
-Because this is a new bundle, you'll have to manually create the structure for each module in your application. My goal is to leverage the Symfony Maker Bundle to allow you to create the RICH structure for each action similar to how you would create a Doctrine entity.
+Because this is a new bundle, you'll have to manually create the structure for each module in your application. This bundle leverages the [Symfony Maker Bundle](https://symfony.com/bundles/SymfonyMakerBundle/current/index.html) to allow you to create the RICH structure for each action similar to how you would create a Doctrine entity.
 
 ### Install the bundle
 
@@ -48,16 +48,28 @@ Install the bundle using Composer:
 composer require 1tomany/rich-bundle
 ```
 
+The `make:rich-module` command described below requires `symfony/maker-bundle`, which most Symfony applications already have installed as a development dependency. If yours doesn't, install it with:
+
+```shell
+composer require --dev symfony/maker-bundle
+```
+
 ### Create the module structure
 
 Next, you'll need to create the directory structure for your first module. There is no strict definition on what a module is, other than a set of features that are loosely related to the same domain.
 
 It's easiest to think of a module as being related to each of your "primary" entities where a "primary" entity is one that can (mostly) exist without a parent entity. For example, `Invoice` would be a "primary" entity, but `InvoiceLine` would not be because an `InvoiceLine` can't exist without a parent `Invoice`.
 
-I recommend the following directory structure for each module:
+The `make:rich-module` command creates the following directory structure for each module:
 
 ```
 src/
+  Command/
+    <Module>/
+  Controller/
+    <Module>/
+      API/
+      Web/
   Module/
     <Module>/
       Action/
@@ -67,22 +79,27 @@ src/
           Exception/
         Input/
       Contract/
-        Enum/
         Exception/
         Repository/
       Exception/
-      Framework/
-        Command/
-        Controller/
-          API/
-          Web/
 ```
 
 We'll get into the purpose of each of these soon. Use the following command to create this structure for a module named `Account` in your application:
 
 ```shell
-./vendor/bin/create-rich-module Account
+bin/console make:rich-module Account
 ```
+
+The name you provide is converted to `PascalCase` and stripped of any character that isn't a letter, so `account`, `Account`, and even `an account!` all resolve to the same `Account` module.
+
+By default, the command creates the module's controller and console command directories and, if `src/Repository/` exists and is writable, its repository contract. You can customize this behavior with the following options:
+
+- `--src-dir=src` The directory the module structure is created in, relative to the directory the command is run from. Defaults to `src`.
+- `--no-with-controllers` Skips creating the `src/Controller/<Module>/{API,Web}/` directories.
+- `--no-with-commands` Skips creating the `src/Command/<Module>/` directory.
+- `--no-with-repository` Skips creating the `<Module>RepositoryInterface` contract, even if `src/Repository/` exists.
+
+The command never overwrites a file that already exists, so it's safe to run again after you've customized a module's contracts or exceptions - for example, after adding `src/Repository/` for the first time.
 
 Moving forward, lets assume we're working on a module named `Account` for a Doctrine entity also named `Account` which uses a repository (shockingly) named `AccountRepository`.
 
@@ -543,12 +560,12 @@ Despite what I said about writing handlers that are not HTTP aware, I typically 
 
 ### Create the controller
 
-One beautiful result of the RICH architecture is your controllers are usually very small. Because Symfony treats a controller as any other service, you can place them wherever you like. We'll take advantage of that and place them in the same root directory and namespace that the input, command, handler, and result classes live.
+One beautiful result of the RICH architecture is your controllers are usually very small. Because Symfony treats a controller as any other service, you can place them wherever you like. The `make:rich-module` command creates an `API` and a `Web` directory for the module's controllers in `src/Controller/<Module>/`.
 
 ```php
 <?php
 
-namespace App\Module\Account\Framework\Controller\Api;
+namespace App\Controller\Account\API;
 
 use App\Entity\Account;
 use App\Module\Account\Action\Handler\CreateAccountHandler;
