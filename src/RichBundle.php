@@ -144,9 +144,6 @@ class RichBundle extends AbstractBundle
                     ->arg('$inputParser', service(InputParser::class))
         ;
 
-        // The "make:rich-module" command relies on the Symfony Maker Bundle,
-        // an optional, development only dependency, so it's only registered
-        // if the bundle is installed and available in the application.
         if (class_exists(AbstractMaker::class)) {
             $container
                 ->services()
