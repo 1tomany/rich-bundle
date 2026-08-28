@@ -84,22 +84,37 @@ final class MakeRichModule extends AbstractMaker
         }
 
         // Contract\Exception
-        $this->createFile($generator, $moduleDir.'/Contract/Exception/ExceptionInterface.php', $this->buildExceptionInterface($module));
+        $this->createFile($generator, $moduleDir.'/Contract/Exception/ExceptionInterface.php', 'rich/contract/exception/ExceptionInterface.tpl.php', [
+            'namespace' => sprintf('App\\Module\\%s\\Contract\\Exception', $module),
+        ]);
 
         // Contract\Repository
         if ($input->getOption('with-repository')) {
             $repositoryDir = $srcDir.'/Repository';
 
             if (is_dir($repositoryDir) && is_writable($repositoryDir)) {
-                $this->createFile($generator, $moduleDir.'/Contract/Repository/'.$module.'RepositoryInterface.php', $this->buildRepositoryInterface($module));
+                $this->createFile($generator, $moduleDir.'/Contract/Repository/'.$module.'RepositoryInterface.php', 'rich/contract/repository/RepositoryInterface.tpl.php', [
+                    'namespace' => sprintf('App\\Module\\%s\\Contract\\Repository', $module),
+                    'class_name' => sprintf('%sRepositoryInterface', $module),
+                ]);
             } else {
                 $io->note(sprintf('Skipping the repository contract because the directory "%s" does not exist or is not writable.', $repositoryDir));
             }
         }
 
         // Exception
-        $this->createFile($generator, $moduleDir.'/Exception/InvalidArgumentException.php', $this->buildInvalidArgumentException($module));
-        $this->createFile($generator, $moduleDir.'/Exception/RuntimeException.php', $this->buildRuntimeException($module));
+        $exceptionNamespace = sprintf('App\\Module\\%s\\Exception', $module);
+        $exceptionInterfaceUseStatement = sprintf("use App\\Module\\%s\\Contract\\Exception\\ExceptionInterface;\n", $module);
+
+        $this->createFile($generator, $moduleDir.'/Exception/InvalidArgumentException.php', 'rich/exception/InvalidArgumentException.tpl.php', [
+            'namespace' => $exceptionNamespace,
+            'use_statements' => $exceptionInterfaceUseStatement,
+        ]);
+
+        $this->createFile($generator, $moduleDir.'/Exception/RuntimeException.php', 'rich/exception/RuntimeException.tpl.php', [
+            'namespace' => $exceptionNamespace,
+            'use_statements' => $exceptionInterfaceUseStatement,
+        ]);
 
         $generator->writeChanges();
 
@@ -150,32 +165,20 @@ final class MakeRichModule extends AbstractMaker
         $io->comment(sprintf('<fg=blue>created</>: %s', $directory));
     }
 
-    private function createFile(Generator $generator, string $file, string $contents): void
+    /**
+     * @param array<string, string> $variables
+     */
+    private function createFile(Generator $generator, string $file, string $template, array $variables): void
     {
         if (file_exists($file)) {
             return;
         }
 
-        $generator->dumpFile($file, $contents);
+        $generator->generateFile($file, $this->templatePath($template), $variables);
     }
 
-    private function buildRepositoryInterface(string $module): string
+    private function templatePath(string $template): string
     {
-        return sprintf("<?php\n\nnamespace App\\Module\\%s\\Contract\\Repository;\n\ninterface %sRepositoryInterface\n{\n}\n", $module, $module);
-    }
-
-    private function buildExceptionInterface(string $module): string
-    {
-        return sprintf("<?php\n\nnamespace App\\Module\\%s\\Contract\\Exception;\n\ninterface ExceptionInterface extends \\Throwable\n{\n}\n", $module);
-    }
-
-    private function buildInvalidArgumentException(string $module): string
-    {
-        return sprintf("<?php\n\nnamespace App\\Module\\%s\\Exception;\n\nuse App\\Module\\%s\\Contract\\Exception\\ExceptionInterface;\n\nclass InvalidArgumentException extends \\InvalidArgumentException implements ExceptionInterface\n{\n}\n", $module, $module);
-    }
-
-    private function buildRuntimeException(string $module): string
-    {
-        return sprintf("<?php\n\nnamespace App\\Module\\%s\\Exception;\n\nuse App\\Module\\%s\\Contract\\Exception\\ExceptionInterface;\n\nclass RuntimeException extends \\RuntimeException implements ExceptionInterface\n{\n}\n", $module, $module);
+        return sprintf('%s/templates/%s', dirname(__DIR__, 2), $template);
     }
 }
