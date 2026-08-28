@@ -3,7 +3,7 @@
 namespace OneToMany\RichBundle\Tests\Error;
 
 use OneToMany\RichBundle\Error\ConsoleError;
-use OneToMany\RichBundle\Exception\InvalidArgumentException;
+use OneToMany\RichBundle\Exception\DomainException;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\ConstraintViolation;
@@ -15,7 +15,7 @@ final class ConsoleErrorTest extends TestCase
 {
     public function testConstructorRequiresAtLeastOneConstraintViolation(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(DomainException::class);
         $this->expectExceptionMessage('The constraint violation list cannot be empty.');
 
         new ConsoleError(new ConstraintViolationList([]));
