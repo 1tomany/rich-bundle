@@ -279,8 +279,8 @@ class HttpError implements HttpErrorInterface
         $message = null;
 
         if (
-            $this->throwable instanceof BadRequestHttpException ||
-            $this->throwable instanceof ValidationFailedException
+            $this->throwable instanceof BadRequestHttpException
+            || $this->throwable instanceof ValidationFailedException
         ) {
             if ($this->throwable instanceof ValidationFailedException) {
                 if (1 === $this->throwable->getViolations()->count()) {
@@ -294,9 +294,9 @@ class HttpError implements HttpErrorInterface
         } elseif ($this->throwable instanceof AccessDeniedException) {
             $message = self::MESSAGE_ACCESS_DENIED;
         } elseif (
-            $this->throwable instanceof HttpExceptionInterface ||
-            $this->hasAttribute(WithHttpStatus::class) ||
-            $this->hasAttribute(HasUserMessage::class)
+            $this->throwable instanceof HttpExceptionInterface
+            || $this->hasAttribute(WithHttpStatus::class)
+            || $this->hasAttribute(HasUserMessage::class)
         ) {
             $message = $this->throwable->getMessage();
         }
