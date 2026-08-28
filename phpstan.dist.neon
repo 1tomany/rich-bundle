@@ -2,7 +2,7 @@ parameters:
     level: max
 
     paths:
-        - ./src/
-        - ./tests/
+        - src/
+        - tests/
 
-    tmpDir: ./.build/phpstan.cache
+    tmpDir: var/phpstan/

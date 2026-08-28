@@ -6,30 +6,23 @@ use PhpCsFixer\Runner\Parallel\ParallelConfig;
 
 $finder = new Finder();
 
-$finder->in([
-    './bin/',
-    './src/',
-    './tests/',
-]);
-
-$finder->append([
-    './bin/create-rich-module',
-]);
+$finder = Finder::create()
+    ->in([__DIR__])
+    ->exclude('assets/')
+    ->append([__FILE__])
+    ->ignoreVCSIgnored(true)
+;
 
 $config = new Config()
     ->setFinder($finder)
     ->setParallelConfig(new ParallelConfig(4))
-    ->setCacheFile('./.build/php-cs-fixer.cache')
+    ->setCacheFile('var/php-cs-fixer/files.cache')
     ->setRules([
         '@Symfony' => true,
         'global_namespace_import' => [
             'import_classes' => false,
             'import_constants' => true,
             'import_functions' => true,
-        ],
-        'operator_linebreak' => [
-            'only_booleans' => true,
-            'position' => 'end',
         ],
         'phpdoc_align' => [
             'align' => 'left',
