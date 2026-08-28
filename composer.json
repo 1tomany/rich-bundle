@@ -23,7 +23,8 @@
         "friendsofphp/php-cs-fixer": "^3.93",
         "phpdocumentor/reflection-docblock": "^5.2|^6.0",
         "phpstan/phpstan": "^2.1.55",
-        "phpunit/phpunit": "^13.1.11"
+        "phpunit/phpunit": "^13.1.11",
+        "symfony/maker-bundle": "^1.67"
     },
     "suggest": {
         "1tomany/data-uri-bundle": "Provides a decoder to convert data into a self-destroying file object",
