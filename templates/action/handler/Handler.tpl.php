@@ -3,7 +3,7 @@
 namespace <?= $namespace; ?>;
 
 use <?= $command_full_class_name; ?>;
-use <?= $exception_full_class_name; ?>;
+use <?= $runtime_exception_full_class_name; ?>;
 use <?= $entity_full_class_name; ?>;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\HandlerInterface;
@@ -24,6 +24,6 @@ final readonly class <?= $class_name; ?> implements HandlerInterface
     #[\Override]
     public function handle(CommandInterface $command): ResultInterface
     {
-        throw new <?= $exception_class_name; ?>('Not implemented!');
+        throw new <?= $runtime_exception_class_name; ?>('Not implemented!');
     }
 }

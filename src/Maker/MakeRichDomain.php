@@ -71,7 +71,7 @@ final class MakeRichDomain extends AbstractMaker
      */
     public static function getCommandDescription(): string
     {
-        return 'Create a new RICH domain';
+        return 'Create RICH domain directories and classes';
     }
 
     /**
@@ -84,9 +84,8 @@ final class MakeRichDomain extends AbstractMaker
     ): void {
         $command
             ->addArgument('domain', InputArgument::REQUIRED, 'The name of the domain (e.g. <fg=yellow>Account</>)')
-            ->addOption('repository', null, InputOption::VALUE_NEGATABLE, "Generate a Doctrine repository interface for the domain's entity", true)
-            ->addOption('create-stub', null, InputOption::VALUE_NEGATABLE, "Generate the RICH classes to create the domain's entity", true)
-            ->addOption('read-stub', null, InputOption::VALUE_NEGATABLE, "Generate the RICH and console command classes to read the domain's entity", true)
+            ->addOption('create-repository', null, InputOption::VALUE_NEGATABLE, "Generate a Doctrine repository interface for the domain's entity", true)
+            ->addOption('create-actions', null, InputOption::VALUE_NEGATABLE, "Generate the RICH classes to create and read the domain's entity", true)
             ->setHelp(<<<'HELP'
                 The <info>%command.name%</info> command generates the directories and classes for a RICH domain:
 
@@ -94,13 +93,13 @@ final class MakeRichDomain extends AbstractMaker
 
                 Existing files are never overwritten, so the command can also be run for an existing domain to generate any missing classes.
 
-                Use the <info>--no-repository</info> option to skip generating the repository interface:
+                Use the <info>--no-create-repository</info> option to skip generating the repository interface:
 
-                <info>php %command.full_name% Account --no-repository</info>
+                <info>php %command.full_name% Account --no-create-repository</info>
 
-                Use the <info>--no-create-stub</info> and <info>--no-read-stub</info> options to skip generating the Create and Read action stubs:
+                Use the <info>--no-create-actions</info> option to skip generating the Create and Read action stubs:
 
-                <info>php %command.full_name% Account --no-create-stub --no-read-stub</info>
+                <info>php %command.full_name% Account --no-create-repository</info>
                 HELP)
         ;
     }
@@ -152,66 +151,63 @@ final class MakeRichDomain extends AbstractMaker
             }
         }
 
-        // Global template variables
-        $variables = [
+        $globalTemplateVariables = [
             'entity_class_name' => $domain,
             'entity_full_class_name' => "{$rootNamespace}\\Entity\\{$domain}",
-            'exception_class_name' => 'RuntimeException',
-            'exception_full_class_name' => "{$domainNamespace}\\Exception\\RuntimeException",
+            'runtime_exception_class_name' => 'RuntimeException',
+            'runtime_exception_full_class_name' => "{$domainNamespace}\\Exception\\RuntimeException",
             'exception_interface_full_class_name' => "{$domainNamespace}\\Contract\\Exception\\ExceptionInterface",
         ];
 
-        // Classes to create
-        $classes = [
+        $classesToCreate = [
             'Contract\\Exception\\ExceptionInterface' => [
                 'contracts/exception/ExceptionInterface.tpl.php', [],
             ],
         ];
 
-        // Create the repository interface
-        if (true === $input->getOption('repository')) {
-            $classes["Contract\\Repository\\{$domain}RepositoryInterface"] = [
+        // Doctrine repository interface
+        if (true === $input->getOption('create-repository')) {
+            $classesToCreate["Contract\\Repository\\{$domain}RepositoryInterface"] = [
                 'contracts/repository/RepositoryInterface.tpl.php', [],
             ];
         }
 
         // Exception classes
-        $classes['Exception\\DomainException'] = [
+        $classesToCreate['Exception\\DomainException'] = [
             'exception/DomainException.tpl.php', [],
         ];
 
-        $classes['Exception\\RuntimeException'] = [
+        $classesToCreate['Exception\\RuntimeException'] = [
             'exception/RuntimeException.tpl.php', [],
         ];
 
         $idProperty = lcfirst($domain).'Id';
 
-        // Create the Create{Domain} action classes
-        if (true === $input->getOption('create-stub')) {
-            $actionClasses = $this->getActionClasses(
+        // Create and Read action classes
+        if (true === $input->getOption('create-actions')) {
+            // Create{Domain} action classes and stubs
+            $createActionClasses = $this->getActionClasses(
                 $domainNamespace, "Create{$domain}", null,
             );
 
-            $classes = [...$classes, ...$actionClasses];
+            $classesToCreate = [...$classesToCreate, ...$createActionClasses];
 
-            // Create the {Domain}Created event class
-            $classes["Action\\Event\\{$domain}Created"] = [
+            // {Domain}Created event class
+            $classesToCreate["Action\\Event\\{$domain}Created"] = [
                 'action/event/Event.tpl.php', [
                     'id_property' => $idProperty,
                 ],
             ];
-        }
 
-        // Create the Read{Domain} action classes
-        if (true === $input->getOption('read-stub')) {
-            $actionClasses = $this->getActionClasses(
+            // Read{Domain} action classes and stubs
+            $readActionClasses = $this->getActionClasses(
                 $domainNamespace, "Read{$domain}", $idProperty,
             );
 
-            $classes = [...$classes, ...$actionClasses];
+            $classesToCreate = [...$classesToCreate, ...$readActionClasses];
 
-            // Create the app:read-{domain} Symfony Console class
-            $classes["Framework\\Command\\Read{$domain}Command"] = [
+            // Read{Domain}Command Symfony Console class stub
+            $classesToCreate["Framework\\Command\\Read{$domain}Command"] = [
                 'framework/command/Command.tpl.php', [
                     'command_name' => 'app:read-'.Str::asCommand($domain),
                 ],
@@ -219,21 +215,20 @@ final class MakeRichDomain extends AbstractMaker
         }
 
         $skippedPaths = [];
-        $templateDirectory = dirname(__DIR__, 2).'/templates';
+        $templateDir = dirname(__DIR__, 2).'/templates';
 
-        foreach ($classes as $relativeClass => [$template, $classVariables]) {
-            $class = "{$domainNamespace}\\{$relativeClass}";
-            $path = $this->getPathForClass($class);
+        foreach ($classesToCreate as $class => [$template, $variables]) {
+            $className = "{$domainNamespace}\\{$class}";
+            $classPath = $this->getPathForClass($className);
 
-            // Never overwrite an existing file
-            if ($this->fileManager->fileExists($path)) {
-                $skippedPaths[] = $path;
+            if (file_exists($classPath)) {
+                $skippedPaths[] = $classPath;
 
                 continue;
             }
 
-            $generator->generateClass($class, "{$templateDirectory}/{$template}", [
-                ...$variables, ...$classVariables,
+            $generator->generateClass($className, "{$templateDir}/{$template}", [
+                ...$globalTemplateVariables, ...$variables,
             ]);
         }
 
@@ -275,7 +270,7 @@ final class MakeRichDomain extends AbstractMaker
         string $action,
         ?string $idProperty,
     ): array {
-        $variables = [
+        $actionClassVariables = [
             'id_property' => $idProperty,
             'command_class_name' => "{$action}Command",
             'command_full_class_name' => "{$namespace}\\Action\\Command\\{$action}Command",
@@ -284,15 +279,15 @@ final class MakeRichDomain extends AbstractMaker
         return [
             "Action\\Command\\{$action}Command" => [
                 'action/command/Command.tpl.php',
-                $variables,
+                $actionClassVariables,
             ],
             "Action\\Input\\{$action}Input" => [
                 'action/input/Input.tpl.php',
-                $variables,
+                $actionClassVariables,
             ],
             "Action\\Handler\\{$action}Handler" => [
                 'action/handler/Handler.tpl.php',
-                $variables,
+                $actionClassVariables,
             ],
         ];
     }
