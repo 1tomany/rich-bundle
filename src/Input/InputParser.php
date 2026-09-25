@@ -276,7 +276,7 @@ readonly class InputParser implements InputParserInterface
         $value = $source->trim && is_string($value) ? trim($value) : $value;
 
         // Finally, convert empty string values to NULL, otherwise leave the value alone
-        $this->appendValue($property->getName(), ($source->nullify && is_string($value) && empty($value)) ? null : $value);
+        $this->appendValue($property->getName(), ($source->nullify && is_string($value) && '' === $value) ? null : $value);
     }
 
     private function appendValue(string $key, mixed $value): void

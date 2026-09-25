@@ -588,8 +588,7 @@ final class UserNotFoundForCreatingAccountException extends DomainException
     public function __construct(
         ?string $username,
         ?\Throwable $previous = null,
-    )
-    {
+    ) {
         parent::__construct(sprintf('The account could not be created because the user "%s" could not be found.', $username), 404, $previous);
     }
 }
