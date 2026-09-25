@@ -236,6 +236,7 @@ readonly class InputParser implements InputParserInterface
     /**
      * @see OneToMany\RichBundle\Contract\Input\InputParserInterface
      */
+    #[\Override]
     public function validate(
         InputInterface $input,
         ?array $groups = null,
