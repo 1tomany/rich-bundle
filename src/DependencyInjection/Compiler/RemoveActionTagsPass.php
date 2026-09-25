@@ -11,6 +11,10 @@ class RemoveActionTagsPass implements CompilerPassInterface
 {
     public const string ACTION_CLASS_TAG = 'onetomany.rich.action';
 
+    /**
+     * @see Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface
+     */
+    #[\Override]
     public function process(ContainerBuilder $container): void
     {
         $serviceIds = $container->findTaggedServiceIds(...[
