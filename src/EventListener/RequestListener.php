@@ -31,6 +31,11 @@ use function strtolower;
 
 final readonly class RequestListener implements EventSubscriberInterface
 {
+    /**
+     * @var non-empty-lowercase-string
+     */
+    private string $requestId;
+
     public const string REQUEST_ID_KEY = '_rich_request_id';
 
     /**
@@ -46,6 +51,7 @@ final readonly class RequestListener implements EventSubscriberInterface
         private string $serializedUriPrefix = '/api',
         private bool $logImportantExceptions = true,
     ) {
+        $this->requestId = $this->generateRequestId();
     }
 
     /**
@@ -80,8 +86,8 @@ final readonly class RequestListener implements EventSubscriberInterface
             return;
         }
 
-        // Generate a random request ID for logging
-        $event->getRequest()->attributes->set(self::REQUEST_ID_KEY, $this->generateRequestId());
+        // Add the randomly generated request ID to the request attributes
+        $event->getRequest()->attributes->set('_rich_requestid', $this->requestId);
 
         if ($this->isSerializableRequest($event->getRequest())) {
             $format = $event->getRequest()->getPreferredFormat(null);
@@ -121,9 +127,15 @@ final readonly class RequestListener implements EventSubscriberInterface
 
     public function onKernelResponse(ResponseEvent $event): void
     {
+        if (!$event->isMainRequest()) {
+            return;
+        }
+
         if ($this->isSerializableRequest($event->getRequest())) {
             $event->getResponse()->setVary(['Accept']);
         }
+
+        $event->getResponse()->headers->set('x-rich-requestid', $this->requestId);
     }
 
     public function onKernelException(ExceptionEvent $event): void
