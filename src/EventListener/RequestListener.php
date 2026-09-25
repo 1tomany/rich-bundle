@@ -151,7 +151,7 @@ final readonly class RequestListener implements EventSubscriberInterface
      *
      * @return non-empty-lowercase-string
      */
-    private function generateRequestId(int $bytes = 12): string
+    private function generateRequestId(int $bytes = 8): string
     {
         return strtolower(bin2hex(random_bytes(max(4, $bytes))));
     }
