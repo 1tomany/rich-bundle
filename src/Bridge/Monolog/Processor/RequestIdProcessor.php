@@ -27,14 +27,12 @@ final readonly class RequestIdProcessor implements ProcessorInterface
             ->getMainRequest();
 
         if ($request instanceof Request) {
-            if ($request->attributes->has('_rich_requestid')) {
-                $requestId = $request->attributes->get(...[
-                    'key' => '_rich_request_id',
-                ]);
+            $requestId = $request->attributes->get(...[
+                'key' => '_rich_request_id',
+            ]);
 
-                if (is_string($requestId) && '' !== $requestId) {
-                    $record->extra['requestId'] = $requestId;
-                }
+            if (is_string($requestId) && '' !== $requestId) {
+                $record->extra['rich_request_id'] = $requestId;
             }
         }
 
