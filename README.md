@@ -102,11 +102,18 @@ src/
 
 We'll get into the purpose of each of these soon. The command has the following options:
 
-- `--no-repository` Skips generating the `AccountRepositoryInterface` interface.
-- `--no-create-stub` Skips generating the `CreateAccountInput`, `CreateAccountCommand`, and `CreateAccountHandler` classes and the `AccountCreated` event.
-- `--no-read-stub` Skips generating the `ReadAccountInput`, `ReadAccountCommand`, and `ReadAccountHandler` classes and the `app:read-account` console command.
+- `--no-create-repository` Skips generating the `Contract\Repository\AccountRepositoryInterface` interface.
+- `--no-create-actions` Skips generating the following classes:
+    - `Action\Command\CreateAccountCommand`
+    - `Action\Command\ReadAccountCommand`
+    - `Action\Event\AccountCreated`
+    - `Action\Handler\CreateAccountHandler`
+    - `Action\Handler\ReadAccountHandler`
+    - `Action\Input\CreateAccountInput`
+    - `Action\Input\ReadAccountInput`
+    - `Framework\Command\ReadAccountCommand`
 
-Existing files are never overwritten, so you can run the command multiple times to generate any missing classes. The generated handlers and console command throw a `RuntimeException` until you implement them.
+Existing files are never overwritten, so you can run the command multiple times to generate any missing classes. The generated handlers and console command throw an `Exception\RuntimeException` until you implement them.
 
 Moving forward, lets assume we're working on a domain named `Account` for a Doctrine entity also named `Account` which uses a repository (shockingly) named `AccountRepository`.
 

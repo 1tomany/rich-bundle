@@ -25,7 +25,9 @@ use function is_string;
 use function lcfirst;
 use function mkdir;
 use function sprintf;
+use function strtolower;
 use function substr;
+use function vsprintf;
 
 final class MakeRichDomain extends AbstractMaker
 {
@@ -99,7 +101,7 @@ final class MakeRichDomain extends AbstractMaker
 
                 Use the <info>--no-create-actions</info> option to skip generating the Create and Read action stubs:
 
-                <info>php %command.full_name% Account --no-create-repository</info>
+                <info>php %command.full_name% Account --no-create-actions</info>
                 HELP)
         ;
     }
@@ -206,10 +208,19 @@ final class MakeRichDomain extends AbstractMaker
 
             $classesToCreate = [...$classesToCreate, ...$readActionClasses];
 
-            // Read{Domain}Command Symfony Console class stub
+            // app:read-{domain} Symfony Console class
+            $commandName = vsprintf('app:read-%s', [
+                Str::asCommand($domain),
+            ]);
+
+            $humanizedDomain = Str::asHumanWords($domain);
+            $humanizedDomain = strtolower($humanizedDomain);
+
             $classesToCreate["Framework\\Command\\Read{$domain}Command"] = [
                 'framework/command/Command.tpl.php', [
-                    'command_name' => 'app:read-'.Str::asCommand($domain),
+                    'command_name' => $commandName,
+                    'humanized_domain' => $humanizedDomain,
+                    'id_property' => $idProperty,
                 ],
             ];
         }

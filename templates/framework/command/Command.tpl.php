@@ -9,6 +9,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: '<?= $command_name; ?>',
+    description: 'Displays <?= $humanized_domain; ?> details',
 )]
 final readonly class <?= $class_name."\n"; ?>
 {
@@ -18,8 +19,9 @@ final readonly class <?= $class_name."\n"; ?>
 
     public function __invoke(
         SymfonyStyle $io,
+        #[Argument('ID of the <?= $humanized_domain; ?> to read')] int $<?= $id_property; ?>,
     ): int {
-        $io->error('Not implemented!');
+        $io->warning('Not implemented!');
 
         return Command::SUCCESS;
     }
