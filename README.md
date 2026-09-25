@@ -12,9 +12,9 @@ RICH applies these sames principles to backend engineering: each input, command,
 
 ## RICH structure
 
-**Request** Everything starts with an action taken by an outside actor. The request is content and metadata associated with that action. Almost anything can generate a request: another system that has integrated with your REST API, a user submitting a form, a developer running a console command, or even another module from within your application.
+**Request** Everything starts with an action taken by an outside actor. The request is content and metadata associated with that action. Almost anything can generate a request: another system that has integrated with your REST API, a user submitting a form, a developer running a console command, or even another domain from within your application.
 
-**Input** Once sent, the request content and metadata is mapped onto an input object and validated. By default, this bundle uses the Symfony serializer and validator components, but you're welcome to manually map data and validate it however you see fit.
+**Input** Once sent, the request content and metadata is mapped onto an input object and validated. By default, this bundle uses the Symfony Serializer and Validator components, but you're welcome to manually map data and validate it however you see fit.
 
 Input objects can contain some basic logic, but should generally rely on no additional dependencies outside of the standard PHP library.
 
@@ -24,11 +24,11 @@ In this bundle, all input objects must implement the interface defined in `OneTo
 
 A command object is a POPO - Plain Old PHP Object - and should do its best to use scalar primitives (`null`, `bool`, `int`, `float`, and `string`), basic arrays, standard PHP classes, or other value objects.
 
-In other words, a command object would use an `int` (or a simple value object) to refer to the primary key of a Doctrine entity rather than the entity itself. Command objects should be so simple they can easily be serialized and deserialized so they can used in an asynchronous message queue.
+In other words, a command object would use an `int` - or a simple `Id` value object - to refer to the primary key of a Doctrine entity rather than the entity itself. Command objects should be so simple they can easily be serialized and deserialized so they can used in an asynchronous message queue.
 
 In this bundle, all command objects must implement the interface defined in `OneToMany\RichBundle\Contract\Action\CommandInterface`.
 
-**Handler** Once created, the command object is passed to the handler. For the vast majority of applications, this can (and should) be done manually - using an asynchronous message queue is not necessary. A handler should hydrate the environment it needs without assuming it already exists. It should not be aware of an HTTP request, session data, cookie data, or that an entity it relies on is already being managed by Doctrine.
+**Handler** Once created, the command object is passed to the handler. For the vast majority of applications, this can (and should) be done manually; using an asynchronous message queue is not necessary. A handler should hydrate the environment it needs without assuming it already exists. It should not be aware of an HTTP request, session data, cookie data, or that an entity it relies on is already being managed by Doctrine.
 
 The handler that runs synchronously today may need to be placed in a message queue tomorrow for a variety of reason and having the foresight to make it stateless today will save you endless headaches tomorrow. This is also why you want your handlers to rehydrate your entity map: an entity that existed when the command was pushed onto an asynchronous queue may not exist when the handler is executed.
 
@@ -46,22 +46,22 @@ Install the bundle using Composer:
 composer require 1tomany/rich-bundle
 ```
 
-The bundle integrates with the [Symfony Maker Bundle](https://symfony.com/bundles/SymfonyMakerBundle/current/index.html) to generate modules. Install it as well if you haven't already:
+The bundle integrates with the [Symfony Maker Bundle](https://symfony.com/bundles/SymfonyMakerBundle/current/index.html) to generate domains. Install it as well if you haven't already:
 
 ```shell
 composer require --dev symfony/maker-bundle
 ```
 
-### Create the module structure
+### Create the domain structure
 
-Next, you'll need to create the directory structure for your first module. There is no strict definition on what a module is, other than a set of features that are loosely related to the same domain.
+Next, you'll need to create the directory structure for your first domain. There is no strict definition on what a domain is, other than a set of features that are closely related.
 
-It's easiest to think of a module as being related to each of your "primary" entities where a "primary" entity is one that can (mostly) exist without a parent entity. For example, `Invoice` would be a "primary" entity, but `InvoiceLine` would not be because an `InvoiceLine` can't exist without a parent `Invoice`.
+It's easiest to think of a domain as being related to each of your "primary" entities where a "primary" entity is one that can (mostly) exist without a parent entity. For example, `Invoice` would be a "primary" entity, but `InvoiceLine` would not be because an `InvoiceLine` can't exist without a parent `Invoice`. Again, it's entirely up to you; you're welcome to have an `Invoice` and `InvoiceLine` domain.
 
-Use the following command to create a module named `Account` in your application:
+Use the following command to create a domain named `Account` in your application:
 
 ```shell
-php bin/console make:rich-module Account
+php bin/console make:rich-domain Account
 ```
 
 This generates the following directory structure and classes:
@@ -106,13 +106,13 @@ We'll get into the purpose of each of these soon. The command has the following 
 - `--no-with-create-stub` Skips generating the `CreateAccountInput`, `CreateAccountCommand`, and `CreateAccountHandler` classes and the `AccountCreated` event.
 - `--no-with-read-stub` Skips generating the `ReadAccountInput`, `ReadAccountCommand`, and `ReadAccountHandler` classes and the `app:read-account` console command.
 
-Existing files are never overwritten, so you can run the command again for an existing module to generate any missing classes. The generated handlers and console command throw a `RuntimeException` until you implement them.
+Existing files are never overwritten, so you can run the command multiple times to generate any missing classes. The generated handlers and console command throw a `RuntimeException` until you implement them.
 
-Moving forward, lets assume we're working on a module named `Account` for a Doctrine entity also named `Account` which uses a repository (shockingly) named `AccountRepository`.
+Moving forward, lets assume we're working on a domain named `Account` for a Doctrine entity also named `Account` which uses a repository (shockingly) named `AccountRepository`.
 
-### Create the module's contracts
+### Create the domains's contracts
 
-As the name implies, the `Contract` directory stores contracts to interact with this module. You should have, at minimum, two contracts to start with: a `<Entity>RepositoryInterface` and `ExceptionInterface`.
+As the name implies, the `Contract` directory stores contracts to interact with this domain. You should have, at minimum, two contracts to start with: an `AccountRepositoryInterface` and `ExceptionInterface`.
 
 In the `Contract/Repository` directory, you'll find an empty interface in a file named `AccountRepositoryInterface.php`. Add the methods your handlers need to find `Account` entities:
 
@@ -131,7 +131,7 @@ interface AccountRepositoryInterface
 
 Again, a RICH application is flexible by nature so you're not required to create a method named `findOneById()`, but I find it more descriptive and extensible than just `find()`.
 
-A RICH application encourages you to keep your Doctrine entities and repositories in their original locations. There's no reason to fight with the Doctrine configuration to force each entity to reside in a directory or namespace different than what it expects. While modules remain loosely coupled in a RICH application, entities will always remain tightly coupled, so it's best to leave them in `src/Entity`.
+A RICH application encourages you to keep your Doctrine entities and repositories in their original locations. There's no reason to fight with the Doctrine configuration to force each entity to reside in a directory or namespace different than what it expects. While domain remain loosely coupled in a RICH application, entities will always remain tightly coupled, so it's best to leave them in `src/Entity`.
 
 Assuming the `Account` entity and `AccountRepository` repository already exist, update the `AccountRepository` class to implement your new `AccountRepositoryInterface`.
 
@@ -167,7 +167,7 @@ class AccountRepository extends ServiceEntityRepository implements AccountReposi
 }
 ```
 
-We also need an interface that all exceptions from this module originate from. This makes it easy for any other module using handlers from this module to catch all thrown exceptions.
+We also need an interface that all exceptions from this domain originate from. This makes it easy to capture to catch all thrown exceptions from this domain.
 
 You'll find a file named `ExceptionInterface.php` in the `src/Domain/Account/Contract/Exception` directory with the following code:
 
@@ -183,7 +183,7 @@ interface ExceptionInterface extends \Throwable
 
 Additionally, two base exceptions, `DomainException` and `RuntimeException` have been created in the `src/Domain/Account/Exception/` directory. I find that generally all handler specific exceptions can extend one of these.
 
-Finally, I'll generally place other value objects and enums in the `Contract` directory for a module. It loosely indicates they will be used in other modules or domains in your application.
+Finally, I'll generally place other value objects and enums in the `Contract` directory for a domain. It loosely indicates they will be used by other domains in your application.
 
 ### Create the command class
 
@@ -280,9 +280,18 @@ final readonly class CreateAccountInput implements InputInterface
     /**
      * @see OneToMany\RichBundle\Contract\Action\CommandInterface
      */
+    #[\Override]
     public function toCommand(): CommandInterface
     {
-        return new CreateAccountCommand($this->user?->getId(), (string) $this->name, (string) $this->company, (string) $this->email, $this->notes, $this->founded, $this->ipAddress);
+        return new CreateAccountCommand(
+            $this->user?->getId(),
+            (string) $this->name,
+            (string) $this->company,
+            (string) $this->email,
+            $this->notes,
+            $this->founded,
+            $this->ipAddress,
+        );
     }
 }
 ```
@@ -391,19 +400,34 @@ use OneToMany\RichBundle\Contract\Action\InputInterface;
 final readonly class UpdateAccountInput implements InputInterface
 {
     public function __construct(
-        #[SourceRequest(trim: true, nullify: true)]
+        #[SourceRequest(
+            trim: true,
+            nullify: true,
+        )]
         public string $name,
 
-        #[SourceRequest(trim: true, nullify: true)]
+        #[SourceRequest(
+            trim: true,
+            nullify: true,
+        )]
         public ?string $email,
 
-        #[SourceRequest(trim: false, nullify: false)]
+        #[SourceRequest(
+            trim: false,
+            nullify: false,
+        )]
         public string $notes,
 
-        #[SourceRequest(trim: true, nullify: false)]
+        #[SourceRequest(
+            trim: true,
+            nullify: false,
+        )]
         public int $pin,
 
-        #[SourceRequest(trim: true, nullify: true)]
+        #[SourceRequest(
+            trim: true,
+            nullify: true,
+        )]
         public ?\DateTimeImmutable $birth,
     ) {
     }
@@ -422,15 +446,15 @@ The following request content would be decoded correctly.
 }
 ```
 
-1. `$name` would have the value `string(14) "Modesto Herman"` because `$trim` is `true`.
-2. `$email` would have the value `string(14) "mh@example.com"` because `$trim` is `true`.
-3. `$notes` would have the value `string(20) " Please call back! \n"` because `$trim` is `false`.
-4. `$pin` would have the value `int(8891)` because `$trim` is `true`.
-5. `$birth` would have the value `NULL` because `$trim` and `$nullify` are true. After being trimmed, the value is identical to an empty string and is nullified.
+1. `UpdateAccountInput::$name` would have the value `string(14) "Modesto Herman"` because `trim` is `true`.
+2. `UpdateAccountInput::$email` would have the value `string(14) "mh@example.com"` because `trim` is `true`.
+3. `UpdateAccountInput::$notes` would have the value `string(20) " Please call back! \n"` because `trim` is `false`.
+4. `UpdateAccountInput::$pin` would have the value `int(8891)` because `trim` is `true`.
+5. `UpdateAccountInput::$birth` would have the value `NULL` because `trim` and `nullify` are true. After being trimmed, the value is identical to an empty string and is nullified.
 
 However, if an empty string was used for the value of the key `name` the request, a `OneToMany\RichBundle\Exception\HttpException` would be thrown because the `$name` property is not nullable, yet the source was explicitly set to nullify the value.
 
-In practice, you should only set `$nullify` to `true` on properties that are nullable.
+You should only set `nullify` to `true` on properties that are nullable, and `nullify` is `false` by default.
 
 #### Input denormalization
 
@@ -448,7 +472,7 @@ The value resolver will throw a `Symfony\Component\Validator\Exception\Validatio
 
 ### Create the handler class
 
-The **R**equest has been handled, the **I**nput has been validated, and the **C**ommand can be created. It's now time to **H**andle the command with the handler class.
+The **R**equest has been decoded, the **I**nput has been validated, and the **C**ommand can be created. It's now time to **H**andle the command with the handler class.
 
 Each handler class must implement the `OneToMany\RichBundle\Contract\Action\HandlerInterface` interface. This requires creating a method named `handle()` that takes an object of type `OneToMany\RichBundle\Contract\Action\CommandInterface` as it's argument and returns an object of type `OneToMany\RichBundle\Contract\Action\ResultInterface`.
 
@@ -484,6 +508,7 @@ final readonly class CreateAccountHandler implements HandlerInterface
     /**
      * @see OneToMany\RichBundle\Contract\Action\HandlerInterface
      */
+    #[\Override]
     public function handle(CommandInterface $command): ResultInterface
     {
         // Create the Account entity
@@ -544,26 +569,31 @@ A very specifically named exception `App\Domain\Account\Action\Handler\Exception
 
 namespace App\Domain\Account\Action\Handler\Exception;
 
-use App\Domain\Account\Exception\RuntimeException;
+use App\Domain\Account\Exception\DomainException;
 use OneToMany\RichBundle\Attribute\HasUserMessage;
 
 use function sprintf;
 
 #[HasUserMessage]
-final class UserNotFoundForCreatingAccountException extends RuntimeException
+final class UserNotFoundForCreatingAccountException extends DomainException
 {
-    public function __construct(?string $username, ?\Throwable $previous = null)
+    public function __construct(
+        ?string $username,
+        ?\Throwable $previous = null,
+    )
     {
         parent::__construct(sprintf('The account could not be created because the user "%s" could not be found.', $username), 404, $previous);
     }
 }
 ```
 
-Despite what I said about writing handlers that are not HTTP aware, I typically make the `$code` argument of my exceptions mirror HTTP status codes:
+Despite what I said about writing handlers that are not HTTP aware, I typically make the `code` argument of my exceptions mirror HTTP status codes:
 
 1. Most handlers _are_ called in an HTTP context, so it's easiest if any exception they throw easily provides the correct HTTP status code.
 2. HTTP has a very well defined list of standard [response status codes](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status) that aren't likely to change.
 3. Any non-HTTP environment or context can simply ignore the exception's code or map it to one of their own.
+
+In general, your handler exceptions should extend the domain's `DomainException` if the error code is in the 4xx range, and `RuntimeException` if the error code is in the 5xx range.
 
 ### Create the controller
 
@@ -616,8 +646,12 @@ curl --location 'https://localhost:8000/api/accounts' \
   }'
 ```
 
+## `SKILL.md` file
+
+You can find the `SKILL.md` file for this bundle in our `agent-skills` repository: [https://github.com/1tomany/agent-skills/tree/master/rich-bundle](https://github.com/1tomany/agent-skills/tree/master/rich-bundle).
+
 ## Conclusion
 
-I've been using this bundle (or rather, the code in this bundle) in production applications for over a year, and it's provided a delightful developer experience. Each class has a single purpose, I can easily throw a long running handler into a message queue, testing is much simpler, and most importantly, I can change individual components without fear they'll break something unrelated.
+I've been using this bundle (or rather, the code in this bundle) in production applications for more than two years, and it's provided a delightful developer experience. Each class has a single purpose, I can easily throw a long running handler into a message queue, testing is much simpler, and most importantly, I can change individual components without fear they'll break something unrelated.
 
-Make your application RICH!
+It's time to make your application RICH!
