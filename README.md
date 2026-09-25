@@ -155,8 +155,8 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
-* @extends ServiceEntityRepository<Account>
-*/
+ * @extends ServiceEntityRepository<Account>
+ */
 class AccountRepository extends ServiceEntityRepository implements AccountRepositoryInterface
 {
     public function __construct(ManagerRegistry $registry)
@@ -165,8 +165,9 @@ class AccountRepository extends ServiceEntityRepository implements AccountReposi
     }
 
     /**
-    * @see App\Domain\Account\Contract\Repository\AccountRepositoryInterface
-    */
+     * @see App\Domain\Account\Contract\Repository\AccountRepositoryInterface
+     */
+    #[\Override]
     public function findOneById(?int $accountId): ?Account
     {
         return $accountId ? $this->find($accountId) : null;
