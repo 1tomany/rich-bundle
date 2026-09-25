@@ -95,11 +95,11 @@ final class MakeRichDomain extends AbstractMaker
 
                 Existing files are never overwritten, so the command can also be run for an existing domain to generate any missing classes.
 
-                Use the <info>--no-create-repository</info> option to skip generating the repository interface:
+                Use the <info>--no-create-repository</info> option to skip generating the Doctrine repository interface:
 
                 <info>php %command.full_name% Account --no-create-repository</info>
 
-                Use the <info>--no-create-actions</info> option to skip generating the Create and Read action stubs:
+                Use the <info>--no-create-actions</info> option to skip generating the create and read action stubs:
 
                 <info>php %command.full_name% Account --no-create-actions</info>
                 HELP)
