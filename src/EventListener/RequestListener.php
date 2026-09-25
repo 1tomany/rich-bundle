@@ -23,13 +23,18 @@ use function bin2hex;
 use function get_debug_type;
 use function implode;
 use function in_array;
+use function max;
 use function random_bytes;
 use function sprintf;
 use function stripos;
+use function strtolower;
 
 final readonly class RequestListener implements EventSubscriberInterface
 {
-    public const string REQUEST_ID_KEY = '_rich_request_id';
+    /**
+     * @var non-empty-lowercase-string
+     */
+    private string $requestId;
 
     /**
      * @param non-empty-list<non-empty-lowercase-string> $acceptFormats
@@ -44,11 +49,13 @@ final readonly class RequestListener implements EventSubscriberInterface
         private string $serializedUriPrefix = '/api',
         private bool $logImportantExceptions = true,
     ) {
+        $this->requestId = $this->generateRequestId();
     }
 
     /**
      * @see Symfony\Component\EventDispatcher\EventSubscriberInterface
      */
+    #[\Override]
     public static function getSubscribedEvents(): array
     {
         return [
@@ -67,14 +74,18 @@ final readonly class RequestListener implements EventSubscriberInterface
         ];
     }
 
+    /**
+     * @throws HttpException when the server cannot respond with an acceptable media type
+     * @throws HttpException when the server cannot process the media type of the content
+     */
     public function onKernelRequest(RequestEvent $event): void
     {
         if (!$event->isMainRequest()) {
             return;
         }
 
-        // Generate a random request ID for logging
-        $event->getRequest()->attributes->set(self::REQUEST_ID_KEY, bin2hex(random_bytes(6)));
+        // Add the randomly generated request ID to the request attributes
+        $event->getRequest()->attributes->set('_rich_request_id', $this->requestId);
 
         if ($this->isSerializableRequest($event->getRequest())) {
             $format = $event->getRequest()->getPreferredFormat(null);
@@ -114,9 +125,15 @@ final readonly class RequestListener implements EventSubscriberInterface
 
     public function onKernelResponse(ResponseEvent $event): void
     {
+        if (!$event->isMainRequest()) {
+            return;
+        }
+
         if ($this->isSerializableRequest($event->getRequest())) {
             $event->getResponse()->setVary(['Accept']);
         }
+
+        $event->getResponse()->headers->set('x-rich-request-id', $this->requestId);
     }
 
     public function onKernelException(ExceptionEvent $event): void
@@ -139,6 +156,16 @@ final readonly class RequestListener implements EventSubscriberInterface
         }
     }
 
+    /**
+     * @param positive-int $bytes
+     *
+     * @return non-empty-lowercase-string
+     */
+    private function generateRequestId(int $bytes = 8): string
+    {
+        return strtolower(bin2hex(random_bytes(max(4, $bytes))));
+    }
+
     private function isSerializableRequest(Request $request): bool
     {
         return 0 === stripos($request->getRequestUri(), $this->serializedUriPrefix);
@@ -159,6 +186,8 @@ final readonly class RequestListener implements EventSubscriberInterface
     /**
      * @param array<string, mixed> $context
      * @param array<string, string> $headers
+     *
+     * @throws RuntimeException when serializing the response content fails
      */
     private function serializeResponse(
         Request $request,
@@ -172,7 +201,7 @@ final readonly class RequestListener implements EventSubscriberInterface
         try {
             $content = $this->serializer->serialize($data, $format, $context);
         } catch (SerializerExceptionInterface $e) {
-            throw new RuntimeException(sprintf('Serializing the response failed because the type "%s" could not be encoded as "%s".', get_debug_type($data), $format), previous: $e);
+            throw new RuntimeException(sprintf('Serializing the response content failed because the type "%s" could not be encoded as "%s".', get_debug_type($data), $format), previous: $e);
         }
 
         $response = new Response($content, $status, $headers + [

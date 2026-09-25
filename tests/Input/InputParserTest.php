@@ -541,7 +541,7 @@ final class InputParserTest extends TestCase
     public function testParsingSourceUserRequiresSymfonySecurityBundle(): void
     {
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessageMatches('/Symfony Security Bundle is not installed/');
+        $this->expectExceptionMessageIsOrContains('Symfony Security Bundle is not installed');
 
         $class = new class implements InputInterface {
             public function __construct(

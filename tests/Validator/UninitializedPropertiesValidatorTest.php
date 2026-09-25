@@ -22,7 +22,7 @@ final class UninitializedPropertiesValidatorTest extends ConstraintValidatorTest
     public function testValidationRequiresInputInterfaceValue(): void
     {
         $this->expectException(UnexpectedTypeException::class);
-        $this->expectExceptionMessage('Expected argument of type "OneToMany\RichBundle\Contract\Action\InputInterface", "string" given');
+        $this->expectExceptionMessageIs('Expected argument of type "OneToMany\RichBundle\Contract\Action\InputInterface", "string" given');
 
         $this->validator->validate('string', new UninitializedProperties());
     }
@@ -30,7 +30,7 @@ final class UninitializedPropertiesValidatorTest extends ConstraintValidatorTest
     public function testValidationRequiresMissingPropertiesConstraint(): void
     {
         $this->expectException(UnexpectedTypeException::class);
-        $this->expectExceptionMessage('Expected argument of type "OneToMany\RichBundle\Validator\UninitializedProperties", "Symfony\Component\Validator\Constraints\IsNull" given');
+        $this->expectExceptionMessageIs('Expected argument of type "OneToMany\RichBundle\Validator\UninitializedProperties", "Symfony\Component\Validator\Constraints\IsNull" given');
 
         $input = new class implements InputInterface {
             public function toCommand(): CommandInterface

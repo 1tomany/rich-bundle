@@ -15,12 +15,12 @@ final class FailureHandlerTraitTest extends TestCase
 
     public function testOnAuthenticationFailureThrowsHttpException(): void
     {
-        $authenticationExceptionMessage = 'Invalid credentials.';
+        $exception = new AuthenticationException('Invalid credentials.');
 
         $this->expectException(HttpExceptionInterface::class);
         $this->expectExceptionCode(Response::HTTP_UNAUTHORIZED);
-        $this->expectExceptionMessage($authenticationExceptionMessage);
+        $this->expectExceptionMessageIs($exception->getMessage());
 
-        $this->onAuthenticationFailure(new Request(), new AuthenticationException($authenticationExceptionMessage));
+        $this->onAuthenticationFailure(new Request(), $exception);
     }
 }
