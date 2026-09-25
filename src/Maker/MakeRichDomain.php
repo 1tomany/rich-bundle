@@ -86,8 +86,8 @@ final class MakeRichDomain extends AbstractMaker
     ): void {
         $command
             ->addArgument('domain', InputArgument::REQUIRED, 'The name of the domain (e.g. <fg=yellow>Account</>)')
-            ->addOption('create-repository', null, InputOption::VALUE_NEGATABLE, "Generate a Doctrine repository interface for the domain's entity", true)
             ->addOption('create-actions', null, InputOption::VALUE_NEGATABLE, "Generate the RICH classes to create and read the domain's entity", true)
+            ->addOption('create-repository', null, InputOption::VALUE_NEGATABLE, "Generate a Doctrine repository interface for the domain's entity", true)
             ->setHelp(<<<'HELP'
                 The <info>%command.name%</info> command generates the directories and classes for a RICH domain:
 
@@ -95,13 +95,13 @@ final class MakeRichDomain extends AbstractMaker
 
                 Existing files are never overwritten, so the command can also be run for an existing domain to generate any missing classes.
 
-                Use the <info>--no-create-repository</info> option to skip generating the Doctrine repository interface:
-
-                <info>php %command.full_name% Account --no-create-repository</info>
-
                 Use the <info>--no-create-actions</info> option to skip generating the create and read action stubs:
 
                 <info>php %command.full_name% Account --no-create-actions</info>
+
+                Use the <info>--no-create-repository</info> option to skip generating the Doctrine repository interface:
+
+                <info>php %command.full_name% Account --no-create-repository</info>
                 HELP)
         ;
     }
