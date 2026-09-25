@@ -38,8 +38,6 @@ Each handler should contain the business logic necessary to handle the command p
 
 ## Getting started
 
-Because this is a new bundle, you'll have to manually create the structure for each module in your application. My goal is to leverage the Symfony Maker Bundle to allow you to create the RICH structure for each action similar to how you would create a Doctrine entity.
-
 ### Install the bundle
 
 Install the bundle using Composer:
@@ -48,41 +46,67 @@ Install the bundle using Composer:
 composer require 1tomany/rich-bundle
 ```
 
+The bundle integrates with the [Symfony Maker Bundle](https://symfony.com/bundles/SymfonyMakerBundle/current/index.html) to generate modules. Install it as well if you haven't already:
+
+```shell
+composer require --dev symfony/maker-bundle
+```
+
 ### Create the module structure
 
 Next, you'll need to create the directory structure for your first module. There is no strict definition on what a module is, other than a set of features that are loosely related to the same domain.
 
 It's easiest to think of a module as being related to each of your "primary" entities where a "primary" entity is one that can (mostly) exist without a parent entity. For example, `Invoice` would be a "primary" entity, but `InvoiceLine` would not be because an `InvoiceLine` can't exist without a parent `Invoice`.
 
-I recommend the following directory structure for each module:
+Use the following command to create a module named `Account` in your application:
+
+```shell
+php bin/console make:rich-module Account
+```
+
+This generates the following directory structure and classes:
 
 ```
 src/
-  Module/
-    <Module>/
+  Domain/
+    Account/
       Action/
         Command/
+          CreateAccountCommand.php
+          ReadAccountCommand.php
         Event/
+          AccountCreated.php
         Handler/
           Exception/
+          CreateAccountHandler.php
+          ReadAccountHandler.php
         Input/
+          CreateAccountInput.php
+          ReadAccountInput.php
       Contract/
         Enum/
         Exception/
+          ExceptionInterface.php
         Repository/
+          AccountRepositoryInterface.php
       Exception/
+        DomainException.php
+        RuntimeException.php
       Framework/
         Command/
+          ReadAccountCommand.php
         Controller/
           API/
           Web/
 ```
 
-We'll get into the purpose of each of these soon. Use the following command to create this structure for a module named `Account` in your application:
+We'll get into the purpose of each of these soon. The command has the following options:
 
-```shell
-./vendor/bin/create-rich-module Account
-```
+- `--without-repository` Skips generating the `AccountRepositoryInterface` interface.
+- `--no-with-create-stub` Skips generating the `CreateAccountInput`, `CreateAccountCommand`, and `CreateAccountHandler` classes and the `AccountCreated` event.
+- `--no-with-read-stub` Skips generating the `ReadAccountInput`, `ReadAccountCommand`, and `ReadAccountHandler` classes and the `app:read-account` console command.
+
+Existing files are never overwritten, so you can run the command again for an existing module to generate any missing classes. The generated handlers and console command throw a `RuntimeException` until you implement them.
 
 Moving forward, lets assume we're working on a module named `Account` for a Doctrine entity also named `Account` which uses a repository (shockingly) named `AccountRepository`.
 
@@ -90,12 +114,12 @@ Moving forward, lets assume we're working on a module named `Account` for a Doct
 
 As the name implies, the `Contract` directory stores contracts to interact with this module. You should have, at minimum, two contracts to start with: a `<Entity>RepositoryInterface` and `ExceptionInterface`.
 
-In the `Contract/Repository` directory, you'll find a file named `AccountRepositoryInterface.php` with the following scaffolding:
+In the `Contract/Repository` directory, you'll find an empty interface in a file named `AccountRepositoryInterface.php`. Add the methods your handlers need to find `Account` entities:
 
 ```php
 <?php
 
-namespace App\Module\Account\Contract\Repository;
+namespace App\Domain\Account\Contract\Repository;
 
 use App\Entity\Account;
 
@@ -111,7 +135,7 @@ A RICH application encourages you to keep your Doctrine entities and repositorie
 
 Assuming the `Account` entity and `AccountRepository` repository already exist, update the `AccountRepository` class to implement your new `AccountRepositoryInterface`.
 
-Because only a single class will implement the `App\Module\Account\Contract\Repository\AccountRepositoryInterface` interface, you can use it as a typehint and the Symfony container will know what class to inject.
+Because only a single class will implement the `App\Domain\Account\Contract\Repository\AccountRepositoryInterface` interface, you can use it as a typehint and the Symfony container will know what class to inject.
 
 ```php
 <?php
@@ -119,7 +143,7 @@ Because only a single class will implement the `App\Module\Account\Contract\Repo
 namespace App\Repository;
 
 use App\Entity\Account;
-use App\Module\Account\Contract\Repository\AccountRepositoryInterface;
+use App\Domain\Account\Contract\Repository\AccountRepositoryInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -134,7 +158,7 @@ class AccountRepository extends ServiceEntityRepository implements AccountReposi
     }
 
     /**
-    * @see App\Module\Account\Contract\Repository\AccountRepositoryInterface
+    * @see App\Domain\Account\Contract\Repository\AccountRepositoryInterface
     */
     public function findOneById(?int $accountId): ?Account
     {
@@ -145,19 +169,19 @@ class AccountRepository extends ServiceEntityRepository implements AccountReposi
 
 We also need an interface that all exceptions from this module originate from. This makes it easy for any other module using handlers from this module to catch all thrown exceptions.
 
-You'll find a file named `ExceptionInterface.php` in the `src/Module/Account/Contract/Exception` directory with the following code:
+You'll find a file named `ExceptionInterface.php` in the `src/Domain/Account/Contract/Exception` directory with the following code:
 
 ```php
 <?php
 
-namespace App\Module\Account\Contract\Exception;
+namespace App\Domain\Account\Contract\Exception;
 
 interface ExceptionInterface extends \Throwable
 {
 }
 ```
 
-Additionally, two base exceptions, `InvalidArgumentException` and `RuntimeException` have been created in the `src/Module/Account/Exception/`. I find that generally all handler specific exceptions can extend one of these.
+Additionally, two base exceptions, `DomainException` and `RuntimeException` have been created in the `src/Domain/Account/Exception/` directory. I find that generally all handler specific exceptions can extend one of these.
 
 Finally, I'll generally place other value objects and enums in the `Contract` directory for a module. It loosely indicates they will be used in other modules or domains in your application.
 
@@ -165,12 +189,12 @@ Finally, I'll generally place other value objects and enums in the `Contract` di
 
 Though the input class is used first, the command class is shared amongst the input and handler classes, so lets start by creating it. Each command class must implement the `OneToMany\RichBundle\Contract\Action\CommandInterface` interface.
 
-Create a file named `CreateAccountCommand.php` in the `src/Module/Account/Action/Command/` directory and populate it with the following code:
+Open the `CreateAccountCommand.php` file generated in the `src/Domain/Account/Action/Command/` directory and populate it with the following code:
 
 ```php
 <?php
 
-namespace App\Module\Account\Action\Command;
+namespace App\Domain\Account\Action\Command;
 
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 
@@ -193,15 +217,15 @@ final readonly class CreateAccountCommand implements CommandInterface
 
 Now that we have a command class, we need an input class that creates the command object after the request has been mapped and validated. Each input class must implement the `OneToMany\RichBundle\Contract\Action\InputInterface` interface.
 
-Create a file named `CreateAccountInput.php` in the `src/Module/Account/Action/Input` directory and populate it with the following code:
+Open the `CreateAccountInput.php` file generated in the `src/Domain/Account/Action/Input/` directory and populate it with the following code:
 
 ```php
 <?php
 
-namespace App\Module\Account\Action\Input;
+namespace App\Domain\Account\Action\Input;
 
 use App\Entity\User;
-use App\Module\Account\Action\Command\CreateAccountCommand;
+use App\Domain\Account\Action\Command\CreateAccountCommand;
 use OneToMany\RichBundle\Attribute\SourceIpAddress;
 use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Attribute\SourceUser;
@@ -309,9 +333,9 @@ In the example below, the `$username` property could be mapped from either of th
 ```php
 <?php
 
-namespace App\Module\Account\Action\Input;
+namespace App\Domain\Account\Action\Input;
 
-use App\Module\Account\Action\Command\ReadAccountCommand;
+use App\Domain\Account\Action\Command\ReadAccountCommand;
 use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
@@ -359,7 +383,7 @@ Take the following input class as an example:
 ```php
 <?php
 
-namespace App\Module\Account\Action\Input;
+namespace App\Domain\Account\Action\Input;
 
 use OneToMany\RichBundle\Attribute\SourceRequest;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
@@ -433,13 +457,13 @@ Let's see what this class looks like:
 ```php
 <?php
 
-namespace App\Module\Account\Action\Handler;
+namespace App\Domain\Account\Action\Handler;
 
 use App\Entity\Account;
-use App\Module\Account\Action\Command\CreateAccountCommand;
-use App\Module\Account\Action\Input\CreateCustomerInput;
-use App\Module\Account\Action\Handler\Exception\UserNotFoundForCreatingAccountException;
-use App\Module\User\Contract\UserRepositoryInterface;
+use App\Domain\Account\Action\Command\CreateAccountCommand;
+use App\Domain\Account\Action\Input\CreateCustomerInput;
+use App\Domain\Account\Action\Handler\Exception\UserNotFoundForCreatingAccountException;
+use App\Domain\User\Contract\Repository\UserRepositoryInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use OneToMany\RichBundle\Action\Result\HandlerResult;
 use OneToMany\RichBundle\Contract\Action\CommandInterface;
@@ -513,14 +537,14 @@ In each of these scenarios, the handler is unaware of the HTTP context, so it ca
 
 #### Handler exceptions
 
-A very specifically named exception `App\Module\Account\Action\Handler\Exception\UserNotFoundForCreatingAccountException` is thrown when the author user can't be found. I prefer to create a new exception class for each exception state. From just the name of the class, any developer can quickly tell what caused it to be thrown. A unique class for each exception also lets you standardize the error message and exception code.
+A very specifically named exception `App\Domain\Account\Action\Handler\Exception\UserNotFoundForCreatingAccountException` is thrown when the author user can't be found. I prefer to create a new exception class for each exception state. From just the name of the class, any developer can quickly tell what caused it to be thrown. A unique class for each exception also lets you standardize the error message and exception code.
 
 ```php
 <?php
 
-namespace App\Module\Account\Action\Handler\Exception;
+namespace App\Domain\Account\Action\Handler\Exception;
 
-use App\Module\Account\Exception\RuntimeException;
+use App\Domain\Account\Exception\RuntimeException;
 use OneToMany\RichBundle\Attribute\HasUserMessage;
 
 use function sprintf;
@@ -548,11 +572,11 @@ One beautiful result of the RICH architecture is your controllers are usually ve
 ```php
 <?php
 
-namespace App\Module\Account\Framework\Controller\Api;
+namespace App\Domain\Account\Framework\Controller\API;
 
 use App\Entity\Account;
-use App\Module\Account\Action\Handler\CreateAccountHandler;
-use App\Module\Account\Action\Input\CreateAccountInput;
+use App\Domain\Account\Action\Handler\CreateAccountHandler;
+use App\Domain\Account\Action\Input\CreateAccountInput;
 use OneToMany\RichBundle\Contract\Action\ResultInterface;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 

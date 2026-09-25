@@ -10,13 +10,17 @@ use OneToMany\RichBundle\DependencyInjection\Compiler\RemoveDtoTagsPass;
 use OneToMany\RichBundle\EventListener\RequestListener;
 use OneToMany\RichBundle\Form\InputDataMapper;
 use OneToMany\RichBundle\Input\InputParser;
+use OneToMany\RichBundle\Maker\MakeRichModule;
 use OneToMany\RichBundle\Serializer\HttpErrorNormalizer;
 use OneToMany\RichBundle\ValueResolver\InputValueResolver;
+use Symfony\Bundle\MakerBundle\MakerBundle;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 
+use function in_array;
+use function is_array;
 use function str_starts_with;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
@@ -141,5 +145,17 @@ class RichBundle extends AbstractBundle
                     ->tag('controller.argument_value_resolver')
                     ->arg('$inputParser', service(InputParser::class))
         ;
+
+        // Makers are only registered when the MakerBundle is enabled
+        $bundles = $builder->hasParameter('kernel.bundles') ? $builder->getParameter('kernel.bundles') : [];
+
+        if (is_array($bundles) && in_array(MakerBundle::class, $bundles, true)) {
+            $container
+                ->services()
+                    ->set(MakeRichModule::class)
+                        ->tag('maker.command')
+                        ->arg('$fileManager', service('maker.file_manager'))
+            ;
+        }
     }
 }
