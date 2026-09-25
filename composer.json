@@ -6,7 +6,7 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "require": {
-        "php": ">=8.4",
+        "php": ">=8.5",
         "psr/log": "^3.0",
         "symfony/config": "^7.2|^8.0|^8.1",
         "symfony/dependency-injection": "^7.2|^8.0|^8.1",
@@ -23,10 +23,12 @@
         "friendsofphp/php-cs-fixer": "^3.93",
         "phpdocumentor/reflection-docblock": "^5.2|^6.0",
         "phpstan/phpstan": "^2.1.55",
-        "phpunit/phpunit": "^13.1.11"
+        "phpunit/phpunit": "^13.1.11",
+        "symfony/maker-bundle": "^1.67"
     },
     "suggest": {
-        "1tomany/data-uri-bundle": "Provides a decoder to convert data into a self-destroying file object",
+        "1tomany/data-uri": "Provides a decoder to convert data into a self-destroying file object",
+        "symfony/maker-bundle": "Provides the make:rich-module command to generate RICH modules",
         "symfony/security-bundle": "Provides an autowired TokenStorageInterface to extract authenticated users"
     },
     "autoload": {
@@ -42,9 +44,6 @@
             "OneToMany\\RichBundle\\Tests\\": "tests/"
         }
     },
-    "bin": [
-        "bin/create-rich-module"
-    ],
     "scripts": {
         "fix": "php-cs-fixer fix",
         "stan": "phpstan",

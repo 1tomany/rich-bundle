@@ -27,9 +27,14 @@ readonly class InputDataMapper implements DataMapperInterface
      * @see Symfony\Component\Form\DataMapperInterface
      *
      * @param ?InputInterface<CommandInterface> $viewData
+     *
+     * @throws RuntimeException when the data does not implement {@see OneToMany\RichBundle\Contract\Action\InputInterface}
      */
-    public function mapDataToForms(mixed $viewData, \Traversable $forms): void
-    {
+    #[\Override]
+    public function mapDataToForms(
+        mixed $viewData,
+        \Traversable $forms,
+    ): void {
         if (null === $viewData) {
             return;
         }
@@ -52,9 +57,15 @@ readonly class InputDataMapper implements DataMapperInterface
      * @see Symfony\Component\Form\DataMapperInterface
      *
      * @param-out InputInterface<CommandInterface> $viewData
+     *
+     * @throws RuntimeException when mapping a form without an HTTP request
+     * @throws RuntimeException when mapping a form without the "data_class" option set
      */
-    public function mapFormsToData(\Traversable $forms, mixed &$viewData): void
-    {
+    #[\Override]
+    public function mapFormsToData(
+        \Traversable $forms,
+        mixed &$viewData,
+    ): void {
         if (!$request = $this->requestStack->getMainRequest()) {
             throw new RuntimeException('Mapping the form failed because the data mapper requires an HTTP request.');
         }

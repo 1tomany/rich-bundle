@@ -6,17 +6,21 @@ use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
 use OneToMany\RichBundle\Contract\Action\ResultInterface;
 use OneToMany\RichBundle\Contract\Input\InputParserInterface;
-use OneToMany\RichBundle\DependencyInjection\Compiler\RemoveDtoTagsPass;
+use OneToMany\RichBundle\DependencyInjection\Compiler\RemoveActionTagsPass;
 use OneToMany\RichBundle\EventListener\RequestListener;
 use OneToMany\RichBundle\Form\InputDataMapper;
 use OneToMany\RichBundle\Input\InputParser;
+use OneToMany\RichBundle\Maker\MakeRichDomain;
 use OneToMany\RichBundle\Serializer\HttpErrorNormalizer;
 use OneToMany\RichBundle\ValueResolver\InputValueResolver;
+use Symfony\Bundle\MakerBundle\MakerBundle;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 
+use function in_array;
+use function is_array;
 use function str_starts_with;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
@@ -34,17 +38,17 @@ class RichBundle extends AbstractBundle
 
         $container
             ->registerForAutoconfiguration(CommandInterface::class)
-            ->addTag(RemoveDtoTagsPass::DTO_CLASS_TAG);
+            ->addTag(RemoveActionTagsPass::ACTION_CLASS_TAG);
 
         $container
             ->registerForAutoconfiguration(InputInterface::class)
-            ->addTag(RemoveDtoTagsPass::DTO_CLASS_TAG);
+            ->addTag(RemoveActionTagsPass::ACTION_CLASS_TAG);
 
         $container
             ->registerForAutoconfiguration(ResultInterface::class)
-            ->addTag(RemoveDtoTagsPass::DTO_CLASS_TAG);
+            ->addTag(RemoveActionTagsPass::ACTION_CLASS_TAG);
 
-        $container->addCompilerPass(new RemoveDtoTagsPass());
+        $container->addCompilerPass(new RemoveActionTagsPass());
     }
 
     /**
@@ -141,5 +145,17 @@ class RichBundle extends AbstractBundle
                     ->tag('controller.argument_value_resolver')
                     ->arg('$inputParser', service(InputParser::class))
         ;
+
+        // Makers are only registered when the MakerBundle is enabled
+        $bundles = $builder->hasParameter('kernel.bundles') ? $builder->getParameter('kernel.bundles') : [];
+
+        if (is_array($bundles) && in_array(MakerBundle::class, $bundles, true)) {
+            $container
+                ->services()
+                    ->set(MakeRichDomain::class)
+                        ->tag('maker.command')
+                        ->arg('$fileManager', service('maker.file_manager'))
+            ;
+        }
     }
 }

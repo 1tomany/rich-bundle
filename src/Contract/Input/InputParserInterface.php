@@ -22,10 +22,10 @@ interface InputParserInterface
      * @throws HttpException when the Content-Type header is invalid
      * @throws HttpException when decoding the request content fails
      * @throws HttpException when denormalizing the request content fails
-     * @throws HttpException when a non-nullable property is configured to be nullified
+     * @throws HttpException when a non-nullable property is nullified
      * @throws RuntimeException when the Symfony Security Bundle is not installed
      * @throws ValidationFailedException when a property is uninitialized after mapping
-     * @throws ValidationFailedException when $validate is true and validation fails
+     * @throws ValidationFailedException when `$validate` is true and validation fails
      */
     public function parse(Request $request, string $type, array $defaultData = [], bool $validate = false): InputInterface;
 

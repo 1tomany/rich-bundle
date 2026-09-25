@@ -2,7 +2,7 @@
 
 namespace OneToMany\RichBundle\Error;
 
-use OneToMany\RichBundle\Exception\InvalidArgumentException;
+use OneToMany\RichBundle\Exception\DomainException;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
@@ -13,13 +13,13 @@ use function sprintf;
 class ConsoleError extends HttpError
 {
     /**
-     * @throws InvalidArgumentException when the constraint violation list is empty
+     * @throws DomainException when the constraint violation list is empty
      */
     public function __construct(
         ConstraintViolationListInterface $violations,
     ) {
         if (0 === $violations->count()) {
-            throw new InvalidArgumentException('The constraint violation list cannot be empty.');
+            throw new DomainException('The constraint violation list cannot be empty.');
         }
 
         parent::__construct(new ValidationFailedException(null, $violations));

@@ -1,5 +1,5 @@
-/.build
-/vendor
+/var/
+/vendor/
 *.swp
 .DS_Store
 composer.lock

@@ -26,7 +26,6 @@ use OneToMany\RichBundle\Exception\HttpException;
 use OneToMany\RichBundle\Exception\RuntimeException;
 use OneToMany\RichBundle\Validator\UninitializedProperties;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
-use Symfony\Component\HttpFoundation\Exception\RequestExceptionInterface as HttpFoundationRequestExceptionInterface;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
@@ -71,8 +70,13 @@ readonly class InputParser implements InputParserInterface
      *
      * @return InputInterface<C>
      */
-    public function parse(Request $request, string $type, array $defaultData = [], bool $validate = false): InputInterface
-    {
+    #[\Override]
+    public function parse(
+        Request $request,
+        string $type,
+        array $defaultData = [],
+        bool $validate = false,
+    ): InputInterface {
         // Initialize the data
         $this->data->replace([]);
 
@@ -150,8 +154,8 @@ readonly class InputParser implements InputParserInterface
                     $this->appendProperty($property, $source, $request->getClientIp());
                 }
 
+                // @see https://github.com/symfony/symfony/issues/62561
                 if ($source instanceof SourceQuery && $request->query->has($name)) {
-                    // @see https://github.com/symfony/symfony/issues/62561
                     $this->appendProperty($property, $source, $request->query->all()[$name]);
                 }
 
@@ -203,7 +207,7 @@ readonly class InputParser implements InputParserInterface
                 'disable_type_enforcement' => true,
                 'filter_bool' => true,
             ]);
-        } catch (HttpFoundationRequestExceptionInterface|SerializerExceptionInterface $e) {
+        } catch (\Throwable $e) {
             $message = 'Parsing the request failed because it is is malformed and could not be mapped correctly.';
 
             if ($e instanceof MissingConstructorArgumentsException) {
@@ -232,8 +236,11 @@ readonly class InputParser implements InputParserInterface
     /**
      * @see OneToMany\RichBundle\Contract\Input\InputParserInterface
      */
-    public function validate(InputInterface $input, ?array $groups = null): void
-    {
+    #[\Override]
+    public function validate(
+        InputInterface $input,
+        ?array $groups = null,
+    ): void {
         $violations = $this->validator->validate($input, null, $groups);
 
         if ($violations->count() > 0) {
@@ -241,16 +248,18 @@ readonly class InputParser implements InputParserInterface
         }
     }
 
-    private function isPropertyIgnored(\ReflectionProperty $property): bool
-    {
+    private function isPropertyIgnored(
+        \ReflectionProperty $property,
+    ): bool {
         return 0 !== count($property->getAttributes(PropertyIgnored::class));
     }
 
     /**
      * @return list<PropertySource>
      */
-    private function findSources(\ReflectionProperty $property): array
-    {
+    private function findSources(
+        \ReflectionProperty $property,
+    ): array {
         $propertySources = null;
 
         foreach ($property->getAttributes(PropertySource::class, \ReflectionAttribute::IS_INSTANCEOF) as $attribute) {
@@ -260,8 +269,11 @@ readonly class InputParser implements InputParserInterface
         return $propertySources ?? [new SourceRequest()];
     }
 
-    private function appendProperty(\ReflectionProperty $property, PropertySource $source, mixed $value): void
-    {
+    private function appendProperty(
+        \ReflectionProperty $property,
+        PropertySource $source,
+        mixed $value,
+    ): void {
         // Ensure nullified sources support null property values
         if ($source->nullify && !$property->getType()?->allowsNull()) {
             throw HttpException::create(400, sprintf('Parsing the request failed because the property "%s" is not nullable.', $property->getName()));
@@ -275,18 +287,24 @@ readonly class InputParser implements InputParserInterface
         // Trim the value if the source indicates to and it is a string
         $value = $source->trim && is_string($value) ? trim($value) : $value;
 
-        // Finally, convert empty string values to NULL, otherwise leave the value alone
-        $this->appendValue($property->getName(), ($source->nullify && is_string($value) && empty($value)) ? null : $value);
+        // Convert empty strings to NULL if required
+        if ($source->nullify && is_string($value)) {
+            $value = '' === $value ? null : $value;
+        }
+
+        $this->appendValue($property->getName(), $value);
     }
 
-    private function appendValue(string $key, mixed $value): void
-    {
+    private function appendValue(
+        string $key,
+        mixed $value,
+    ): void {
         // Ignore values once mapped
         if ($this->data->has($key)) {
             return;
         }
 
-        // Convert BackedEnum values into scalars so the enum normalizer doesn't complain
+        // Convert BackedEnum values into scalars so the normalizer does not complain
         $this->data->set($key, $value instanceof \BackedEnum ? $value->value : $value);
     }
 }
