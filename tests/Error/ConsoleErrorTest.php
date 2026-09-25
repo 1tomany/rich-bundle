@@ -16,7 +16,7 @@ final class ConsoleErrorTest extends TestCase
     public function testConstructorRequiresAtLeastOneConstraintViolation(): void
     {
         $this->expectException(DomainException::class);
-        $this->expectExceptionMessage('The constraint violation list cannot be empty.');
+        $this->expectExceptionMessageIs('The constraint violation list cannot be empty.');
 
         new ConsoleError(new ConstraintViolationList([]));
     }

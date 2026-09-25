@@ -36,8 +36,6 @@ final readonly class RequestListener implements EventSubscriberInterface
      */
     private string $requestId;
 
-    public const string REQUEST_ID_KEY = '_rich_request_id';
-
     /**
      * @param non-empty-list<non-empty-lowercase-string> $acceptFormats
      * @param non-empty-list<non-empty-lowercase-string> $contentTypeFormats
@@ -87,7 +85,7 @@ final readonly class RequestListener implements EventSubscriberInterface
         }
 
         // Add the randomly generated request ID to the request attributes
-        $event->getRequest()->attributes->set('_rich_requestid', $this->requestId);
+        $event->getRequest()->attributes->set('_rich_request_id', $this->requestId);
 
         if ($this->isSerializableRequest($event->getRequest())) {
             $format = $event->getRequest()->getPreferredFormat(null);
@@ -135,7 +133,7 @@ final readonly class RequestListener implements EventSubscriberInterface
             $event->getResponse()->setVary(['Accept']);
         }
 
-        $event->getResponse()->headers->set('x-rich-requestid', $this->requestId);
+        $event->getResponse()->headers->set('x-rich-request-id', $this->requestId);
     }
 
     public function onKernelException(ExceptionEvent $event): void
@@ -188,6 +186,8 @@ final readonly class RequestListener implements EventSubscriberInterface
     /**
      * @param array<string, mixed> $context
      * @param array<string, string> $headers
+     *
+     * @throws RuntimeException when serializing the response content fails
      */
     private function serializeResponse(
         Request $request,
@@ -201,7 +201,7 @@ final readonly class RequestListener implements EventSubscriberInterface
         try {
             $content = $this->serializer->serialize($data, $format, $context);
         } catch (SerializerExceptionInterface $e) {
-            throw new RuntimeException(sprintf('Serializing the response failed because the type "%s" could not be encoded as "%s".', get_debug_type($data), $format), previous: $e);
+            throw new RuntimeException(sprintf('Serializing the response content failed because the type "%s" could not be encoded as "%s".', get_debug_type($data), $format), previous: $e);
         }
 
         $response = new Response($content, $status, $headers + [

@@ -4,7 +4,6 @@ namespace OneToMany\RichBundle\Bridge\Monolog\Processor;
 
 use Monolog\LogRecord;
 use Monolog\Processor\ProcessorInterface;
-use OneToMany\RichBundle\EventListener\RequestListener;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -30,7 +29,7 @@ final readonly class RequestIdProcessor implements ProcessorInterface
         if ($request instanceof Request) {
             if ($request->attributes->has('_rich_requestid')) {
                 $requestId = $request->attributes->get(...[
-                    'key' => '_rich_requestid',
+                    'key' => '_rich_request_id',
                 ]);
 
                 if (is_string($requestId) && '' !== $requestId) {

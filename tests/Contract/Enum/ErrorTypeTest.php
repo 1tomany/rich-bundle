@@ -27,8 +27,10 @@ final class ErrorTypeTest extends TestCase
     }
 
     #[DataProvider('providerThrowableAndErrorType')]
-    public function testCreatingTypeFromThrowable(\Throwable $throwable, ErrorType $type): void
-    {
+    public function testCreatingTypeFromThrowable(
+        \Throwable $throwable,
+        ErrorType $type,
+    ): void {
         $this->assertSame($type, ErrorType::create($throwable));
     }
 
@@ -49,8 +51,10 @@ final class ErrorTypeTest extends TestCase
     }
 
     #[DataProvider('providerHttpStatusAndErrorType')]
-    public function testCreatingTypeFromHttpStatus(int $httpStatus, ErrorType $type): void
-    {
+    public function testCreatingTypeFromHttpStatus(
+        int $httpStatus,
+        ErrorType $type,
+    ): void {
         $this->assertSame($type, ErrorType::create(new \Exception(), $httpStatus));
     }
 
