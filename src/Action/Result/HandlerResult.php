@@ -64,6 +64,7 @@ class HandlerResult implements ResultInterface
      *
      * @return R
      */
+    #[\Override]
     public function __invoke(): mixed
     {
         return $this->result;
@@ -74,6 +75,7 @@ class HandlerResult implements ResultInterface
      *
      * @return R
      */
+    #[\Override]
     public function getResult(): mixed
     {
         return $this->result;
@@ -82,6 +84,7 @@ class HandlerResult implements ResultInterface
     /**
      * @see OneToMany\RichBundle\Contract\Action\ResultInterface
      */
+    #[\Override]
     public function getStatus(): int
     {
         return $this->status;
@@ -90,6 +93,7 @@ class HandlerResult implements ResultInterface
     /**
      * @see OneToMany\RichBundle\Contract\Action\ResultInterface
      */
+    #[\Override]
     public function getContext(): array
     {
         // Merge in the groups if none are explicitly set in the context
@@ -103,6 +107,7 @@ class HandlerResult implements ResultInterface
     /**
      * @see OneToMany\RichBundle\Contract\Action\ResultInterface
      */
+    #[\Override]
     public function getHeaders(): array
     {
         return $this->headers;
@@ -111,6 +116,7 @@ class HandlerResult implements ResultInterface
     /**
      * @see OneToMany\RichBundle\Contract\Action\ResultInterface
      */
+    #[\Override]
     public function withStatus(int $status): static
     {
         if (!isset(Response::$statusTexts[$status])) {
@@ -125,6 +131,7 @@ class HandlerResult implements ResultInterface
     /**
      * @see OneToMany\RichBundle\Contract\Action\ResultInterface
      */
+    #[\Override]
     public function withContext(array $context): static
     {
         $this->context = $context;
@@ -135,6 +142,7 @@ class HandlerResult implements ResultInterface
     /**
      * @see OneToMany\RichBundle\Contract\Action\ResultInterface
      */
+    #[\Override]
     public function withGroups(array $groups): static
     {
         $this->groups = $groups;
@@ -145,6 +153,7 @@ class HandlerResult implements ResultInterface
     /**
      * @see OneToMany\RichBundle\Contract\Action\ResultInterface
      */
+    #[\Override]
     public function withHeaders(array $headers): static
     {
         $this->headers = $headers;

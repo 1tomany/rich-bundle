@@ -6,7 +6,7 @@ use OneToMany\RichBundle\Contract\Action\CommandInterface;
 use OneToMany\RichBundle\Contract\Action\InputInterface;
 use OneToMany\RichBundle\Contract\Action\ResultInterface;
 use OneToMany\RichBundle\Contract\Input\InputParserInterface;
-use OneToMany\RichBundle\DependencyInjection\Compiler\RemoveDtoTagsPass;
+use OneToMany\RichBundle\DependencyInjection\Compiler\RemoveActionTagsPass;
 use OneToMany\RichBundle\EventListener\RequestListener;
 use OneToMany\RichBundle\Form\InputDataMapper;
 use OneToMany\RichBundle\Input\InputParser;
@@ -38,17 +38,17 @@ class RichBundle extends AbstractBundle
 
         $container
             ->registerForAutoconfiguration(CommandInterface::class)
-            ->addTag(RemoveDtoTagsPass::DTO_CLASS_TAG);
+            ->addTag(RemoveActionTagsPass::ACTION_CLASS_TAG);
 
         $container
             ->registerForAutoconfiguration(InputInterface::class)
-            ->addTag(RemoveDtoTagsPass::DTO_CLASS_TAG);
+            ->addTag(RemoveActionTagsPass::ACTION_CLASS_TAG);
 
         $container
             ->registerForAutoconfiguration(ResultInterface::class)
-            ->addTag(RemoveDtoTagsPass::DTO_CLASS_TAG);
+            ->addTag(RemoveActionTagsPass::ACTION_CLASS_TAG);
 
-        $container->addCompilerPass(new RemoveDtoTagsPass());
+        $container->addCompilerPass(new RemoveActionTagsPass());
     }
 
     /**
