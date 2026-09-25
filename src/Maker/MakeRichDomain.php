@@ -14,20 +14,23 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Filesystem\Path;
 
 use function ctype_alnum;
 use function ctype_alpha;
 use function dirname;
+use function file_exists;
+use function is_dir;
 use function is_string;
 use function lcfirst;
+use function mkdir;
 use function sprintf;
 use function substr;
-use function vsprintf;
 
 final class MakeRichDomain extends AbstractMaker
 {
+    private string $rootDirectory;
+
     /**
      * Directories relative to the domain root that are
      * created even if no class is generated inside them.
@@ -51,8 +54,8 @@ final class MakeRichDomain extends AbstractMaker
 
     public function __construct(
         private readonly FileManager $fileManager,
-        private readonly Filesystem $filesystem = new Filesystem(),
     ) {
+        $this->rootDirectory = $this->fileManager->getRootDirectory();
     }
 
     /**
@@ -122,25 +125,30 @@ final class MakeRichDomain extends AbstractMaker
         $domain = $this->normalizeDomain($input);
 
         $rootNamespace = $generator->getRootNamespace();
-        $rootDirectory = $this->fileManager->getRootDirectory();
-
-        $namespace = "{$rootNamespace}\\Domain\\{$domain}";
+        $domainNamespace = "{$rootNamespace}\\Domain\\{$domain}";
 
         // The file manager only resolves paths for classes, so the domain directory
         // is resolved by simulating a class name in the root directory of the domain
-        $domainRoot = Path::join($rootDirectory, dirname($this->getPathForClass("{$namespace}\\{$domain}")));
+        $domainDir = dirname($this->getPathForClass("{$domainNamespace}\\{$domain}"));
 
-        if (!Path::isAbsolute($domainRoot)) {
-            throw new RuntimeCommandException(sprintf('The domain root "%s" is not an absolute path.', $domainRoot));
+        // Generate an absolute path to the domain root directory
+        $domainDir = Path::join($this->rootDirectory, $domainDir);
+
+        if (!Path::isAbsolute($domainDir)) {
+            throw new RuntimeCommandException(sprintf('The domain directory "%s" is not an absolute path.', $domainDir));
         }
 
         foreach (self::DIRECTORIES as $directory) {
-            $dir = Path::join($domainRoot, $directory);
+            $path = Path::join($domainDir, $directory);
 
-            if (!$this->filesystem->exists($dir)) {
-                $this->filesystem->mkdir($dir, 0755);
+            if (!file_exists($path)) {
+                @mkdir($path, 0755, true);
 
-                $io->comment(sprintf('<fg=blue>created</>: %s/', Path::makeRelative($dir, $rootDirectory)));
+                if (!is_dir($path)) {
+                    throw new RuntimeCommandException(sprintf('Failed to create "%s".', $path));
+                }
+
+                $io->comment(sprintf('<fg=blue>created</>: %s/', Path::makeRelative($path, $this->rootDirectory)));
             }
         }
 
@@ -149,8 +157,8 @@ final class MakeRichDomain extends AbstractMaker
             'entity_class_name' => $domain,
             'entity_full_class_name' => "{$rootNamespace}\\Entity\\{$domain}",
             'exception_class_name' => 'RuntimeException',
-            'exception_full_class_name' => "{$namespace}\\Exception\\RuntimeException",
-            'exception_interface_full_class_name' => "{$namespace}\\Contract\\Exception\\ExceptionInterface",
+            'exception_full_class_name' => "{$domainNamespace}\\Exception\\RuntimeException",
+            'exception_interface_full_class_name' => "{$domainNamespace}\\Contract\\Exception\\ExceptionInterface",
         ];
 
         // Classes to create
@@ -181,11 +189,12 @@ final class MakeRichDomain extends AbstractMaker
         // Create the Create{Domain} action classes
         if (true === $input->getOption('create-stub')) {
             $actionClasses = $this->getActionClasses(
-                $namespace, "Create{$domain}", null,
+                $domainNamespace, "Create{$domain}", null,
             );
 
             $classes = [...$classes, ...$actionClasses];
 
+            // Create the {Domain}Created event class
             $classes["Action\\Event\\{$domain}Created"] = [
                 'action/event/Event.tpl.php', [
                     'id_property' => $idProperty,
@@ -193,13 +202,15 @@ final class MakeRichDomain extends AbstractMaker
             ];
         }
 
+        // Create the Read{Domain} action classes
         if (true === $input->getOption('read-stub')) {
             $actionClasses = $this->getActionClasses(
-                $namespace, "Read{$domain}", $idProperty,
+                $domainNamespace, "Read{$domain}", $idProperty,
             );
 
             $classes = [...$classes, ...$actionClasses];
 
+            // Create the app:read-{domain} Symfony Console class
             $classes["Framework\\Command\\Read{$domain}Command"] = [
                 'framework/command/Command.tpl.php', [
                     'command_name' => 'app:read-'.Str::asCommand($domain),
@@ -211,7 +222,7 @@ final class MakeRichDomain extends AbstractMaker
         $templateDirectory = dirname(__DIR__, 2).'/templates';
 
         foreach ($classes as $relativeClass => [$template, $classVariables]) {
-            $class = "{$namespace}\\{$relativeClass}";
+            $class = "{$domainNamespace}\\{$relativeClass}";
             $path = $this->getPathForClass($class);
 
             // Never overwrite an existing file
@@ -264,14 +275,10 @@ final class MakeRichDomain extends AbstractMaker
         string $action,
         ?string $idProperty,
     ): array {
-        $commandClassName = vsprintf('%s\\Action\\Command\\%sCommand', [
-            $namespace, $action,
-        ]);
-
         $variables = [
             'id_property' => $idProperty,
             'command_class_name' => "{$action}Command",
-            'command_full_class_name' => $commandClassName,
+            'command_full_class_name' => "{$namespace}\\Action\\Command\\{$action}Command",
         ];
 
         return [
