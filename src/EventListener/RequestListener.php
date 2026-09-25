@@ -23,9 +23,11 @@ use function bin2hex;
 use function get_debug_type;
 use function implode;
 use function in_array;
+use function max;
 use function random_bytes;
 use function sprintf;
 use function stripos;
+use function strtolower;
 
 final readonly class RequestListener implements EventSubscriberInterface
 {
@@ -49,6 +51,7 @@ final readonly class RequestListener implements EventSubscriberInterface
     /**
      * @see Symfony\Component\EventDispatcher\EventSubscriberInterface
      */
+    #[\Override]
     public static function getSubscribedEvents(): array
     {
         return [
@@ -67,6 +70,10 @@ final readonly class RequestListener implements EventSubscriberInterface
         ];
     }
 
+    /**
+     * @throws HttpException when the server cannot respond with an acceptable media type
+     * @throws HttpException when the server cannot process the media type of the content
+     */
     public function onKernelRequest(RequestEvent $event): void
     {
         if (!$event->isMainRequest()) {
@@ -74,7 +81,7 @@ final readonly class RequestListener implements EventSubscriberInterface
         }
 
         // Generate a random request ID for logging
-        $event->getRequest()->attributes->set(self::REQUEST_ID_KEY, bin2hex(random_bytes(6)));
+        $event->getRequest()->attributes->set(self::REQUEST_ID_KEY, $this->generateRequestId());
 
         if ($this->isSerializableRequest($event->getRequest())) {
             $format = $event->getRequest()->getPreferredFormat(null);
@@ -137,6 +144,16 @@ final readonly class RequestListener implements EventSubscriberInterface
         if ($this->isSerializableRequest($event->getRequest())) {
             $event->setResponse($this->serializeResponse($event->getRequest(), $error, $error->getContext(), $error->getStatus(), $error->getHeaders()));
         }
+    }
+
+    /**
+     * @param positive-int $bytes
+     *
+     * @return non-empty-lowercase-string
+     */
+    private function generateRequestId(int $bytes = 12): string
+    {
+        return strtolower(bin2hex(random_bytes(max(4, $bytes))));
     }
 
     private function isSerializableRequest(Request $request): bool
