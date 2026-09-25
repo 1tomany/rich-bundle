@@ -10,7 +10,7 @@ use OneToMany\RichBundle\DependencyInjection\Compiler\RemoveDtoTagsPass;
 use OneToMany\RichBundle\EventListener\RequestListener;
 use OneToMany\RichBundle\Form\InputDataMapper;
 use OneToMany\RichBundle\Input\InputParser;
-use OneToMany\RichBundle\Maker\MakeRichModule;
+use OneToMany\RichBundle\Maker\MakeRichDomain;
 use OneToMany\RichBundle\Serializer\HttpErrorNormalizer;
 use OneToMany\RichBundle\ValueResolver\InputValueResolver;
 use Symfony\Bundle\MakerBundle\MakerBundle;
@@ -152,7 +152,7 @@ class RichBundle extends AbstractBundle
         if (is_array($bundles) && in_array(MakerBundle::class, $bundles, true)) {
             $container
                 ->services()
-                    ->set(MakeRichModule::class)
+                    ->set(MakeRichDomain::class)
                         ->tag('maker.command')
                         ->arg('$fileManager', service('maker.file_manager'))
             ;

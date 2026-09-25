@@ -2,7 +2,7 @@
 
 namespace OneToMany\RichBundle\Tests;
 
-use OneToMany\RichBundle\Maker\MakeRichModule;
+use OneToMany\RichBundle\Maker\MakeRichDomain;
 use OneToMany\RichBundle\RichBundle;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
@@ -22,21 +22,22 @@ final class RichBundleTest extends TestCase
             'MakerBundle' => MakerBundle::class,
         ]);
 
-        $this->assertTrue($container->hasDefinition(MakeRichModule::class));
+        $this->assertTrue($container->hasDefinition(MakeRichDomain::class));
 
-        $definition = $container->getDefinition(MakeRichModule::class);
+        $definition = $container->getDefinition(MakeRichDomain::class);
         $this->assertTrue($definition->hasTag('maker.command'));
 
         $fileManager = $definition->getArgument('$fileManager');
+
         $this->assertInstanceOf(Reference::class, $fileManager);
-        $this->assertSame('maker.file_manager', (string) $fileManager);
+        $this->assertEquals('maker.file_manager', $fileManager);
     }
 
     public function testLoadingExtensionDoesNotRegisterMakersWhenMakerBundleIsNotEnabled(): void
     {
         $container = $this->loadExtension([]);
 
-        $this->assertFalse($container->hasDefinition(MakeRichModule::class));
+        $this->assertFalse($container->hasDefinition(MakeRichDomain::class));
     }
 
     /**
