@@ -15,8 +15,8 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Filesystem\Path;
 
-use function array_diff;
 use function ctype_alnum;
 use function ctype_alpha;
 use function dirname;
@@ -24,6 +24,7 @@ use function is_string;
 use function lcfirst;
 use function sprintf;
 use function substr;
+use function vsprintf;
 
 final class MakeRichDomain extends AbstractMaker
 {
@@ -80,9 +81,9 @@ final class MakeRichDomain extends AbstractMaker
     ): void {
         $command
             ->addArgument('domain', InputArgument::REQUIRED, 'The name of the domain (e.g. <fg=yellow>Account</>)')
-            ->addOption('without-repository', null, InputOption::VALUE_NONE, 'Do not generate the repository interface')
-            ->addOption('with-create-stub', null, InputOption::VALUE_NEGATABLE, 'Generate the input, command, and handler classes to create an entity', true)
-            ->addOption('with-read-stub', null, InputOption::VALUE_NEGATABLE, 'Generate the input, command, handler, and console command classes to read an entity', true)
+            ->addOption('repository', null, InputOption::VALUE_NEGATABLE, "Generate a Doctrine repository interface for the domain's entity", true)
+            ->addOption('create-stub', null, InputOption::VALUE_NEGATABLE, "Generate the RICH classes to create the domain's entity", true)
+            ->addOption('read-stub', null, InputOption::VALUE_NEGATABLE, "Generate the RICH and console command classes to read the domain's entity", true)
             ->setHelp(<<<'HELP'
                 The <info>%command.name%</info> command generates the directories and classes for a RICH domain:
 
@@ -90,13 +91,13 @@ final class MakeRichDomain extends AbstractMaker
 
                 Existing files are never overwritten, so the command can also be run for an existing domain to generate any missing classes.
 
-                Use the <info>--without-repository</info> option to skip generating the repository interface:
+                Use the <info>--no-repository</info> option to skip generating the repository interface:
 
-                <info>php %command.full_name% Account --without-repository</info>
+                <info>php %command.full_name% Account --no-repository</info>
 
-                Use the <info>--no-with-create-stub</info> and <info>--no-with-read-stub</info> options to skip generating the Create and Read action stubs:
+                Use the <info>--no-create-stub</info> and <info>--no-read-stub</info> options to skip generating the Create and Read action stubs:
 
-                <info>php %command.full_name% Account --no-with-create-stub --no-with-read-stub</info>
+                <info>php %command.full_name% Account --no-create-stub --no-read-stub</info>
                 HELP)
         ;
     }
@@ -118,17 +119,32 @@ final class MakeRichDomain extends AbstractMaker
         ConsoleStyle $io,
         Generator $generator,
     ): void {
-        $domain = $this->getDomain($input);
-
-        $withRepository = true !== $input->getOption('without-repository');
-        $withCreateStub = true === $input->getOption('with-create-stub');
-        $withReadStub = true === $input->getOption('with-read-stub');
+        $domain = $this->normalizeDomain($input);
 
         $rootNamespace = $generator->getRootNamespace();
-        $namespace = "{$rootNamespace}\\Domain\\{$domain}";
-        $idProperty = lcfirst($domain).'Id';
+        $rootDirectory = $this->fileManager->getRootDirectory();
 
-        // Variables shared by all templates
+        $namespace = "{$rootNamespace}\\Domain\\{$domain}";
+
+        // The file manager only resolves paths for classes, so the domain directory
+        // is resolved by simulating a class name in the root directory of the domain
+        $domainRoot = Path::join($rootDirectory, dirname($this->getPathForClass("{$namespace}\\{$domain}")));
+
+        if (!Path::isAbsolute($domainRoot)) {
+            throw new RuntimeCommandException(sprintf('The domain root "%s" is not an absolute path.', $domainRoot));
+        }
+
+        foreach (self::DIRECTORIES as $directory) {
+            $dir = Path::join($domainRoot, $directory);
+
+            if (!$this->filesystem->exists($dir)) {
+                $this->filesystem->mkdir($dir, 0755);
+
+                $io->comment(sprintf('<fg=blue>created</>: %s/', Path::makeRelative($dir, $rootDirectory)));
+            }
+        }
+
+        // Global template variables
         $variables = [
             'entity_class_name' => $domain,
             'entity_full_class_name' => "{$rootNamespace}\\Entity\\{$domain}",
@@ -137,19 +153,21 @@ final class MakeRichDomain extends AbstractMaker
             'exception_interface_full_class_name' => "{$namespace}\\Contract\\Exception\\ExceptionInterface",
         ];
 
-        // Classes relative to the domain namespace and their templates
+        // Classes to create
         $classes = [
             'Contract\\Exception\\ExceptionInterface' => [
                 'contracts/exception/ExceptionInterface.tpl.php', [],
             ],
         ];
 
-        if ($withRepository) {
+        // Create the repository interface
+        if (true === $input->getOption('repository')) {
             $classes["Contract\\Repository\\{$domain}RepositoryInterface"] = [
                 'contracts/repository/RepositoryInterface.tpl.php', [],
             ];
         }
 
+        // Exception classes
         $classes['Exception\\DomainException'] = [
             'exception/DomainException.tpl.php', [],
         ];
@@ -158,7 +176,10 @@ final class MakeRichDomain extends AbstractMaker
             'exception/RuntimeException.tpl.php', [],
         ];
 
-        if ($withCreateStub) {
+        $idProperty = lcfirst($domain).'Id';
+
+        // Create the Create{Domain} action classes
+        if (true === $input->getOption('create-stub')) {
             $actionClasses = $this->getActionClasses(
                 $namespace, "Create{$domain}", null,
             );
@@ -172,7 +193,7 @@ final class MakeRichDomain extends AbstractMaker
             ];
         }
 
-        if ($withReadStub) {
+        if (true === $input->getOption('read-stub')) {
             $actionClasses = $this->getActionClasses(
                 $namespace, "Read{$domain}", $idProperty,
             );
@@ -200,44 +221,27 @@ final class MakeRichDomain extends AbstractMaker
                 continue;
             }
 
-            $generator->generateClass($class, "{$templateDirectory}/{$template}", [...$variables, ...$classVariables]);
+            $generator->generateClass($class, "{$templateDirectory}/{$template}", [
+                ...$variables, ...$classVariables,
+            ]);
         }
 
         $generator->writeChanges();
 
-        $directories = self::DIRECTORIES;
-
-        if (!$withRepository) {
-            $directories = array_diff($directories, ['Contract/Repository']);
-        }
-
-        // The file manager only resolves paths for classes, so the
-        // domain directory is resolved from a class in the domain root
-        $domainDirectory = dirname($this->getPathForClass("{$namespace}\\{$domain}"));
-
-        foreach ($directories as $directory) {
-            $directory = $domainDirectory.'/'.$directory;
-
-            if (!$this->fileManager->fileExists($directory)) {
-                $this->filesystem->mkdir($this->fileManager->absolutizePath($directory));
-
-                $io->comment(sprintf('<fg=blue>created</>: %s/', $directory));
-            }
-        }
-
         foreach ($skippedPaths as $path) {
-            $io->comment(sprintf('<fg=yellow>skipped</>: %s (already exists)', $path));
+            $io->comment(sprintf('<fg=yellow>skipped</>: %s', $path));
         }
 
         $this->writeSuccessMessage($io);
 
+        $io->text('Next: open and customize your input, command, and handler classes!');
         $io->text('Find the documentation at <fg=yellow>https://github.com/1tomany/rich-bundle</>');
     }
 
     /**
      * @return non-empty-string
      */
-    private function getDomain(InputInterface $input): string
+    private function normalizeDomain(InputInterface $input): string
     {
         $argument = $input->getArgument('domain');
 
@@ -260,10 +264,14 @@ final class MakeRichDomain extends AbstractMaker
         string $action,
         ?string $idProperty,
     ): array {
+        $commandClassName = vsprintf('%s\\Action\\Command\\%sCommand', [
+            $namespace, $action,
+        ]);
+
         $variables = [
-            'command_full_class_name' => "{$namespace}\\Action\\Command\\{$action}Command",
-            'command_class_name' => "{$action}Command",
             'id_property' => $idProperty,
+            'command_class_name' => "{$action}Command",
+            'command_full_class_name' => $commandClassName,
         ];
 
         return [

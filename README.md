@@ -102,9 +102,9 @@ src/
 
 We'll get into the purpose of each of these soon. The command has the following options:
 
-- `--without-repository` Skips generating the `AccountRepositoryInterface` interface.
-- `--no-with-create-stub` Skips generating the `CreateAccountInput`, `CreateAccountCommand`, and `CreateAccountHandler` classes and the `AccountCreated` event.
-- `--no-with-read-stub` Skips generating the `ReadAccountInput`, `ReadAccountCommand`, and `ReadAccountHandler` classes and the `app:read-account` console command.
+- `--no-repository` Skips generating the `AccountRepositoryInterface` interface.
+- `--no-create-stub` Skips generating the `CreateAccountInput`, `CreateAccountCommand`, and `CreateAccountHandler` classes and the `AccountCreated` event.
+- `--no-read-stub` Skips generating the `ReadAccountInput`, `ReadAccountCommand`, and `ReadAccountHandler` classes and the `app:read-account` console command.
 
 Existing files are never overwritten, so you can run the command multiple times to generate any missing classes. The generated handlers and console command throw a `RuntimeException` until you implement them.
 
