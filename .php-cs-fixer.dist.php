@@ -8,7 +8,10 @@ $finder = new Finder();
 
 $finder = Finder::create()
     ->in([__DIR__])
-    ->exclude(['assets/', 'templates/'])
+    ->exclude([
+        'assets/',
+        'templates/',
+    ])
     ->append([__FILE__])
     ->ignoreVCSIgnored(true)
 ;
