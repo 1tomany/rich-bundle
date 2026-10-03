@@ -6,7 +6,6 @@ use OneToMany\RichBundle\Contract\Action\ResultInterface;
 use OneToMany\RichBundle\Error\HttpError;
 use OneToMany\RichBundle\Exception\HttpException;
 use OneToMany\RichBundle\Exception\RuntimeException;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
