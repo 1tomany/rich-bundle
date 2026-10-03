@@ -3,6 +3,7 @@
 namespace OneToMany\RichBundle\Serializer;
 
 use OneToMany\RichBundle\Contract\Error\HttpErrorInterface;
+use OneToMany\RichBundle\Contract\Error\Record\DebugError;
 use OneToMany\RichBundle\Contract\Error\Record\Violation;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
@@ -23,7 +24,7 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
      *   title: non-empty-string,
      *   message: non-empty-string,
      *   violations: list<Violation>,
-     *   previous?: ?HttpErrorInterface,
+     *   stack?: DebugError,
      * }
      */
     #[\Override]
@@ -34,8 +35,10 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
     ): array {
         $error = $data->jsonSerialize();
 
-        if (false === $this->debug) {
-            unset($error['previous']);
+        if (true === $this->debug) {
+            $error['stack'] = new DebugError(...[
+                'throwable' => $data->getThrowable(),
+            ]);
         }
 
         return $error;

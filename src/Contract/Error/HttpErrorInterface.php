@@ -50,7 +50,6 @@ interface HttpErrorInterface extends \JsonSerializable, \Stringable
      *   title: non-empty-string,
      *   message: non-empty-string,
      *   violations: list<Violation>,
-     *   previous: ?HttpErrorInterface,
      * }
      */
     #[\Override]

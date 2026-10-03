@@ -297,8 +297,7 @@ class HttpError implements HttpErrorInterface
      */
     protected function getAttribute(
         string $attributeClass,
-    ): ?object
-    {
+    ): ?object {
         $class = new \ReflectionClass($this->throwable);
 
         do {
@@ -315,8 +314,7 @@ class HttpError implements HttpErrorInterface
      */
     protected function hasAttribute(
         string $attributeClass,
-    ): bool
-    {
+    ): bool {
         return null !== $this->getAttribute($attributeClass);
     }
 }
