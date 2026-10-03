@@ -2,19 +2,16 @@
 
 namespace OneToMany\RichBundle\Contract\Error;
 
-use OneToMany\RichBundle\Contract\Enum\ErrorType;
-use OneToMany\RichBundle\Contract\Error\Record\StackItem;
-use OneToMany\RichBundle\Contract\Error\Record\TraceItem;
 use OneToMany\RichBundle\Contract\Error\Record\Violation;
 
-interface HttpErrorInterface extends \Stringable
+interface HttpErrorInterface extends \JsonSerializable, \Stringable
 {
     public function getThrowable(): \Throwable;
 
-    public function getType(): ErrorType;
+    public function getPrevious(): ?self;
 
     /**
-     * @return int<100, 599>
+     * @return int<100,599>
      */
     public function getStatus(): int;
 
@@ -33,6 +30,8 @@ interface HttpErrorInterface extends \Stringable
      */
     public function getMessage(): string;
 
+    public function getLogLevel(): string;
+
     /**
      * @return array<string, string>
      */
@@ -44,19 +43,15 @@ interface HttpErrorInterface extends \Stringable
     public function getViolations(): array;
 
     /**
-     * @return list<StackItem>
+     * @see \JsonSerializable
+     *
+     * @return array{
+     *   status: int<100,599>,
+     *   title: non-empty-string,
+     *   message: non-empty-string,
+     *   violations: list<Violation>,
+     * }
      */
-    public function getStack(): array;
-
-    /**
-     * @return list<TraceItem>
-     */
-    public function getTrace(): array;
-
-    public function getLogLevel(): string;
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function getContext(): array;
+    #[\Override]
+    public function jsonSerialize(): array;
 }

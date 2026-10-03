@@ -2,10 +2,7 @@
 
 namespace OneToMany\RichBundle\Tests\Error;
 
-use OneToMany\RichBundle\Attribute\HasErrorType;
 use OneToMany\RichBundle\Attribute\HasUserMessage;
-use OneToMany\RichBundle\Contract\Enum\ErrorType;
-use OneToMany\RichBundle\Contract\Error\Record\StackItem;
 use OneToMany\RichBundle\Contract\Error\Record\Violation;
 use OneToMany\RichBundle\Error\HttpError;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -199,29 +196,6 @@ final class HttpErrorTest extends TestCase
         $this->assertEquals($violations, new HttpError(new ValidationFailedException(null, new ConstraintViolationList($violationList)))->getViolations());
     }
 
-    public function testConstructorFlattensStack(): void
-    {
-        $exception1 = new \Exception('Exception 1', previous: null);
-        $exception2 = new \Exception('Exception 2', previous: $exception1);
-        $exception3 = new \Exception('Exception 3', previous: $exception2);
-
-        $stackTrace = [
-            StackItem::create($exception3),
-            StackItem::create($exception2),
-            StackItem::create($exception1),
-        ];
-
-        $this->assertEquals($stackTrace, new HttpError($exception3)->getStack());
-    }
-
-    public function testConstructorResolvesType(): void
-    {
-        $exception = new \Exception('Error');
-        $httpError = new HttpError($exception);
-
-        $this->assertSame(ErrorType::create($exception), $httpError->getType());
-    }
-
     public function testToString(): void
     {
         $httpError = new HttpError(new \Exception('File Not Found', 404));
@@ -236,16 +210,9 @@ final class HttpErrorTest extends TestCase
         $this->assertSame($exception, new HttpError($exception)->getThrowable());
     }
 
-    public function testGettingTypeResolvesErrorTypeWhenHasErrorTypeAttributeIsPresent(): void
-    {
-        $exception = new #[HasErrorType(ErrorType::Data)] class('Error') extends \Exception {};
-
-        $this->assertSame(ErrorType::Data, new HttpError($exception)->getType());
-    }
-
     public function testGettingDescriptionFromValidHttpStatus(): void
     {
-        /** @var int<100, 599> $status */
+        /** @var int<100,599> $status */
         $status = array_rand(Response::$statusTexts);
         $this->assertArrayHasKey($status, Response::$statusTexts);
 
@@ -295,11 +262,6 @@ final class HttpErrorTest extends TestCase
         $this->assertSame($logLevel, new HttpError(new \Exception('Error', $status))->getLogLevel());
     }
 
-    public function testGettingLogLevelWithAccessDeniedExceptionIsCritical(): void
-    {
-        $this->assertSame(LogLevel::CRITICAL, new HttpError(new AccessDeniedException())->getLogLevel());
-    }
-
     /**
      * @return list<list<int|string>>
      */
@@ -324,7 +286,7 @@ final class HttpErrorTest extends TestCase
             [400, LogLevel::ERROR],
             [401, LogLevel::ERROR],
             [402, LogLevel::ERROR],
-            [403, LogLevel::CRITICAL],
+            [403, LogLevel::ERROR],
             [404, LogLevel::ERROR],
             [405, LogLevel::ERROR],
             [406, LogLevel::ERROR],
@@ -373,10 +335,5 @@ final class HttpErrorTest extends TestCase
 
         $exception = new #[HasUserMessage] class('Error') extends \Exception {};
         $this->assertTrue(new HttpError($exception)->hasUserMessage());
-    }
-
-    public function testIsNotCriticalWhenLogLevelIsNotCritical(): void
-    {
-        $this->assertFalse(new HttpError(new \Exception('Not Found', 404))->isCritical());
     }
 }

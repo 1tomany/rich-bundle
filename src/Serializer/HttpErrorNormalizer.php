@@ -3,6 +3,8 @@
 namespace OneToMany\RichBundle\Serializer;
 
 use OneToMany\RichBundle\Contract\Error\HttpErrorInterface;
+use OneToMany\RichBundle\Contract\Error\Record\StackError;
+use OneToMany\RichBundle\Contract\Error\Record\Violation;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 final readonly class HttpErrorNormalizer implements NormalizerInterface
@@ -18,68 +20,28 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
      * @param HttpErrorInterface $data
      *
      * @return array{
-     *   status: int<100, 599>,
+     *   status: int<100,599>,
      *   title: non-empty-string,
-     *   detail: non-empty-string,
-     *   violations: list<
-     *     array{
-     *       property: string,
-     *       message: string,
-     *     },
-     *   >,
-     *   stack?: list<
-     *     array{
-     *       class: class-string,
-     *       message: string,
-     *       file: string,
-     *       line: non-negative-int,
-     *     },
-     *   >,
-     *   trace?: list<
-     *     array{
-     *       class: ?class-string,
-     *       function: ?string,
-     *       file: ?string,
-     *       line: ?int,
-     *     },
-     *   >,
+     *   message: non-empty-string,
+     *   violations: list<Violation>,
+     *   stack?: StackError,
      * }
      */
+    #[\Override]
     public function normalize(
         mixed $data,
         ?string $format = null,
         array $context = [],
     ): array {
-        $record = [
-            'status' => $data->getStatus(),
-            'title' => $data->getTitle(),
-            'detail' => $data->getMessage(),
-        ];
-
-        // Violation Objects
-        $record['violations'] = [];
-
-        foreach ($data->getViolations() as $v) {
-            $record['violations'][] = $v->toArray();
-        }
+        $error = $data->jsonSerialize();
 
         if (true === $this->debug) {
-            // StackItem Objects
-            $record['stack'] = [];
-
-            foreach ($data->getStack() as $si) {
-                $record['stack'][] = $si->toArray();
-            }
-
-            // TraceItem Objects
-            $record['trace'] = [];
-
-            foreach ($data->getTrace() as $ti) {
-                $record['trace'][] = $ti->toArray();
-            }
+            $error['stack'] = new StackError(...[
+                'throwable' => $data->getThrowable(),
+            ]);
         }
 
-        return $record;
+        return $error;
     }
 
     /**

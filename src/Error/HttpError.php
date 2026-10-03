@@ -2,12 +2,8 @@
 
 namespace OneToMany\RichBundle\Error;
 
-use OneToMany\RichBundle\Attribute\HasErrorType;
 use OneToMany\RichBundle\Attribute\HasUserMessage;
-use OneToMany\RichBundle\Contract\Enum\ErrorType;
 use OneToMany\RichBundle\Contract\Error\HttpErrorInterface;
-use OneToMany\RichBundle\Contract\Error\Record\StackItem;
-use OneToMany\RichBundle\Contract\Error\Record\TraceItem;
 use OneToMany\RichBundle\Contract\Error\Record\Violation;
 use Psr\Log\LogLevel;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,58 +22,52 @@ use function trim;
 
 class HttpError implements HttpErrorInterface
 {
-    protected ErrorType $type;
+    public protected(set) \Throwable $throwable;
+    public protected(set) ?self $previous = null;
 
     /**
-     * @var int<100, 599>
+     * @var int<100,599>
      */
-    protected int $status = 500;
+    public protected(set) int $status = 500;
 
     /**
      * @var non-empty-string
      */
-    protected string $title = 'Internal Server Error';
+    public protected(set) string $title = 'Internal Server Error';
+
+    /**
+     * @var non-empty-string
+     */
+    public protected(set) string $message = self::MESSAGE_UNEXPECTED_ERROR;
 
     /**
      * @var array<string, string>
      */
-    protected array $headers = [];
-
-    /**
-     * @var non-empty-string
-     */
-    protected string $message = self::MESSAGE_UNEXPECTED_ERROR;
+    public protected(set) array $headers = [];
 
     /**
      * @var list<Violation>
      */
-    protected array $violations = [];
-
-    /**
-     * @var list<StackItem>
-     */
-    protected array $stack = [];
-
-    /**
-     * @var list<TraceItem>
-     */
-    protected array $trace = [];
+    public protected(set) array $violations = [];
 
     public const string MESSAGE_ACCESS_DENIED = 'Access to this resource is denied.';
     public const string MESSAGE_VALIDATION_FAILED = 'The data provided is not valid.';
     public const string MESSAGE_UNEXPECTED_ERROR = 'An unexpected error occurred.';
 
     public function __construct(
-        protected readonly \Throwable $throwable,
+        \Throwable $throwable,
     ) {
+        $this->throwable = $throwable;
+
         $this->resolveStatus();
         $this->resolveTitle();
-        $this->resolveHeaders();
         $this->resolveMessage();
+        $this->resolveHeaders();
         $this->expandViolations();
-        $this->flattenStack();
-        $this->flattenTrace();
-        $this->resolveType();
+
+        if ($previous = $throwable->getPrevious()) {
+            $this->previous = new self($previous);
+        }
     }
 
     /**
@@ -85,6 +75,7 @@ class HttpError implements HttpErrorInterface
      *
      * @return non-empty-string
      */
+    #[\Override]
     public function __toString(): string
     {
         return sprintf('[%s] %s', $this->getDescription(), $this->getMessage());
@@ -93,6 +84,7 @@ class HttpError implements HttpErrorInterface
     /**
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
+    #[\Override]
     public function getThrowable(): \Throwable
     {
         return $this->throwable;
@@ -101,14 +93,16 @@ class HttpError implements HttpErrorInterface
     /**
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
-    public function getType(): ErrorType
+    #[\Override]
+    public function getPrevious(): ?HttpErrorInterface
     {
-        return $this->type;
+        return $this->previous;
     }
 
     /**
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
+    #[\Override]
     public function getStatus(): int
     {
         return $this->status;
@@ -125,6 +119,7 @@ class HttpError implements HttpErrorInterface
     /**
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
+    #[\Override]
     public function getDescription(): string
     {
         return sprintf('%d %s', $this->status, $this->title);
@@ -133,9 +128,31 @@ class HttpError implements HttpErrorInterface
     /**
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
+    #[\Override]
     public function getMessage(): string
     {
         return $this->message;
+    }
+
+    /**
+     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
+     */
+    #[\Override]
+    public function getLogLevel(): string
+    {
+        if ($this->getStatus() < 300) {
+            return LogLevel::INFO;
+        }
+
+        if ($this->getStatus() < 400) {
+            return LogLevel::NOTICE;
+        }
+
+        if ($this->getStatus() < 500) {
+            return LogLevel::ERROR;
+        }
+
+        return LogLevel::CRITICAL;
     }
 
     /**
@@ -149,6 +166,7 @@ class HttpError implements HttpErrorInterface
     /**
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
+    #[\Override]
     public function getViolations(): array
     {
         return $this->violations;
@@ -157,65 +175,20 @@ class HttpError implements HttpErrorInterface
     /**
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
-    public function getStack(): array
+    #[\Override]
+    public function jsonSerialize(): array
     {
-        return $this->stack;
-    }
-
-    /**
-     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
-     */
-    public function getTrace(): array
-    {
-        return $this->trace;
-    }
-
-    /**
-     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
-     */
-    public function getLogLevel(): string
-    {
-        if ($this->getStatus() < 300) {
-            return LogLevel::INFO;
-        }
-
-        if ($this->getStatus() < 400) {
-            return LogLevel::NOTICE;
-        }
-
-        // @see https://github.com/1tomany/rich-bundle/issues/61
-        if (403 === $this->getStatus() || $this->throwable instanceof AccessDeniedException) {
-            return LogLevel::CRITICAL;
-        }
-
-        if ($this->getStatus() < 500) {
-            return LogLevel::ERROR;
-        }
-
-        return LogLevel::CRITICAL;
-    }
-
-    /**
-     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
-     */
-    public function getContext(): array
-    {
-        return [];
+        return [
+            'status' => $this->getStatus(),
+            'title' => $this->getTitle(),
+            'message' => $this->getMessage(),
+            'violations' => $this->getViolations(),
+        ];
     }
 
     public function hasUserMessage(): bool
     {
         return $this->hasAttribute(HasUserMessage::class);
-    }
-
-    public function isCritical(): bool
-    {
-        return LogLevel::CRITICAL === $this->getLogLevel();
-    }
-
-    public function shouldBeLogged(): bool
-    {
-        return $this->hasUserMessage() || $this->isCritical();
     }
 
     protected function resolveStatus(): void
@@ -242,15 +215,40 @@ class HttpError implements HttpErrorInterface
         $this->title = (Response::$statusTexts[$this->status] ?? null) ?: $this->title;
     }
 
-    protected function resolveType(): void
+    protected function resolveMessage(): void
     {
-        $hasErrorType = $this->getAttribute(HasErrorType::class);
+        $message = null;
 
-        if ($hasErrorType instanceof HasErrorType) {
-            $this->type = $hasErrorType->type;
-        } else {
-            $this->type = ErrorType::create($this->throwable, $this->status);
+        if (
+            $this->throwable instanceof BadRequestHttpException
+            || $this->throwable instanceof ValidationFailedException
+        ) {
+            if ($this->throwable instanceof ValidationFailedException) {
+                if (1 === $this->throwable->getViolations()->count()) {
+                    $message = $this->throwable->getViolations()->get(0)->getMessage();
+                }
+            } else {
+                $message = $this->throwable->getMessage();
+            }
+
+            if ('' === $message = trim((string) $message)) {
+                $message = self::MESSAGE_VALIDATION_FAILED;
+            }
+        } elseif ($this->throwable instanceof AccessDeniedException) {
+            $message = self::MESSAGE_ACCESS_DENIED;
+        } elseif (
+            $this->throwable instanceof HttpExceptionInterface
+            || $this->hasAttribute(WithHttpStatus::class)
+            || $this->hasAttribute(HasUserMessage::class)
+        ) {
+            $message = $this->throwable->getMessage();
         }
+
+        if ('' === $message = trim((string) $message)) {
+            $message = self::MESSAGE_UNEXPECTED_ERROR;
+        }
+
+        $this->message = $message;
     }
 
     protected function resolveHeaders(): void
@@ -274,68 +272,18 @@ class HttpError implements HttpErrorInterface
         }
     }
 
-    protected function resolveMessage(): void
-    {
-        $message = null;
-
-        if (
-            $this->throwable instanceof BadRequestHttpException
-            || $this->throwable instanceof ValidationFailedException
-        ) {
-            if ($this->throwable instanceof ValidationFailedException) {
-                if (1 === $this->throwable->getViolations()->count()) {
-                    $message = $this->throwable->getViolations()->get(0)->getMessage();
-                }
-            } else {
-                $message = $this->throwable->getMessage();
-            }
-
-            $message = trim((string) $message) ?: self::MESSAGE_VALIDATION_FAILED;
-        } elseif ($this->throwable instanceof AccessDeniedException) {
-            $message = self::MESSAGE_ACCESS_DENIED;
-        } elseif (
-            $this->throwable instanceof HttpExceptionInterface
-            || $this->hasAttribute(WithHttpStatus::class)
-            || $this->hasAttribute(HasUserMessage::class)
-        ) {
-            $message = $this->throwable->getMessage();
-        }
-
-        $this->message = trim((string) $message) ?: self::MESSAGE_UNEXPECTED_ERROR;
-    }
-
     protected function expandViolations(): void
     {
-        $exception = $this->throwable;
+        $throwable = $this->throwable;
 
-        while (null !== $exception) {
-            if ($exception instanceof ValidationFailedException) {
-                foreach ($exception->getViolations() as $violation) {
+        while (null !== $throwable) {
+            if ($throwable instanceof ValidationFailedException) {
+                foreach ($throwable->getViolations() as $violation) {
                     $this->violations[] = Violation::create($violation);
                 }
             }
 
-            $exception = $exception->getPrevious();
-        }
-    }
-
-    protected function flattenStack(): void
-    {
-        $exception = $this->throwable;
-
-        while (null !== $exception) {
-            $this->stack[] = StackItem::create(...[
-                'throwable' => $exception,
-            ]);
-
-            $exception = $exception->getPrevious();
-        }
-    }
-
-    protected function flattenTrace(): void
-    {
-        foreach ($this->throwable->getTrace() as $trace) {
-            $this->trace[] = TraceItem::create($trace);
+            $throwable = $throwable->getPrevious();
         }
     }
 
@@ -346,8 +294,9 @@ class HttpError implements HttpErrorInterface
      *
      * @return ?T
      */
-    protected function getAttribute(string $attributeClass): ?object
-    {
+    protected function getAttribute(
+        string $attributeClass,
+    ): ?object {
         $class = new \ReflectionClass($this->throwable);
 
         do {
@@ -362,8 +311,9 @@ class HttpError implements HttpErrorInterface
     /**
      * @param class-string $attributeClass
      */
-    protected function hasAttribute(string $attributeClass): bool
-    {
+    protected function hasAttribute(
+        string $attributeClass,
+    ): bool {
         return null !== $this->getAttribute($attributeClass);
     }
 }
