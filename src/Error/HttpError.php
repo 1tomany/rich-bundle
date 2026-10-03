@@ -137,23 +137,6 @@ class HttpError implements HttpErrorInterface
     /**
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
-    public function getHeaders(): array
-    {
-        return $this->headers;
-    }
-
-    /**
-     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
-     */
-    #[\Override]
-    public function getViolations(): array
-    {
-        return $this->violations;
-    }
-
-    /**
-     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
-     */
     #[\Override]
     public function getLogLevel(): string
     {
@@ -170,6 +153,23 @@ class HttpError implements HttpErrorInterface
         }
 
         return LogLevel::CRITICAL;
+    }
+
+    /**
+     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
+     */
+    public function getHeaders(): array
+    {
+        return $this->headers;
+    }
+
+    /**
+     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
+     */
+    #[\Override]
+    public function getViolations(): array
+    {
+        return $this->violations;
     }
 
     /**
