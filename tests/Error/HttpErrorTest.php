@@ -3,7 +3,6 @@
 namespace OneToMany\RichBundle\Tests\Error;
 
 use OneToMany\RichBundle\Attribute\HasUserMessage;
-use OneToMany\RichBundle\Contract\Error\Record\StackItem;
 use OneToMany\RichBundle\Contract\Error\Record\Violation;
 use OneToMany\RichBundle\Error\HttpError;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -195,21 +194,6 @@ final class HttpErrorTest extends TestCase
         }, $violations);
 
         $this->assertEquals($violations, new HttpError(new ValidationFailedException(null, new ConstraintViolationList($violationList)))->getViolations());
-    }
-
-    public function testConstructorFlattensStack(): void
-    {
-        $exception1 = new \Exception('Exception 1', previous: null);
-        $exception2 = new \Exception('Exception 2', previous: $exception1);
-        $exception3 = new \Exception('Exception 3', previous: $exception2);
-
-        $stackTrace = [
-            StackItem::create($exception3),
-            StackItem::create($exception2),
-            StackItem::create($exception1),
-        ];
-
-        $this->assertEquals($stackTrace, new HttpError($exception3)->getStack());
     }
 
     public function testToString(): void

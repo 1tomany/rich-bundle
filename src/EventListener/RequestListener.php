@@ -143,7 +143,7 @@ final readonly class RequestListener implements EventSubscriberInterface
         $error = new HttpError($event->getThrowable());
 
         if ($this->isSerializableRequest($event->getRequest())) {
-            $event->setResponse($this->serializeResponse($event->getRequest(), $error, $error->getContext(), $error->getStatus(), $error->getHeaders()));
+            $event->setResponse($this->serializeResponse($event->getRequest(), $error, [], $error->getStatus(), $error->getHeaders()));
         }
     }
 

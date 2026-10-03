@@ -2,8 +2,6 @@
 
 namespace OneToMany\RichBundle\Contract\Error;
 
-use OneToMany\RichBundle\Contract\Error\Record\StackItem;
-use OneToMany\RichBundle\Contract\Error\Record\TraceItem;
 use OneToMany\RichBundle\Contract\Error\Record\Violation;
 
 interface HttpErrorInterface extends \JsonSerializable, \Stringable
@@ -13,7 +11,7 @@ interface HttpErrorInterface extends \JsonSerializable, \Stringable
     public function getPrevious(): ?self;
 
     /**
-     * @return int<100, 599>
+     * @return int<100,599>
      */
     public function getStatus(): int;
 
@@ -32,6 +30,8 @@ interface HttpErrorInterface extends \JsonSerializable, \Stringable
      */
     public function getMessage(): string;
 
+    public function getLogLevel(): string;
+
     /**
      * @return array<string, string>
      */
@@ -41,23 +41,6 @@ interface HttpErrorInterface extends \JsonSerializable, \Stringable
      * @return list<Violation>
      */
     public function getViolations(): array;
-
-    /**
-     * @return list<StackItem>
-     */
-    public function getStack(): array;
-
-    /**
-     * @return list<TraceItem>
-     */
-    public function getTrace(): array;
-
-    public function getLogLevel(): string;
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function getContext(): array;
 
     /**
      * @see \JsonSerializable

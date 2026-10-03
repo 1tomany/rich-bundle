@@ -4,8 +4,6 @@ namespace OneToMany\RichBundle\Error;
 
 use OneToMany\RichBundle\Attribute\HasUserMessage;
 use OneToMany\RichBundle\Contract\Error\HttpErrorInterface;
-use OneToMany\RichBundle\Contract\Error\Record\StackItem;
-use OneToMany\RichBundle\Contract\Error\Record\TraceItem;
 use OneToMany\RichBundle\Contract\Error\Record\Violation;
 use Psr\Log\LogLevel;
 use Symfony\Component\HttpFoundation\Response;
@@ -52,16 +50,6 @@ class HttpError implements HttpErrorInterface
      */
     protected array $violations = [];
 
-    /**
-     * @var list<StackItem>
-     */
-    protected array $stack = [];
-
-    /**
-     * @var list<TraceItem>
-     */
-    protected array $trace = [];
-
     public const string MESSAGE_ACCESS_DENIED = 'Access to this resource is denied.';
     public const string MESSAGE_VALIDATION_FAILED = 'The data provided is not valid.';
     public const string MESSAGE_UNEXPECTED_ERROR = 'An unexpected error occurred.';
@@ -76,8 +64,6 @@ class HttpError implements HttpErrorInterface
         $this->resolveHeaders();
         $this->resolveMessage();
         $this->expandViolations();
-        $this->flattenStack();
-        $this->flattenTrace();
 
         if ($previous = $throwable->getPrevious()) {
             $this->previous = new self($previous);
@@ -93,29 +79,6 @@ class HttpError implements HttpErrorInterface
     public function __toString(): string
     {
         return sprintf('[%s] %s', $this->getDescription(), $this->getMessage());
-    }
-
-    /**
-     * @see \JsonSerializable
-     *
-     * @return array{
-     *   status: int<100,599>,
-     *   title: non-empty-string,
-     *   message: non-empty-string,
-     *   violations: list<Violation>,
-     *   previous: ?HttpErrorInterface,
-     * }
-     */
-    #[\Override]
-    public function jsonSerialize(): array
-    {
-        return [
-            'status' => $this->getStatus(),
-            'title' => $this->getTitle(),
-            'message' => $this->getMessage(),
-            'violations' => $this->getViolations(),
-            'previous' => $this->getPrevious(),
-        ];
     }
 
     /**
@@ -192,24 +155,6 @@ class HttpError implements HttpErrorInterface
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
     #[\Override]
-    public function getStack(): array
-    {
-        return $this->stack;
-    }
-
-    /**
-     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
-     */
-    #[\Override]
-    public function getTrace(): array
-    {
-        return $this->trace;
-    }
-
-    /**
-     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
-     */
-    #[\Override]
     public function getLogLevel(): string
     {
         if ($this->getStatus() < 300) {
@@ -231,9 +176,15 @@ class HttpError implements HttpErrorInterface
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
     #[\Override]
-    public function getContext(): array
+    public function jsonSerialize(): array
     {
-        return [];
+        return [
+            'status' => $this->getStatus(),
+            'title' => $this->getTitle(),
+            'message' => $this->getMessage(),
+            'violations' => $this->getViolations(),
+            'previous' => $this->getPrevious(),
+        ];
     }
 
     public function hasUserMessage(): bool
@@ -318,36 +269,10 @@ class HttpError implements HttpErrorInterface
 
     protected function expandViolations(): void
     {
-        $exception = $this->throwable;
-
-        while (null !== $exception) {
-            if ($exception instanceof ValidationFailedException) {
-                foreach ($exception->getViolations() as $violation) {
-                    $this->violations[] = Violation::create($violation);
-                }
+        if ($this->throwable instanceof ValidationFailedException) {
+            foreach ($this->throwable->getViolations() as $violation) {
+                $this->violations[] = Violation::create($violation);
             }
-
-            $exception = $exception->getPrevious();
-        }
-    }
-
-    protected function flattenStack(): void
-    {
-        $exception = $this->throwable;
-
-        while (null !== $exception) {
-            $this->stack[] = StackItem::create(...[
-                'throwable' => $exception,
-            ]);
-
-            $exception = $exception->getPrevious();
-        }
-    }
-
-    protected function flattenTrace(): void
-    {
-        foreach ($this->throwable->getTrace() as $trace) {
-            $this->trace[] = TraceItem::create($trace);
         }
     }
 
