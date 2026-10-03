@@ -22,33 +22,33 @@ use function trim;
 
 class HttpError implements HttpErrorInterface
 {
-    protected \Throwable $throwable;
-    protected ?self $previous = null;
+    public protected(set) \Throwable $throwable;
+    public protected(set) ?self $previous = null;
 
     /**
      * @var int<100,599>
      */
-    protected int $status = 500;
+    public protected(set) int $status = 500;
 
     /**
      * @var non-empty-string
      */
-    protected string $title = 'Internal Server Error';
+    public protected(set) string $title = 'Internal Server Error';
 
     /**
      * @var array<string, string>
      */
-    protected array $headers = [];
+    public protected(set) array $headers = [];
 
     /**
      * @var non-empty-string
      */
-    protected string $message = self::MESSAGE_UNEXPECTED_ERROR;
+    public protected(set) string $message = self::MESSAGE_UNEXPECTED_ERROR;
 
     /**
      * @var list<Violation>
      */
-    protected array $violations = [];
+    public protected(set) array $violations = [];
 
     public const string MESSAGE_ACCESS_DENIED = 'Access to this resource is denied.';
     public const string MESSAGE_VALIDATION_FAILED = 'The data provided is not valid.';
@@ -253,7 +253,9 @@ class HttpError implements HttpErrorInterface
                 $message = $this->throwable->getMessage();
             }
 
-            $message = trim((string) $message) ?: self::MESSAGE_VALIDATION_FAILED;
+            if ('' === $message = trim((string) $message)) {
+                $message = self::MESSAGE_VALIDATION_FAILED;
+            }
         } elseif ($this->throwable instanceof AccessDeniedException) {
             $message = self::MESSAGE_ACCESS_DENIED;
         } elseif (
@@ -264,7 +266,11 @@ class HttpError implements HttpErrorInterface
             $message = $this->throwable->getMessage();
         }
 
-        $this->message = trim((string) $message) ?: self::MESSAGE_UNEXPECTED_ERROR;
+        if ('' === $message = trim((string) $message)) {
+            $message = self::MESSAGE_UNEXPECTED_ERROR;
+        }
+
+        $this->message = $message;
     }
 
     protected function expandViolations(): void
