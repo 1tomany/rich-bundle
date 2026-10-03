@@ -28,7 +28,7 @@
     },
     "suggest": {
         "1tomany/data-uri": "Provides a decoder to convert data into a self-destroying file object",
-        "symfony/maker-bundle": "Provides the make:rich-module command to generate RICH modules",
+        "symfony/maker-bundle": "Provides the make:rich-domain command to generate RICH domains",
         "symfony/security-bundle": "Provides an autowired TokenStorageInterface to extract authenticated users"
     },
     "autoload": {
