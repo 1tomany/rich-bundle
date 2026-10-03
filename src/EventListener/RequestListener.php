@@ -42,12 +42,10 @@ final readonly class RequestListener implements EventSubscriberInterface
      * @param non-empty-string $serializedUriPrefix
      */
     public function __construct(
-        private LoggerInterface $logger,
         private SerializerInterface $serializer,
         private array $acceptFormats = ['json', 'xml'],
         private array $contentTypeFormats = ['form', 'json'],
         private string $serializedUriPrefix = '/api',
-        private bool $logImportantExceptions = true,
     ) {
         $this->requestId = $this->generateRequestId();
     }
