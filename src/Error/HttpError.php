@@ -98,6 +98,14 @@ class HttpError implements HttpErrorInterface
 
     /**
      * @see \JsonSerializable
+     *
+     * @return array{
+     *   status: int<100,599>,
+     *   title: non-empty-string,
+     *   message: non-empty-string,
+     *   violations: list<Violation>,
+     *   previous: ?HttpErrorInterface,
+     * }
      */
     #[\Override]
     public function jsonSerialize(): array
