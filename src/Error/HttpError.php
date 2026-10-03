@@ -2,7 +2,6 @@
 
 namespace OneToMany\RichBundle\Error;
 
-use Exception;
 use OneToMany\RichBundle\Attribute\HasErrorType;
 use OneToMany\RichBundle\Attribute\HasUserMessage;
 use OneToMany\RichBundle\Contract\Enum\ErrorType;
@@ -10,7 +9,6 @@ use OneToMany\RichBundle\Contract\Error\HttpErrorInterface;
 use OneToMany\RichBundle\Contract\Error\Record\StackItem;
 use OneToMany\RichBundle\Contract\Error\Record\TraceItem;
 use OneToMany\RichBundle\Contract\Error\Record\Violation;
-use Override;
 use Psr\Log\LogLevel;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
@@ -101,6 +99,10 @@ class HttpError implements HttpErrorInterface
     {
         return [
             'status' => $this->getStatus(),
+            'title' => $this->getTitle(),
+            'message' => $this->getMessage(),
+            'violations' => $this->getViolations(),
+            // 'previous' => $this->
         ];
     }
 
