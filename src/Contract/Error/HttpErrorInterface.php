@@ -7,7 +7,7 @@ use OneToMany\RichBundle\Contract\Error\Record\StackItem;
 use OneToMany\RichBundle\Contract\Error\Record\TraceItem;
 use OneToMany\RichBundle\Contract\Error\Record\Violation;
 
-interface HttpErrorInterface extends \Stringable
+interface HttpErrorInterface extends \JsonSerializable, \Stringable
 {
     public function getThrowable(): \Throwable;
 

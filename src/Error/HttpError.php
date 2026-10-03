@@ -2,6 +2,7 @@
 
 namespace OneToMany\RichBundle\Error;
 
+use Exception;
 use OneToMany\RichBundle\Attribute\HasErrorType;
 use OneToMany\RichBundle\Attribute\HasUserMessage;
 use OneToMany\RichBundle\Contract\Enum\ErrorType;
@@ -9,6 +10,7 @@ use OneToMany\RichBundle\Contract\Error\HttpErrorInterface;
 use OneToMany\RichBundle\Contract\Error\Record\StackItem;
 use OneToMany\RichBundle\Contract\Error\Record\TraceItem;
 use OneToMany\RichBundle\Contract\Error\Record\Violation;
+use Override;
 use Psr\Log\LogLevel;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
@@ -85,14 +87,27 @@ class HttpError implements HttpErrorInterface
      *
      * @return non-empty-string
      */
+    #[\Override]
     public function __toString(): string
     {
         return sprintf('[%s] %s', $this->getDescription(), $this->getMessage());
     }
 
     /**
+     * @see \JsonSerializable
+     */
+    #[\Override]
+    public function jsonSerialize(): array
+    {
+        return [
+            'status' => $this->getStatus(),
+        ];
+    }
+
+    /**
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
+    #[\Override]
     public function getThrowable(): \Throwable
     {
         return $this->throwable;
@@ -101,6 +116,7 @@ class HttpError implements HttpErrorInterface
     /**
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
+    #[\Override]
     public function getType(): ErrorType
     {
         return $this->type;
@@ -109,6 +125,7 @@ class HttpError implements HttpErrorInterface
     /**
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
+    #[\Override]
     public function getStatus(): int
     {
         return $this->status;
@@ -125,6 +142,7 @@ class HttpError implements HttpErrorInterface
     /**
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
+    #[\Override]
     public function getDescription(): string
     {
         return sprintf('%d %s', $this->status, $this->title);
@@ -133,6 +151,7 @@ class HttpError implements HttpErrorInterface
     /**
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
+    #[\Override]
     public function getMessage(): string
     {
         return $this->message;
@@ -149,6 +168,7 @@ class HttpError implements HttpErrorInterface
     /**
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
+    #[\Override]
     public function getViolations(): array
     {
         return $this->violations;
@@ -157,6 +177,7 @@ class HttpError implements HttpErrorInterface
     /**
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
+    #[\Override]
     public function getStack(): array
     {
         return $this->stack;
@@ -165,6 +186,7 @@ class HttpError implements HttpErrorInterface
     /**
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
+    #[\Override]
     public function getTrace(): array
     {
         return $this->trace;
@@ -173,6 +195,7 @@ class HttpError implements HttpErrorInterface
     /**
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
+    #[\Override]
     public function getLogLevel(): string
     {
         if ($this->getStatus() < 300) {
@@ -198,6 +221,7 @@ class HttpError implements HttpErrorInterface
     /**
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
+    #[\Override]
     public function getContext(): array
     {
         return [];
