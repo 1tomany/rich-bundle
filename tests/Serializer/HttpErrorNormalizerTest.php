@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 #[Group('SerializerTests')]
 final class HttpErrorNormalizerTest extends TestCase
 {
-    public function testNormalizingExceptionInDebugEnvironmentIncludesPreviousKey(): void
+    public function testNormalizingExceptionInDebugEnvironmentIncludesStackKey(): void
     {
         $exception1 = new \Exception('Exception 1');
         $exception2 = new \Exception('Exception 2', previous: $exception1);
@@ -19,13 +19,13 @@ final class HttpErrorNormalizerTest extends TestCase
         $this->assertNotNull($exception2->getPrevious());
 
         $record = new HttpErrorNormalizer(true)->normalize(
-            data: new HttpError($exception2),
+            new HttpError($exception2), null, [],
         );
 
-        $this->assertArrayHasKey('previous', $record);
+        $this->assertArrayHasKey('stack', $record);
     }
 
-    public function testNormalizingExceptionInNonDebugEnvironmentDoesNotIncludePreviousKey(): void
+    public function testNormalizingExceptionInNonDebugEnvironmentDoesNotIncludeStackKey(): void
     {
         $exception1 = new \Exception('Exception 1');
         $exception2 = new \Exception('Exception 2', previous: $exception1);
@@ -33,9 +33,9 @@ final class HttpErrorNormalizerTest extends TestCase
         $this->assertNotNull($exception2->getPrevious());
 
         $record = new HttpErrorNormalizer(false)->normalize(
-            data: new HttpError($exception2),
+            new HttpError($exception2), null, [],
         );
 
-        $this->assertArrayNotHasKey('previous', $record);
+        $this->assertArrayNotHasKey('stack', $record);
     }
 }

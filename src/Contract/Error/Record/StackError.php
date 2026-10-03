@@ -4,7 +4,7 @@ namespace OneToMany\RichBundle\Contract\Error\Record;
 
 use function get_class;
 
-final readonly class DebugError implements \JsonSerializable
+final readonly class StackError implements \JsonSerializable
 {
     public int|string $code;
     public string $message;

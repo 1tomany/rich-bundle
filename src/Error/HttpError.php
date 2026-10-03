@@ -183,7 +183,6 @@ class HttpError implements HttpErrorInterface
             'title' => $this->getTitle(),
             'message' => $this->getMessage(),
             'violations' => $this->getViolations(),
-            'previous' => $this->getPrevious(),
         ];
     }
 
