@@ -230,11 +230,6 @@ class HttpError implements HttpErrorInterface
             return LogLevel::NOTICE;
         }
 
-        // @see https://github.com/1tomany/rich-bundle/issues/61
-        if (403 === $this->getStatus() || $this->throwable instanceof AccessDeniedException) {
-            return LogLevel::CRITICAL;
-        }
-
         if ($this->getStatus() < 500) {
             return LogLevel::ERROR;
         }
@@ -254,16 +249,6 @@ class HttpError implements HttpErrorInterface
     public function hasUserMessage(): bool
     {
         return $this->hasAttribute(HasUserMessage::class);
-    }
-
-    public function isCritical(): bool
-    {
-        return LogLevel::CRITICAL === $this->getLogLevel();
-    }
-
-    public function shouldBeLogged(): bool
-    {
-        return $this->hasUserMessage() || $this->isCritical();
     }
 
     protected function resolveStatus(): void

@@ -295,11 +295,6 @@ final class HttpErrorTest extends TestCase
         $this->assertSame($logLevel, new HttpError(new \Exception('Error', $status))->getLogLevel());
     }
 
-    public function testGettingLogLevelWithAccessDeniedExceptionIsCritical(): void
-    {
-        $this->assertSame(LogLevel::CRITICAL, new HttpError(new AccessDeniedException())->getLogLevel());
-    }
-
     /**
      * @return list<list<int|string>>
      */
@@ -324,7 +319,7 @@ final class HttpErrorTest extends TestCase
             [400, LogLevel::ERROR],
             [401, LogLevel::ERROR],
             [402, LogLevel::ERROR],
-            [403, LogLevel::CRITICAL],
+            [403, LogLevel::ERROR],
             [404, LogLevel::ERROR],
             [405, LogLevel::ERROR],
             [406, LogLevel::ERROR],
@@ -373,10 +368,5 @@ final class HttpErrorTest extends TestCase
 
         $exception = new #[HasUserMessage] class('Error') extends \Exception {};
         $this->assertTrue(new HttpError($exception)->hasUserMessage());
-    }
-
-    public function testIsNotCriticalWhenLogLevelIsNotCritical(): void
-    {
-        $this->assertFalse(new HttpError(new \Exception('Not Found', 404))->isCritical());
     }
 }
