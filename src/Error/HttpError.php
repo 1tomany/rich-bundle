@@ -36,14 +36,14 @@ class HttpError implements HttpErrorInterface
     public protected(set) string $title = 'Internal Server Error';
 
     /**
-     * @var array<string, string>
-     */
-    public protected(set) array $headers = [];
-
-    /**
      * @var non-empty-string
      */
     public protected(set) string $message = self::MESSAGE_UNEXPECTED_ERROR;
+
+    /**
+     * @var array<string, string>
+     */
+    public protected(set) array $headers = [];
 
     /**
      * @var list<Violation>
@@ -61,8 +61,8 @@ class HttpError implements HttpErrorInterface
 
         $this->resolveStatus();
         $this->resolveTitle();
-        $this->resolveHeaders();
         $this->resolveMessage();
+        $this->resolveHeaders();
         $this->expandViolations();
 
         if ($previous = $throwable->getPrevious()) {
@@ -216,27 +216,6 @@ class HttpError implements HttpErrorInterface
         $this->title = (Response::$statusTexts[$this->status] ?? null) ?: $this->title;
     }
 
-    protected function resolveHeaders(): void
-    {
-        $headers = null;
-
-        if ($this->throwable instanceof HttpExceptionInterface) {
-            $headers = $this->throwable->getHeaders();
-        } elseif ($withHttpStatus = $this->getAttribute(WithHttpStatus::class)) {
-            $headers = $withHttpStatus->headers;
-        }
-
-        if (!$headers) {
-            return;
-        }
-
-        foreach ($headers as $header => $value) {
-            if (is_string($header) && is_string($value)) {
-                $this->headers[$header] = trim($value);
-            }
-        }
-    }
-
     protected function resolveMessage(): void
     {
         $message = null;
@@ -273,6 +252,27 @@ class HttpError implements HttpErrorInterface
         $this->message = $message;
     }
 
+    protected function resolveHeaders(): void
+    {
+        $headers = null;
+
+        if ($this->throwable instanceof HttpExceptionInterface) {
+            $headers = $this->throwable->getHeaders();
+        } elseif ($withHttpStatus = $this->getAttribute(WithHttpStatus::class)) {
+            $headers = $withHttpStatus->headers;
+        }
+
+        if (!$headers) {
+            return;
+        }
+
+        foreach ($headers as $header => $value) {
+            if (is_string($header) && is_string($value)) {
+                $this->headers[$header] = trim($value);
+            }
+        }
+    }
+
     protected function expandViolations(): void
     {
         $throwable = $this->throwable;
@@ -295,7 +295,9 @@ class HttpError implements HttpErrorInterface
      *
      * @return ?T
      */
-    protected function getAttribute(string $attributeClass): ?object
+    protected function getAttribute(
+        string $attributeClass,
+    ): ?object
     {
         $class = new \ReflectionClass($this->throwable);
 
@@ -311,7 +313,9 @@ class HttpError implements HttpErrorInterface
     /**
      * @param class-string $attributeClass
      */
-    protected function hasAttribute(string $attributeClass): bool
+    protected function hasAttribute(
+        string $attributeClass,
+    ): bool
     {
         return null !== $this->getAttribute($attributeClass);
     }
