@@ -76,9 +76,6 @@ class RichBundle extends AbstractBundle
                                     ->stringPrototype()
                                 ->end()
                             ->end()
-                            ->booleanNode('log_important_exceptions')
-                                ->defaultTrue()
-                            ->end()
                             ->stringNode('serialized_uri_prefix')
                                 ->cannotBeEmpty()
                                 ->defaultValue('/api')
@@ -100,7 +97,6 @@ class RichBundle extends AbstractBundle
      *   request_listener: array{
      *     accept_formats: non-empty-list<non-empty-lowercase-string>,
      *     content_type_formats: non-empty-list<non-empty-lowercase-string>,
-     *     log_important_exceptions: bool,
      *     serialized_uri_prefix: non-empty-string,
      *   },
      * } $config
