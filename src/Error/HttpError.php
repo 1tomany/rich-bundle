@@ -269,10 +269,16 @@ class HttpError implements HttpErrorInterface
 
     protected function expandViolations(): void
     {
-        if ($this->throwable instanceof ValidationFailedException) {
-            foreach ($this->throwable->getViolations() as $violation) {
-                $this->violations[] = Violation::create($violation);
+        $throwable = $this->throwable;
+
+        while (null !== $throwable) {
+            if ($throwable instanceof ValidationFailedException) {
+                foreach ($throwable->getViolations() as $violation) {
+                    $this->violations[] = Violation::create($violation);
+                }
             }
+
+            $throwable = $throwable->getPrevious();
         }
     }
 
