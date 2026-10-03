@@ -76,9 +76,6 @@ class RichBundle extends AbstractBundle
                                     ->stringPrototype()
                                 ->end()
                             ->end()
-                            ->booleanNode('log_important_exceptions')
-                                ->defaultTrue()
-                            ->end()
                             ->stringNode('serialized_uri_prefix')
                                 ->cannotBeEmpty()
                                 ->defaultValue('/api')
@@ -100,7 +97,6 @@ class RichBundle extends AbstractBundle
      *   request_listener: array{
      *     accept_formats: non-empty-list<non-empty-lowercase-string>,
      *     content_type_formats: non-empty-list<non-empty-lowercase-string>,
-     *     log_important_exceptions: bool,
      *     serialized_uri_prefix: non-empty-string,
      *   },
      * } $config
@@ -123,12 +119,10 @@ class RichBundle extends AbstractBundle
                 // Event Subscribers
                 ->set(RequestListener::class)
                     ->tag('kernel.event_subscriber')
-                    ->arg('$logger', service('logger'))
                     ->arg('$serializer', service('serializer'))
                     ->arg('$acceptFormats', $config['request_listener']['accept_formats'])
                     ->arg('$contentTypeFormats', $config['request_listener']['content_type_formats'])
                     ->arg('$serializedUriPrefix', $config['request_listener']['serialized_uri_prefix'])
-                    ->arg('$logImportantExceptions', $config['request_listener']['log_important_exceptions'])
 
                 // Forms
                 ->set(InputDataMapper::class)

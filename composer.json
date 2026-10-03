@@ -7,8 +7,6 @@
     "prefer-stable": true,
     "require": {
         "php": ">=8.5",
-        "monolog/monolog": "^3.12",
-        "psr/log": "^3.0",
         "symfony/config": "^7.2|^8.0|^8.1",
         "symfony/dependency-injection": "^7.2|^8.0|^8.1",
         "symfony/event-dispatcher": "^7.2|^8.0|^8.1",
@@ -22,6 +20,7 @@
     "require-dev": {
         "fakerphp/faker": "^1.24",
         "friendsofphp/php-cs-fixer": "^3.93",
+        "monolog/monolog": "^3.12",
         "phpdocumentor/reflection-docblock": "^5.2|^6.0",
         "phpstan/phpstan": "^2.1.55",
         "phpunit/phpunit": "^13.1.11",
@@ -29,7 +28,7 @@
     },
     "suggest": {
         "1tomany/data-uri": "Provides a decoder to convert data into a self-destroying file object",
-        "symfony/maker-bundle": "Provides the make:rich-module command to generate RICH modules",
+        "symfony/maker-bundle": "Provides the make:rich-domain command to generate RICH domains",
         "symfony/security-bundle": "Provides an autowired TokenStorageInterface to extract authenticated users"
     },
     "autoload": {

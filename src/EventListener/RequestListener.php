@@ -6,7 +6,6 @@ use OneToMany\RichBundle\Contract\Action\ResultInterface;
 use OneToMany\RichBundle\Error\HttpError;
 use OneToMany\RichBundle\Exception\HttpException;
 use OneToMany\RichBundle\Exception\RuntimeException;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -42,12 +41,10 @@ final readonly class RequestListener implements EventSubscriberInterface
      * @param non-empty-string $serializedUriPrefix
      */
     public function __construct(
-        private LoggerInterface $logger,
         private SerializerInterface $serializer,
         private array $acceptFormats = ['json', 'xml'],
         private array $contentTypeFormats = ['form', 'json'],
         private string $serializedUriPrefix = '/api',
-        private bool $logImportantExceptions = true,
     ) {
         $this->requestId = $this->generateRequestId();
     }
@@ -142,14 +139,8 @@ final readonly class RequestListener implements EventSubscriberInterface
             return;
         }
 
-        // Flatten and normalize the exception
-        $error = new HttpError($t = $event->getThrowable());
-
-        if ($this->logImportantExceptions && $error->shouldBeLogged()) {
-            $this->logger->log($error->getLogLevel(), $t->getMessage(), [
-                'exception' => $error->getThrowable(),
-            ]);
-        }
+        // Flatten the exception
+        $error = new HttpError($event->getThrowable());
 
         if ($this->isSerializableRequest($event->getRequest())) {
             $event->setResponse($this->serializeResponse($event->getRequest(), $error, $error->getContext(), $error->getStatus(), $error->getHeaders()));
