@@ -21,7 +21,7 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
      * @return array{
      *   status: int<100,599>,
      *   title: non-empty-string,
-     *   detail: non-empty-string,
+     *   message: non-empty-string,
      *   violations: list<Violation>,
      *   previous?: ?HttpErrorInterface,
      * }
@@ -32,19 +32,13 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
         ?string $format = null,
         array $context = [],
     ): array {
-        $record = [
-            'status' => $data->getStatus(),
-            'title' => $data->getTitle(),
-            'detail' => $data->getMessage(),
-            'violations' => $data->getViolations(),
-            'previous' => $data->getPrevious(),
-        ];
+        $error = $data->jsonSerialize();
 
         if (false === $this->debug) {
-            unset($record['previous']);
+            unset($error['previous']);
         }
 
-        return $record;
+        return $error;
     }
 
     /**

@@ -24,10 +24,11 @@ use function trim;
 
 class HttpError implements HttpErrorInterface
 {
+    protected \Throwable $throwable;
     protected ?self $previous = null;
 
     /**
-     * @var int<100, 599>
+     * @var int<100,599>
      */
     protected int $status = 500;
 
@@ -66,8 +67,10 @@ class HttpError implements HttpErrorInterface
     public const string MESSAGE_UNEXPECTED_ERROR = 'An unexpected error occurred.';
 
     public function __construct(
-        protected readonly \Throwable $throwable,
+        \Throwable $throwable,
     ) {
+        $this->throwable = $throwable;
+
         $this->resolveStatus();
         $this->resolveTitle();
         $this->resolveHeaders();
