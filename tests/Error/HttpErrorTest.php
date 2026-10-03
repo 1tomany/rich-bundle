@@ -2,9 +2,7 @@
 
 namespace OneToMany\RichBundle\Tests\Error;
 
-use OneToMany\RichBundle\Attribute\HasErrorType;
 use OneToMany\RichBundle\Attribute\HasUserMessage;
-use OneToMany\RichBundle\Contract\Enum\ErrorType;
 use OneToMany\RichBundle\Contract\Error\Record\StackItem;
 use OneToMany\RichBundle\Contract\Error\Record\Violation;
 use OneToMany\RichBundle\Error\HttpError;
@@ -214,14 +212,6 @@ final class HttpErrorTest extends TestCase
         $this->assertEquals($stackTrace, new HttpError($exception3)->getStack());
     }
 
-    public function testConstructorResolvesType(): void
-    {
-        $exception = new \Exception('Error');
-        $httpError = new HttpError($exception);
-
-        $this->assertSame(ErrorType::create($exception), $httpError->getType());
-    }
-
     public function testToString(): void
     {
         $httpError = new HttpError(new \Exception('File Not Found', 404));
@@ -236,16 +226,9 @@ final class HttpErrorTest extends TestCase
         $this->assertSame($exception, new HttpError($exception)->getThrowable());
     }
 
-    public function testGettingTypeResolvesErrorTypeWhenHasErrorTypeAttributeIsPresent(): void
-    {
-        $exception = new #[HasErrorType(ErrorType::Data)] class('Error') extends \Exception {};
-
-        $this->assertSame(ErrorType::Data, new HttpError($exception)->getType());
-    }
-
     public function testGettingDescriptionFromValidHttpStatus(): void
     {
-        /** @var int<100, 599> $status */
+        /** @var int<100,599> $status */
         $status = array_rand(Response::$statusTexts);
         $this->assertArrayHasKey($status, Response::$statusTexts);
 

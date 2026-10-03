@@ -2,9 +2,7 @@
 
 namespace OneToMany\RichBundle\Error;
 
-use OneToMany\RichBundle\Attribute\HasErrorType;
 use OneToMany\RichBundle\Attribute\HasUserMessage;
-use OneToMany\RichBundle\Contract\Enum\ErrorType;
 use OneToMany\RichBundle\Contract\Error\HttpErrorInterface;
 use OneToMany\RichBundle\Contract\Error\Record\StackItem;
 use OneToMany\RichBundle\Contract\Error\Record\TraceItem;
@@ -26,7 +24,6 @@ use function trim;
 
 class HttpError implements HttpErrorInterface
 {
-    protected ErrorType $type;
     protected ?self $previous = null;
 
     /**
@@ -78,7 +75,6 @@ class HttpError implements HttpErrorInterface
         $this->expandViolations();
         $this->flattenStack();
         $this->flattenTrace();
-        $this->resolveType();
 
         if ($previous = $throwable->getPrevious()) {
             $this->previous = new self($previous);
@@ -135,15 +131,6 @@ class HttpError implements HttpErrorInterface
     public function getPrevious(): ?HttpErrorInterface
     {
         return $this->previous;
-    }
-
-    /**
-     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
-     */
-    #[\Override]
-    public function getType(): ErrorType
-    {
-        return $this->type;
     }
 
     /**
@@ -273,17 +260,6 @@ class HttpError implements HttpErrorInterface
     protected function resolveTitle(): void
     {
         $this->title = (Response::$statusTexts[$this->status] ?? null) ?: $this->title;
-    }
-
-    protected function resolveType(): void
-    {
-        $hasErrorType = $this->getAttribute(HasErrorType::class);
-
-        if ($hasErrorType instanceof HasErrorType) {
-            $this->type = $hasErrorType->type;
-        } else {
-            $this->type = ErrorType::create($this->throwable, $this->status);
-        }
     }
 
     protected function resolveHeaders(): void

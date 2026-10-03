@@ -2,7 +2,6 @@
 
 namespace OneToMany\RichBundle\Contract\Error;
 
-use OneToMany\RichBundle\Contract\Enum\ErrorType;
 use OneToMany\RichBundle\Contract\Error\Record\StackItem;
 use OneToMany\RichBundle\Contract\Error\Record\TraceItem;
 use OneToMany\RichBundle\Contract\Error\Record\Violation;
@@ -12,8 +11,6 @@ interface HttpErrorInterface extends \JsonSerializable, \Stringable
     public function getThrowable(): \Throwable;
 
     public function getPrevious(): ?self;
-
-    public function getType(): ErrorType;
 
     /**
      * @return int<100, 599>
