@@ -142,14 +142,8 @@ final readonly class RequestListener implements EventSubscriberInterface
             return;
         }
 
-        // Flatten and normalize the exception
-        $error = new HttpError($t = $event->getThrowable());
-
-        if ($this->logImportantExceptions && $error->shouldBeLogged()) {
-            $this->logger->log($error->getLogLevel(), $t->getMessage(), [
-                'exception' => $error->getThrowable(),
-            ]);
-        }
+        // Flatten the exception
+        $error = new HttpError($event->getThrowable());
 
         if ($this->isSerializableRequest($event->getRequest())) {
             $event->setResponse($this->serializeResponse($event->getRequest(), $error, $error->getContext(), $error->getStatus(), $error->getHeaders()));
