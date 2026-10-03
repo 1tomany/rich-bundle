@@ -27,6 +27,7 @@ use function trim;
 class HttpError implements HttpErrorInterface
 {
     protected ErrorType $type;
+    protected ?self $previous = null;
 
     /**
      * @var int<100, 599>
@@ -78,6 +79,10 @@ class HttpError implements HttpErrorInterface
         $this->flattenStack();
         $this->flattenTrace();
         $this->resolveType();
+
+        if ($previous = $throwable->getPrevious()) {
+            $this->previous = new self($previous);
+        }
     }
 
     /**
@@ -102,7 +107,7 @@ class HttpError implements HttpErrorInterface
             'title' => $this->getTitle(),
             'message' => $this->getMessage(),
             'violations' => $this->getViolations(),
-            // 'previous' => $this->
+            'previous' => $this->getPrevious(),
         ];
     }
 
@@ -113,6 +118,15 @@ class HttpError implements HttpErrorInterface
     public function getThrowable(): \Throwable
     {
         return $this->throwable;
+    }
+
+    /**
+     * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
+     */
+    #[\Override]
+    public function getPrevious(): ?HttpErrorInterface
+    {
+        return $this->previous;
     }
 
     /**

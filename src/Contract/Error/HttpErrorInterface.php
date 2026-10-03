@@ -11,6 +11,8 @@ interface HttpErrorInterface extends \JsonSerializable, \Stringable
 {
     public function getThrowable(): \Throwable;
 
+    public function getPrevious(): ?self;
+
     public function getType(): ErrorType;
 
     /**
