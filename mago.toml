@@ -1,6 +1,4 @@
 #:schema https://mago.carthage.software/1.54.0/schema.json
-# Welcome to Mago!
-# For full documentation, see https://mago.carthage.software/1.54.0/en/tools/overview/
 version = "1"
 php-version = "8.5.0"
 
@@ -32,7 +30,6 @@ find-unused-definitions = true
 find-unused-expressions = true
 analyze-dead-code = true
 memoize-properties = true
-allow-possibly-undefined-array-keys = false
 check-throws = true
 unchecked-exceptions = ["Error", "LogicException"]
 unchecked-exception-classes = []

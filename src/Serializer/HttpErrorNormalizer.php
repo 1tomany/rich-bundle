@@ -45,8 +45,11 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
     }
 
     /**
+     * @see Symfony\Component\Serializer\Normalizer\NormalizerInterface
+     *
      * @param array<string, mixed> $context
      */
+    #[\Override]
     public function supportsNormalization(
         mixed $data,
         ?string $format = null,
@@ -58,6 +61,7 @@ final readonly class HttpErrorNormalizer implements NormalizerInterface
     /**
      * @see Symfony\Component\Serializer\Normalizer\NormalizerInterface
      */
+    #[\Override]
     public function getSupportedTypes(?string $format): array
     {
         return [

@@ -32,6 +32,7 @@ class RichBundle extends AbstractBundle
     /**
      * @see Symfony\Component\HttpKernel\Bundle\BundleInterface
      */
+    #[\Override]
     public function build(ContainerBuilder $container): void
     {
         parent::build($container);
@@ -56,6 +57,7 @@ class RichBundle extends AbstractBundle
      *
      * @param DefinitionConfigurator<'array'> $definition
      */
+    #[\Override]
     public function configure(DefinitionConfigurator $definition): void
     {
         $definition
@@ -101,6 +103,7 @@ class RichBundle extends AbstractBundle
      *   },
      * } $config
      */
+    #[\Override]
     public function loadExtension(
         array $config,
         ContainerConfigurator $container,
