@@ -23,8 +23,11 @@ readonly class InputValueResolver implements ValueResolverInterface
      *
      * @return list<InputInterface<CommandInterface>>
      */
-    public function resolve(Request $request, ArgumentMetadata $argument): iterable
-    {
+    #[\Override]
+    public function resolve(
+        Request $request,
+        ArgumentMetadata $argument,
+    ): iterable {
         // Ensure the argument type can be resolved
         $type = $this->getType($argument->getType());
 

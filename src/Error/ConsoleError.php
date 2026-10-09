@@ -30,6 +30,7 @@ class ConsoleError extends HttpError
      *
      * @return non-empty-string
      */
+    #[\Override]
     public function __toString(): string
     {
         return $this->getMessage();

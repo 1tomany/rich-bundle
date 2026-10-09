@@ -63,6 +63,7 @@ final class MakeRichDomain extends AbstractMaker
     /**
      * @see Symfony\Bundle\MakerBundle\MakerInterface
      */
+    #[\Override]
     public static function getCommandName(): string
     {
         return 'make:rich-domain';
@@ -118,6 +119,7 @@ final class MakeRichDomain extends AbstractMaker
     /**
      * @see Symfony\Bundle\MakerBundle\MakerInterface
      */
+    #[\Override]
     public function generate(
         InputInterface $input,
         ConsoleStyle $io,

@@ -111,6 +111,7 @@ class HttpError implements HttpErrorInterface
     /**
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
+    #[\Override]
     public function getTitle(): string
     {
         return $this->title;
@@ -158,6 +159,7 @@ class HttpError implements HttpErrorInterface
     /**
      * @see OneToMany\RichBundle\Contract\Error\HttpErrorInterface
      */
+    #[\Override]
     public function getHeaders(): array
     {
         return $this->headers;

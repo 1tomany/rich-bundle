@@ -17,6 +17,10 @@ final class UninitializedProperties extends Constraint
         $this->message = 'This property could not be mapped because it was not found in the request and has no default value.';
     }
 
+    /**
+     * @see Symfony\Component\Validator\Constraint
+     */
+    #[\Override]
     public function getTargets(): string
     {
         return self::CLASS_CONSTRAINT;

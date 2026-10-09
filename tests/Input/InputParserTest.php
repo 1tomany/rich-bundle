@@ -55,6 +55,10 @@ final class InputParserTest extends TestCase
     private static Serializer $serializer;
     private static ValidatorInterface $validator;
 
+    /**
+     * @see PHPUnit\Framework\TestCase
+     */
+    #[\Override]
     public static function setUpBeforeClass(): void
     {
         $normalizers = [
@@ -123,7 +127,7 @@ final class InputParserTest extends TestCase
         $class = new class implements InputInterface {
             public function toCommand(): CommandInterface
             {
-                throw new \Exception('Not implemented!');
+                return new class implements CommandInterface {};
             }
         };
 
@@ -167,7 +171,7 @@ final class InputParserTest extends TestCase
 
             public function toCommand(): CommandInterface
             {
-                throw new \Exception('Not implemented!');
+                return new class implements CommandInterface {};
             }
         };
 
@@ -188,7 +192,7 @@ final class InputParserTest extends TestCase
 
             public function toCommand(): CommandInterface
             {
-                throw new \Exception('Not implemented!');
+                return new class implements CommandInterface {};
             }
         };
 
@@ -216,7 +220,7 @@ final class InputParserTest extends TestCase
 
             public function toCommand(): CommandInterface
             {
-                throw new \Exception('Not implemented!');
+                return new class implements CommandInterface {};
             }
         };
 
@@ -267,7 +271,7 @@ final class InputParserTest extends TestCase
 
             public function toCommand(): CommandInterface
             {
-                throw new \Exception('Not implemented!');
+                return new class implements CommandInterface {};
             }
         };
 
@@ -292,7 +296,7 @@ final class InputParserTest extends TestCase
 
             public function toCommand(): CommandInterface
             {
-                throw new \Exception('Not implemented!');
+                return new class implements CommandInterface {};
             }
         };
 
@@ -310,7 +314,7 @@ final class InputParserTest extends TestCase
 
             public function toCommand(): CommandInterface
             {
-                throw new \Exception('Not implemented!');
+                return new class implements CommandInterface {};
             }
         };
 
@@ -345,7 +349,7 @@ final class InputParserTest extends TestCase
 
             public function toCommand(): CommandInterface
             {
-                throw new \Exception('Not implemented!');
+                return new class implements CommandInterface {};
             }
         };
 
@@ -385,7 +389,7 @@ final class InputParserTest extends TestCase
 
             public function toCommand(): CommandInterface
             {
-                throw new \Exception('Not implemented!');
+                return new class implements CommandInterface {};
             }
         };
 
@@ -400,7 +404,7 @@ final class InputParserTest extends TestCase
 
             public function toCommand(): CommandInterface
             {
-                throw new \Exception('Not implemented!');
+                return new class implements CommandInterface {};
             }
         };
 
@@ -428,7 +432,7 @@ final class InputParserTest extends TestCase
 
             public function toCommand(): CommandInterface
             {
-                throw new \Exception('Not implemented!');
+                return new class implements CommandInterface {};
             }
         };
 
@@ -462,7 +466,7 @@ final class InputParserTest extends TestCase
 
             public function toCommand(): CommandInterface
             {
-                throw new \Exception('Not implemented!');
+                return new class implements CommandInterface {};
             }
         };
 
@@ -492,7 +496,7 @@ final class InputParserTest extends TestCase
 
             public function toCommand(): CommandInterface
             {
-                throw new \Exception('Not implemented!');
+                return new class implements CommandInterface {};
             }
         };
 
@@ -520,7 +524,7 @@ final class InputParserTest extends TestCase
 
             public function toCommand(): CommandInterface
             {
-                throw new \Exception('Not implemented!');
+                return new class implements CommandInterface {};
             }
         };
 
@@ -570,7 +574,7 @@ final class InputParserTest extends TestCase
 
             public function toCommand(): CommandInterface
             {
-                throw new \Exception('Not implemented!');
+                return new class implements CommandInterface {};
             }
         };
 
@@ -601,7 +605,7 @@ final class InputParserTest extends TestCase
 
             public function toCommand(): CommandInterface
             {
-                throw new \Exception('Not implemented!');
+                return new class implements CommandInterface {};
             }
         };
 
